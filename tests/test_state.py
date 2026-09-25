@@ -13,6 +13,7 @@ def test_new_game_starts_from_the_world(world_data):
     assert state.item_locations == {"leva": "atrio", "moneta": "inventory", "chiave": None}
     assert state.flags == set()
     assert state.visited == {"atrio"}
+    assert state.seen == set()
     assert state.turns == 0
     assert state.finished is False
 
@@ -23,6 +24,7 @@ def test_state_survives_a_json_round_trip(world_data):
     state.item_locations["chiave"] = "inventory"
     state.flags.add("porta_aperta")
     state.visited.add("cella")
+    state.seen.add("chiave")
     state.turns = 3
 
     restored = GameState.model_validate_json(state.model_dump_json())
@@ -67,11 +69,12 @@ def test_texts_may_change_without_breaking_a_saved_state(world_data):
         (lambda s: s["item_locations"].update(drago="atrio"), "drago"),
         (lambda s: s["item_locations"].update(moneta="cantina"), "cantina"),
         (lambda s: s.update(visited=["atrio", "soffitta"]), "soffitta"),
+        (lambda s: s.update(seen=["drago"]), "drago"),
         (lambda s: s.update(turns="molti"), "turns"),
         (lambda s: s.update(punteggio=10), "punteggio"),
     ],
     ids=["unknown room", "missing item", "unknown item", "item in unknown room", "unknown visited room",
-         "wrong type", "unknown field"],
+         "unknown seen item", "wrong type", "unknown field"],
 )  # fmt: skip
 def test_a_state_that_does_not_fit_the_world_is_refused_with_the_reason(world_data, change, problem):
     data = saved(world_data)
@@ -85,3 +88,12 @@ def test_a_state_that_does_not_fit_the_world_is_refused_with_the_reason(world_da
 def test_something_that_is_not_a_state_is_refused(world_data, data):
     with pytest.raises(StateError):
         Engine(World.model_validate(world_data)).restore(data)
+
+
+def test_a_state_saved_before_seen_existed_is_restored(world_data):
+    data = saved(world_data)
+    del data["seen"]
+
+    state = Engine(World.model_validate(world_data)).restore(data)
+
+    assert state.seen == set()

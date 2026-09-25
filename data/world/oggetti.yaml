@@ -12,6 +12,7 @@ items:
       anello, posata tra i sassi. Troppo in basso per arrivarci con il braccio.
     location: cortile
     scenery: true
+    reveals: [chiave_torre]
     variants:
       - when: {flag: chiave_pescata}
         text: Un pozzo asciutto e profondo. Sul fondo restano solo sassi e foglie secche.

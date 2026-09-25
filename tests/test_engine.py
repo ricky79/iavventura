@@ -248,7 +248,16 @@ def test_using_an_item_out_of_reach_is_refused(data):
 
 @pytest.fixture
 def data_with_ring(data) -> dict:
-    """A ring at the bottom of a well in the atrio: seen from there, fished out with the coin."""
+    """A ring at the bottom of a little well in the atrio: examining the well shows it, and from
+    then on it is in sight from the atrio until it is fished out with the coin."""
+    data["items"]["pozzetto"] = {
+        "name": "pozzetto",
+        "gender": "m",
+        "description": "Sul fondo luccica un anello.",
+        "location": "atrio",
+        "scenery": True,
+        "reveals": ["anello"],
+    }
     data["items"]["anello"] = {
         "name": "anello",
         "gender": "m",
@@ -264,8 +273,46 @@ def data_with_ring(data) -> dict:
     return data
 
 
-def test_items_in_sight_are_seen_only_from_their_room_while_the_condition_holds(data_with_ring):
+def seen_ring(data_with_ring) -> tuple[Engine, GameState]:
     engine, state = start(data_with_ring)
+    state.seen.add("anello")
+    return engine, state
+
+
+def test_an_item_is_in_sight_only_once_seen(data_with_ring):
+    engine, state = start(data_with_ring)
+    assert engine.visible(state) == []
+
+    outcome = engine.execute(state, Action(verb="esamina", target="pozzetto"))
+
+    assert outcome.text == "Sul fondo luccica un anello."
+    assert "anello" in state.seen
+    assert [item.id for item in engine.visible(state)] == ["anello"]
+
+
+def test_an_item_not_seen_yet_is_not_here(data_with_ring):
+    engine, state = start(data_with_ring)
+
+    outcome = engine.execute(state, Action(verb="prendi", target="anello", with_="moneta"))
+
+    assert outcome.text == messages.NOT_HERE
+    assert state.item_locations["anello"] is None
+
+
+def test_a_rule_on_examining_shows_its_own_text_and_reveals_nothing(data_with_ring):
+    data_with_ring["rules"]["esamina_pozzetto"] = {
+        "trigger": {"verb": "esamina", "target": "pozzetto"},
+        "text": "È troppo buio per vedere il fondo.",
+    }
+    engine, state = start(data_with_ring)
+
+    engine.execute(state, Action(verb="esamina", target="pozzetto"))
+
+    assert engine.visible(state) == []
+
+
+def test_items_in_sight_are_seen_only_from_their_room_while_the_condition_holds(data_with_ring):
+    engine, state = seen_ring(data_with_ring)
 
     assert [item.id for item in engine.visible(state)] == ["anello"]
     assert "anello" not in [item.id for item in engine.in_reach(state)]
@@ -279,7 +326,7 @@ def test_items_in_sight_are_seen_only_from_their_room_while_the_condition_holds(
 
 
 def test_a_rule_can_act_on_an_item_in_sight(data_with_ring):
-    engine, state = start(data_with_ring)
+    engine, state = seen_ring(data_with_ring)
 
     outcome = engine.execute(state, Action(verb="prendi", target="anello", with_="moneta"))
 
@@ -298,7 +345,7 @@ def test_a_rule_can_act_on_an_item_in_sight(data_with_ring):
     ids=["take", "examine", "as a tool"],
 )
 def test_without_a_rule_an_item_in_sight_is_out_of_reach(data_with_ring, action):
-    engine, state = start(data_with_ring)
+    engine, state = seen_ring(data_with_ring)
     before = snapshot(state)
 
     outcome = engine.execute(state, action)
@@ -309,7 +356,7 @@ def test_without_a_rule_an_item_in_sight_is_out_of_reach(data_with_ring, action)
 
 
 def test_an_item_no_longer_in_sight_is_not_here(data_with_ring):
-    engine, state = start(data_with_ring)
+    engine, state = seen_ring(data_with_ring)
     state.flags.add("anello_preso")
 
     outcome = engine.execute(state, Action(verb="prendi", target="anello", with_="moneta"))

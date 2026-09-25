@@ -156,8 +156,12 @@ tests/
     equivalenti (`pesca_chiave`: "usa pozzo con corda con gancio" e "prendi chiave con corda con
     gancio").
   - **Oggetti in vista ma non a portata**: campo `visible_from: {room, when}` (la chiave in fondo al
-    pozzo). Parser e interprete li ricevono dopo quelli a portata (`Engine.visible`); solo le regole
-    agiscono su di loro, senza regola "Non ci arrivi.".
+    pozzo). Un oggetto va **visto** prima di poterlo nominare: lo mostra la descrizione di un altro
+    oggetto (`reveals`: esaminando il pozzo vedi la chiave), e `GameState.seen` se lo ricorda.
+    Prima, "Non vedi niente del genere qui." e l'interprete non lo riceve. Poi parser e interprete
+    lo ricevono dopo quelli a portata (`Engine.visible`); solo le regole agiscono su di lui, senza
+    regola "Non ci arrivi.". `reveals` c'è solo sugli oggetti: sulle stanze si aggiungerà quando
+    servirà ("in cima all'albero vedi un nido").
   - **Alias**: c'erano già (`aliases`, anche per gli arredi, che sono oggetti con `scenery: true`),
     mostrati al modello tra parentesi e riconosciuti dal parser.
   - **"altro"**: il modello lo sceglie quando la frase non è un'azione di gioco; lo stato non cambia

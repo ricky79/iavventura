@@ -235,7 +235,10 @@ class Item(_Frozen):
     scenery: bool = False
     variants: tuple[TextVariant, ...] = ()
     # Seen from a room while out of reach: the player can name it, only rules can act on it.
+    # It has to be seen first: another item's description reveals it (the well shows the key).
     visible_from: Visibility | None = None
+    # Items its description shows, when the player examines it: from then on they are seen.
+    reveals: tuple[Id, ...] = ()
 
 
 class Trigger(_Frozen):
@@ -318,6 +321,8 @@ class GameState(BaseModel):
     item_locations: dict[Id, Id | None]
     flags: set[Id] = Field(default_factory=set)
     visited: set[Id] = Field(default_factory=set)
+    # Items out of reach the player has seen (Item.reveals): only these can be named from afar.
+    seen: set[Id] = Field(default_factory=set)
     turns: int = 0
     finished: bool = False
 

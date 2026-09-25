@@ -51,6 +51,13 @@ def find_problems(world: World) -> list[str]:
             check_room(f"items.{item.id}.location", item.location)
         if item.visible_from is not None:
             check_room(f"items.{item.id}.visible_from.room", item.visible_from.room)
+        for index, item_id in enumerate(item.reveals):
+            check_item(f"items.{item.id}.reveals.{index}", item_id)
+
+    revealed = {item_id for item in world.items.values() for item_id in item.reveals}
+    for item in world.items.values():
+        if item.visible_from is not None and item.id not in revealed:
+            report(f"items.{item.id}.visible_from", "no item reveals it (reveals), so it is never seen")
 
     for rule in world.rules.values():
         for index, trigger in enumerate(rule.triggers):

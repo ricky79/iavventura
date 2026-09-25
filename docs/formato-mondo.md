@@ -77,6 +77,7 @@ items:
     visible_from:                # facoltativo: si vede da una stanza, ma non ci si arriva
       room: cortile
       when: {not: {flag: chiave_pescata}}   # facoltativo
+    reveals: []                  # facoltativo: oggetti lontani che la sua descrizione mostra
 ```
 
 - `location: inventory`: l'oggetto parte nelle mani del giocatore.
@@ -89,9 +90,17 @@ items:
 - Gli alias possono ripetersi: dopo la combinazione, "corda" deve indicare la corda con gancio.
 - `visible_from`: l'oggetto **si vede ma non si raggiunge** (la chiave in fondo al pozzo). Dalla
   stanza indicata, finché la condizione è vera e l'oggetto non è a portata, il giocatore lo può
-  nominare, e parser e interprete lo riconoscono. Solo le regole agiscono su di lui: senza una
-  regola il motore risponde "Non ci arrivi.". Tipicamente l'oggetto parte fuori gioco e una
-  regola lo consegna (`give`), attivando il flag che lo toglie dalla vista.
+  nominare, e parser e interprete lo riconoscono, ma **solo dopo averlo visto** (vedi `reveals`):
+  prima, il motore risponde "Non vedi niente del genere qui.". Solo le regole agiscono su di lui:
+  senza una regola il motore risponde "Non ci arrivi.". Tipicamente l'oggetto parte fuori gioco
+  e una regola lo consegna (`give`), attivando il flag che lo toglie dalla vista.
+- `reveals`: gli oggetti lontani che la descrizione di questo oggetto mostra. Quando il giocatore
+  lo esamina, li vede, e da allora può nominarli:
+  ```yaml
+  pozzo:
+    reveals: [chiave_torre]    # esaminando il pozzo vedi la chiave in fondo
+  ```
+  Vale solo per la descrizione: una regola su "esamina" che la sostituisce non rivela niente.
 
 **Come il parser riconosce gli oggetti.** Nel comando del giocatore articoli e preposizioni
 (il, la, con, sul, nella…) vengono ignorati, e così anche nei nomi: "usa la corda con gancio
@@ -205,12 +214,14 @@ Tutti gli errori vengono raccolti e mostrati insieme, ciascuno con il percorso
 - Riferimenti: stanza iniziale, uscite, posizioni, oggetti e stanze citati in trigger,
   condizioni ed effetti devono esistere; `inventory` non può essere l'id di una stanza.
 - Coerenza: flag letti ma mai attivati; oggetti fuori gioco che nessun effetto fa entrare;
-  stanze irraggiungibili dall'inizio; nomi canonici duplicati (maiuscole comprese).
+  oggetti con `visible_from` che nessun `reveals` mostra; stanze irraggiungibili dall'inizio;
+  nomi canonici duplicati (maiuscole comprese).
 
 ## Stato della partita
 
 `GameState` (in `models.py`) contiene tutto ciò che cambia durante la partita: stanza corrente,
-posizione di ogni oggetto, flag attivi, stanze visitate, turni, fine partita.
+posizione di ogni oggetto, flag attivi, stanze visitate, oggetti lontani già visti, turni, fine
+partita.
 `GameState.new(world)` crea lo stato iniziale, che si salva e rilegge in JSON.
 Il mondo invece è immutabile.
 

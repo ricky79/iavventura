@@ -23,7 +23,6 @@ pytestmark = pytest.mark.skipif(os.environ.get("OLLAMA_TESTS") != "1", reason="n
 
 CASTLE = load_world()
 RULE = {rule_id: rule.text for rule_id, rule in CASTLE.rules.items()}
-FISHED = lambda o, s: o.text == RULE["pesca_chiave"]  # noqa: E731
 
 
 @pytest.fixture(scope="module")
@@ -62,10 +61,6 @@ CASES = [
     ("cortile", ("corda",), "cosa ho con me?", lambda o, s: o.inventory == ("corda",)),
     ("cortile", (), "vado in cucina", lambda o, s: s.current_room == "cucina"),
     ("cortile", (), "torno di corsa nella scuderia", lambda o, s: s.current_room == "scuderia"),
-    # The bug found while playing: a sentence with a purpose, with the key in sight at the bottom of the well.
-    ("cortile", ("corda_con_gancio",), "usa il rampino per recuperare la chiave dal pozzo", FISHED),
-    ("cortile", ("corda_con_gancio",), "provo a ripescare la chiave nel pozzo col rampino", FISHED),
-    ("cortile", ("corda_con_gancio",), "recupera la chiave dal pozzo con il rampino", FISHED),
 ]
 
 
@@ -79,6 +74,28 @@ def test_free_sentences_become_the_right_action(llm, room, carried, sentence, ch
 
     assert isinstance(action, Action)
     assert check(engine.execute(state, action), state)
+
+
+# The bug found while playing: a sentence with a purpose. The player had examined the well,
+# so the key was in sight at the bottom of it.
+PURPOSE = [
+    "usa il rampino per recuperare la chiave dal pozzo",
+    "provo a ripescare la chiave nel pozzo col rampino",
+    "recupera la chiave dal pozzo con il rampino",
+]
+
+
+@pytest.mark.parametrize("sentence", PURPOSE)
+def test_the_grapple_fishes_the_key_seen_in_the_well(llm, sentence):
+    engine, state = game_in("cortile", "corda_con_gancio")
+    engine.execute(state, Action(verb="esamina", target="pozzo"))
+
+    start = time.perf_counter()
+    action = interpret(llm, sentence, near(engine, state), engine.known_exits(state))
+    print(f"\n  {time.perf_counter() - start:4.1f}s  {sentence!r} -> {action}")
+
+    assert isinstance(action, Action)
+    assert engine.execute(state, action).text == RULE["pesca_chiave"]
 
 
 @pytest.mark.parametrize("sentence", ["ciao, come stai?", "che tempo farà domani?"])

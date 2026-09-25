@@ -86,6 +86,7 @@ class Engine:
             elif location not in (None, INVENTORY) and location not in rooms:
                 problems.append(f"item '{item_id}' in unknown room '{location}'")
         problems += [f"unknown visited room '{room_id}'" for room_id in sorted(state.visited) if room_id not in rooms]
+        problems += [f"unknown seen item '{item_id}'" for item_id in sorted(state.seen) if item_id not in items]
         if problems:
             raise StateError("; ".join(problems))
         return state
@@ -95,13 +96,14 @@ class Engine:
         return self._items_in(state, state.current_room, INVENTORY)
 
     def visible(self, state: GameState) -> list[Item]:
-        """Items seen from the current room but out of reach (`visible_from`): the player can name
-        them, and only rules can act on them."""
+        """Items in sight from the current room but out of reach (`visible_from`), once the player
+        has seen them: they can be named, and only rules can act on them."""
         in_reach = {item.id for item in self.in_reach(state)}
         return [
             item
             for item in self.world.items.values()
             if item.visible_from is not None
+            and item.id in state.seen
             and item.visible_from.room == state.current_room
             and item.id not in in_reach
             and (item.visible_from.when is None or holds(item.visible_from.when, state))
@@ -182,6 +184,7 @@ class Engine:
         location = state.item_locations[item.id]
         match verb:
             case Verb.EXAMINE:
+                state.seen.update(item.reveals)
                 return Outcome(ok=True, text=_description(item, state))
             case Verb.TAKE if item.scenery:
                 return Outcome(ok=False, text=CANT_TAKE)

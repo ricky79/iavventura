@@ -91,6 +91,14 @@ BROKEN_WORLDS = {
         lambda d: d["items"]["leva"].update(variants=[{"when": {"has": "spada"}, "text": "Altro."}]),
         ["items.leva.variants.0.when", "spada"],
     ),
+    "item revealing an unknown item": (
+        lambda d: d["items"]["leva"].update(reveals=["specchio"]),
+        ["items.leva.reveals", "specchio"],
+    ),
+    "item in sight that nothing reveals": (
+        lambda d: d["items"]["chiave"].update(visible_from={"room": "atrio"}),
+        ["items.chiave.visible_from", "reveals"],
+    ),
     "item visible from an unknown room": (
         lambda d: d["items"]["chiave"].update(visible_from={"room": "cantina"}),
         ["items.chiave.visible_from.room", "cantina"],
@@ -151,3 +159,10 @@ def test_all_problems_are_reported_together(world_data):
 
     assert any("salone" in problem for problem in problems)
     assert any("cantina" in problem for problem in problems)
+
+
+def test_an_item_in_sight_revealed_by_another_is_fine(world_data):
+    world_data["items"]["chiave"]["visible_from"] = {"room": "atrio", "when": {"not": {"flag": "porta_aperta"}}}
+    world_data["items"]["leva"]["reveals"] = ["chiave"]
+
+    assert problems_for(world_data) == []

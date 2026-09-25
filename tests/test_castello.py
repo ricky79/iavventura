@@ -59,13 +59,15 @@ def test_key_can_only_be_fished_out_with_the_grapple(castle):
     assert all("corda_con_gancio" in items for rule in fishers for items in items_used_by(rule))
 
 
-def test_the_key_is_seen_at_the_bottom_of_the_well_until_fished_out(castle):
+def test_the_key_is_in_sight_once_the_well_is_examined_until_fished_out(castle):
     engine = Engine(castle)
     state, _ = engine.new_game()
+    assert engine.visible(state) == []
+
+    play(engine, state, [LOOK_IN_THE_WELL])
     assert [item.id for item in engine.visible(state)] == ["chiave_torre"]
 
     play(engine, state, UP_TO_THE_KEY)
-
     assert engine.visible(state) == []
 
 
@@ -96,6 +98,9 @@ UP_TO_THE_KEY = [
     Action(verb="vai", direction="ovest"),
     Action(verb="usa", target="pozzo", with_="corda_con_gancio"),
 ]
+
+
+LOOK_IN_THE_WELL = Action(verb="esamina", target="pozzo")
 
 
 def play(engine: Engine, state: GameState, actions: list[Action]) -> None:
@@ -157,12 +162,16 @@ def test_using_the_key_on_the_door_opens_it_too(castle):
     assert "torre_aperta" in state.flags
 
 
-def test_the_key_can_also_be_taken_with_the_grapple(castle):
+def test_the_key_can_also_be_taken_with_the_grapple_once_seen(castle):
     engine = Engine(castle)
     state, _ = engine.new_game()
     play(engine, state, UP_TO_THE_KEY[:-1])
+    take_the_key = Action(verb="prendi", target="chiave_torre", with_="corda_con_gancio")
 
-    fished = engine.execute(state, Action(verb="prendi", target="chiave_torre", with_="corda_con_gancio"))
+    unseen = engine.execute(state, take_the_key)
+    play(engine, state, [LOOK_IN_THE_WELL])
+    fished = engine.execute(state, take_the_key)
 
+    assert unseen.text == "Non vedi niente del genere qui."
     assert fished.text == castle.rules["pesca_chiave"].text
     assert state.item_locations["chiave_torre"] == "inventory"
