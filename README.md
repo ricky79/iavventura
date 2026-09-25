@@ -103,6 +103,11 @@ Configurazione, con variabili d'ambiente:
 | `LLM` | `ollama` | `off` per giocare senza LLM |
 | `OLLAMA_URL` | `http://localhost:11434` | dove risponde Ollama |
 | `LLM_MODEL` | `qwen2.5:3b` | il modello da usare |
+| `LLM_LOG` | `logs/llm.log` | file dove finisce ciò che viene passato al modello e ciò che torna; `off` per non scriverlo |
+
+Il log dell'LLM riporta, per ogni frase libera, gli oggetti e la frase inviati (`>>>`), la
+risposta del modello (`<<<`), i tempi e i token, e com'è stata tradotta in azione (`===`). Il
+prompt di sistema compare una volta sola, all'inizio.
 
 ## Sviluppo
 

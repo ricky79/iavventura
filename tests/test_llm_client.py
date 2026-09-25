@@ -111,3 +111,68 @@ def test_fake_client_replays_its_answers_and_records_the_calls():
 def test_fake_client_without_answers_fails_like_a_broken_llm():
     with pytest.raises(LLMError):
         FakeLLMClient().complete_json("s", "u", SCHEMA, max_tokens=60)
+
+
+# --- Log of what goes to the model and what comes back ---------------------------------------------
+
+
+def answering(content: str, **counters) -> OllamaClient:
+    body = {"message": {"role": "assistant", "content": content}, "done": True, **counters}
+    return ollama(lambda request: httpx.Response(200, json=body))
+
+
+def test_each_call_logs_the_message_the_reply_and_the_counters(caplog):
+    client = answering('{"verbo": "usa"}', prompt_eval_count=212, prompt_eval_cached_count=180, eval_count=21)
+
+    with caplog.at_level("INFO", logger="app.llm"):
+        client.complete_json("Sei l'interprete.", "Oggetti: pozzo\nFrase: cala la corda", SCHEMA, max_tokens=60)
+
+    call = caplog.records[-1].getMessage()
+    assert call.startswith("qwen2.5:3b  ")
+    assert " s  prompt 212 token (180 in cache), risposta 21 token\n" in call
+    assert call.endswith('>>> Oggetti: pozzo\n>>> Frase: cala la corda\n<<< {"verbo": "usa"}')
+
+
+def test_missing_counters_are_shown_as_unknown(caplog):
+    with caplog.at_level("INFO", logger="app.llm"):
+        answering('{"verbo": "usa"}').complete_json("s", "u", SCHEMA, max_tokens=60)
+
+    assert "prompt ? token (? in cache), risposta ? token" in caplog.records[-1].getMessage()
+
+
+def test_the_system_prompt_is_logged_only_when_it_is_new(caplog):
+    client = answering('{"verbo": "usa"}')
+
+    with caplog.at_level("INFO", logger="app.llm"):
+        client.complete_json("Sei l'interprete.\nTraduci.", "u1", SCHEMA, max_tokens=60)
+        client.complete_json("Sei l'interprete.\nTraduci.", "u2", SCHEMA, max_tokens=60)
+        client.complete_json("Nuovo prompt.", "u3", SCHEMA, max_tokens=60)
+
+    system_logs = [record.getMessage() for record in caplog.records if "prompt di sistema" in record.getMessage()]
+    assert system_logs == [
+        "prompt di sistema:\n    Sei l'interprete.\n    Traduci.",
+        "prompt di sistema:\n    Nuovo prompt.",
+    ]
+
+
+def test_a_failed_call_logs_the_message_and_the_error(caplog):
+    client = answering("non è json")
+
+    with caplog.at_level("INFO", logger="app.llm"), pytest.raises(LLMError):
+        client.complete_json("s", "Frase: salta", SCHEMA, max_tokens=60)
+
+    failure = caplog.records[-1]
+    assert failure.levelname == "WARNING"
+    assert ">>> Frase: salta\n" in failure.getMessage()
+    assert "<<< non è json" in failure.getMessage()
+    assert "the reply is not JSON" in failure.getMessage()
+
+
+def test_an_unreachable_server_is_logged(caplog):
+    def handler(request):
+        raise httpx.ConnectError("connection refused", request=request)
+
+    with caplog.at_level("INFO", logger="app.llm"), pytest.raises(LLMError):
+        ollama(handler).complete_json("s", "Frase: salta", SCHEMA, max_tokens=60)
+
+    assert "connection refused" in caplog.records[-1].getMessage()

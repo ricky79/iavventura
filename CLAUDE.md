@@ -38,7 +38,12 @@ input giocatore
   - `FakeLLMClient` (risposte predefinite, per i test)
   - `OpenAICompatibleClient` (per provider esterni): rimandato a quando ne sceglieremo uno.
 - Configurazione via variabili d'ambiente (`app/config.py`): `LLM` (ollama | off), `OLLAMA_URL`,
-  `LLM_MODEL`. Se Ollama non risponde, il gioco avvisa e prosegue con i soli comandi semplici.
+  `LLM_MODEL`, `LLM_LOG`. Se Ollama non risponde, il gioco avvisa e prosegue con i soli comandi
+  semplici.
+- Log delle chiamate (logger `app.llm`): il terminale lo scrive in `logs/llm.log` (esclusa da
+  git; `LLM_LOG=off` per spegnerlo). Per ogni chiamata: messaggio inviato (`>>>`), risposta
+  grezza (`<<<`), tempo e token di Ollama (anche quelli in cache), azione risultante o motivo del
+  "non capito" (`===`). Il prompt di sistema solo quando cambia; lo schema mai.
 
 ### Vincoli dovuti alla CPU
 - Prompt **corti**: passa solo gli oggetti a portata (con i loro alias), mai il mondo intero.
