@@ -138,11 +138,13 @@ class FakeLLMClient:
     def __init__(self, json_replies: Iterable[dict[str, Any]] = ()) -> None:
         self._json_replies = list(json_replies)
         self.calls: list[tuple[str, str]] = []  # (system, user)
+        self.schemas: list[dict[str, Any]] = []
 
     def complete_json(
         self, system: str, user: str, schema: dict[str, Any], max_tokens: int, temperature: float = 0
     ) -> dict[str, Any]:
         self.calls.append((system, user))
+        self.schemas.append(schema)
         if not self._json_replies:
             raise LLMError("no canned reply left")
         return self._json_replies.pop(0)

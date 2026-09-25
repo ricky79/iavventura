@@ -215,6 +215,13 @@ class Room(_Frozen):
     exits: dict[Direction, Exit] = {}
 
 
+class Visibility(_Frozen):
+    """Where an item is seen without being within reach (the key at the bottom of the well)."""
+
+    room: Id
+    when: Condition | None = None
+
+
 class Item(_Frozen):
     id: Id
     name: Text
@@ -227,6 +234,8 @@ class Item(_Frozen):
     # Scenery can't be taken and isn't listed: the room description already mentions it.
     scenery: bool = False
     variants: tuple[TextVariant, ...] = ()
+    # Seen from a room while out of reach: the player can name it, only rules can act on it.
+    visible_from: Visibility | None = None
 
 
 class Trigger(_Frozen):

@@ -30,6 +30,26 @@ def test_a_free_sentence_goes_through_the_llm_interpreter(castle):
     assert game.state.item_locations["chiave_torre"] == "inventory"
 
 
+def test_the_key_in_the_well_can_be_named_without_the_llm(castle):
+    game = Game(Engine(castle))
+    game.state.item_locations["corda_con_gancio"] = "inventory"
+
+    assert say(game, "prendi la chiave") == "Non ci arrivi."
+    assert say(game, "prendi la chiave con il rampino") == castle.rules["pesca_chiave"].text
+
+
+def test_the_llm_can_choose_the_key_in_the_well(castle):
+    llm = FakeLLMClient(json_replies=[{"verbo": "prendi", "bersaglio": "chiave di ferro", "con": "corda con gancio"}])
+    game = Game(Engine(castle), llm)
+    game.state.item_locations["corda_con_gancio"] = "inventory"
+
+    output = say(game, "recupera la chiave dal pozzo con il rampino")
+
+    assert "; chiave di ferro (chiave)\n" in llm.calls[0][1]
+    assert "chiave di ferro" in llm.schemas[0]["properties"]["bersaglio"]["enum"]
+    assert output == f"(prendi la chiave di ferro con la corda con gancio)\n{castle.rules['pesca_chiave'].text}"
+
+
 def test_opening_shows_intro_and_first_room(castle):
     opening = Game(Engine(castle)).opening()
 

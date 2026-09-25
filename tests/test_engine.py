@@ -243,6 +243,80 @@ def test_using_an_item_out_of_reach_is_refused(data):
     assert outcome.text == messages.NOT_HERE
 
 
+# --- Items in sight but out of reach -------------------------------------------------------------
+
+
+@pytest.fixture
+def data_with_ring(data) -> dict:
+    """A ring at the bottom of a well in the atrio: seen from there, fished out with the coin."""
+    data["items"]["anello"] = {
+        "name": "anello",
+        "gender": "m",
+        "description": "Un anello d'oro.",
+        "location": None,
+        "visible_from": {"room": "atrio", "when": {"not": {"flag": "anello_preso"}}},
+    }
+    data["rules"]["pesca_anello"] = {
+        "trigger": {"verb": "prendi", "target": "anello", "with": "moneta"},
+        "effects": [{"give": "anello"}, {"set_flag": "anello_preso"}],
+        "text": "Agganci l'anello con il bordo della moneta.",
+    }
+    return data
+
+
+def test_items_in_sight_are_seen_only_from_their_room_while_the_condition_holds(data_with_ring):
+    engine, state = start(data_with_ring)
+
+    assert [item.id for item in engine.visible(state)] == ["anello"]
+    assert "anello" not in [item.id for item in engine.in_reach(state)]
+
+    state.current_room = "cella"
+    assert engine.visible(state) == []
+
+    state.current_room = "atrio"
+    state.flags.add("anello_preso")
+    assert engine.visible(state) == []
+
+
+def test_a_rule_can_act_on_an_item_in_sight(data_with_ring):
+    engine, state = start(data_with_ring)
+
+    outcome = engine.execute(state, Action(verb="prendi", target="anello", with_="moneta"))
+
+    assert outcome.text == "Agganci l'anello con il bordo della moneta."
+    assert state.item_locations["anello"] == "inventory"
+    assert engine.visible(state) == []
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        Action(verb="prendi", target="anello"),
+        Action(verb="esamina", target="anello"),
+        Action(verb="usa", target="candela", with_="anello"),
+    ],
+    ids=["take", "examine", "as a tool"],
+)
+def test_without_a_rule_an_item_in_sight_is_out_of_reach(data_with_ring, action):
+    engine, state = start(data_with_ring)
+    before = snapshot(state)
+
+    outcome = engine.execute(state, action)
+
+    assert not outcome.ok
+    assert outcome.text == messages.OUT_OF_REACH
+    assert snapshot(state) == before
+
+
+def test_an_item_no_longer_in_sight_is_not_here(data_with_ring):
+    engine, state = start(data_with_ring)
+    state.flags.add("anello_preso")
+
+    outcome = engine.execute(state, Action(verb="prendi", target="anello", with_="moneta"))
+
+    assert outcome.text == messages.NOT_HERE
+
+
 # --- Rules --------------------------------------------------------------------------------
 
 

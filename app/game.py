@@ -54,12 +54,13 @@ class Game:
             return ""
         if len(words) == 1 and words[0] in _HELP_WORDS:
             return HELP
-        in_reach = self.engine.in_reach(self.state)
+        # What the player can name: items in reach, then those only in sight (the key in the well).
+        near = self.engine.in_reach(self.state) + self.engine.visible(self.state)
         exits = self.engine.known_exits(self.state)
-        result = parse(line, self.world, in_reach, exits)
+        result = parse(line, self.world, near, exits)
         shown = ""
         if result is None and self.llm is not None:
-            result = interpret(self.llm, line, in_reach, exits)
+            result = interpret(self.llm, line, near, exits)
             if result is not None:
                 # Show how the sentence was understood: if the model got it wrong, the player sees why.
                 shown = f"({action_text(result, self.world)})\n"

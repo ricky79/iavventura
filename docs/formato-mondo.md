@@ -74,6 +74,9 @@ items:
     location: cucina             # una stanza, inventory, oppure null
     scenery: false               # true = arredo: non si prende e non viene elencato
     variants: []                 # come per le stanze
+    visible_from:                # facoltativo: si vede da una stanza, ma non ci si arriva
+      room: cortile
+      when: {not: {flag: chiave_pescata}}   # facoltativo
 ```
 
 - `location: inventory`: l'oggetto parte nelle mani del giocatore.
@@ -84,11 +87,16 @@ items:
   la corda / una corda, gli attrezzi / degli attrezzi.
 - Il nome e gli alias si scrivono senza articolo: "gancio da macellaio", non "il gancio".
 - Gli alias possono ripetersi: dopo la combinazione, "corda" deve indicare la corda con gancio.
+- `visible_from`: l'oggetto **si vede ma non si raggiunge** (la chiave in fondo al pozzo). Dalla
+  stanza indicata, finché la condizione è vera e l'oggetto non è a portata, il giocatore lo può
+  nominare, e parser e interprete lo riconoscono. Solo le regole agiscono su di lui: senza una
+  regola il motore risponde "Non ci arrivi.". Tipicamente l'oggetto parte fuori gioco e una
+  regola lo consegna (`give`), attivando il flag che lo toglie dalla vista.
 
 **Come il parser riconosce gli oggetti.** Nel comando del giocatore articoli e preposizioni
 (il, la, con, sul, nella…) vengono ignorati, e così anche nei nomi: "usa la corda con gancio
 nel pozzo" confronta le parole "corda gancio pozzo". Il parser sceglie:
-- prima gli oggetti **a portata**, e fra questi il nome o alias più lungo: se la corda con
+- prima gli oggetti **a portata o in vista**, e fra questi il nome o alias più lungo: se la corda con
   gancio è fuori gioco, "usa la corda con il gancio" indica la corda e il gancio separati;
 - se due oggetti a portata rispondono alle stesse parole, chiede "Quale intendi: …?";
 - un oggetto non a portata arriva al motore, che risponde "Non vedi niente del genere qui."
@@ -124,7 +132,8 @@ rules:
 
 **Come le usa il motore:**
 - gli oggetti dell'azione devono essere a portata, cioè nell'inventario o nella stanza (arredi
-  compresi); altrimenti il motore risponde "Non vedi niente del genere qui.";
+  compresi), oppure in vista (`visible_from`); altrimenti il motore risponde "Non vedi niente del
+  genere qui.". Su un oggetto in vista agiscono solo le regole: senza, "Non ci arrivi.";
 - `target` e `with` valgono in qualunque ordine: "usa corda con gancio" = "usa gancio con corda";
 - una regola senza `with` scatta solo per azioni senza strumento, e viceversa;
 - vale la prima regola che corrisponde, nell'ordine dei file. Se il suo `when` è falso si mostra

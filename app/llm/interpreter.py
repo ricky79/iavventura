@@ -1,7 +1,7 @@
 """The LLM interpreter: turns a sentence the classic parser didn't understand into an Action.
 
 The model answers with a JSON object whose values are constrained by a schema built every turn:
-known verbs, the names of the items in reach, the directions. The answer is then checked here,
+known verbs, the names of the items in reach or in sight, the directions. The answer is then checked here,
 and the engine still validates the action: the model never touches the game state.
 """
 

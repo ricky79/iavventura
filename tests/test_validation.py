@@ -91,6 +91,14 @@ BROKEN_WORLDS = {
         lambda d: d["items"]["leva"].update(variants=[{"when": {"has": "spada"}, "text": "Altro."}]),
         ["items.leva.variants.0.when", "spada"],
     ),
+    "item visible from an unknown room": (
+        lambda d: d["items"]["chiave"].update(visible_from={"room": "cantina"}),
+        ["items.chiave.visible_from.room", "cantina"],
+    ),
+    "visibility condition is checked": (
+        lambda d: d["items"]["chiave"].update(visible_from={"room": "atrio", "when": {"flag": "pozzo_vuoto"}}),
+        ["items.chiave.visible_from.when", "pozzo_vuoto"],
+    ),
     "flag read but never set (typo)": (
         lambda d: d["rooms"]["atrio"]["exits"]["nord"].update(when={"flag": "porta_apreta"}),
         ["rooms.atrio.exits.nord.when", "porta_apreta"],

@@ -41,6 +41,7 @@ from app.engine.parser import significant_words, words_of
 GAME_OVER = "La partita è finita."
 NO_EXIT = "Non puoi andare da quella parte."
 NOT_HERE = "Non vedi niente del genere qui."
+OUT_OF_REACH = "Non ci arrivi."
 NOTHING_HAPPENS = "Non succede niente."
 DONE = "Fatto."
 CANT_TAKE = "Non si può prendere."
@@ -93,6 +94,19 @@ class Engine:
         """Items the player can act on: those in the current room (scenery included) and those carried."""
         return self._items_in(state, state.current_room, INVENTORY)
 
+    def visible(self, state: GameState) -> list[Item]:
+        """Items seen from the current room but out of reach (`visible_from`): the player can name
+        them, and only rules can act on them."""
+        in_reach = {item.id for item in self.in_reach(state)}
+        return [
+            item
+            for item in self.world.items.values()
+            if item.visible_from is not None
+            and item.visible_from.room == state.current_room
+            and item.id not in in_reach
+            and (item.visible_from.when is None or holds(item.visible_from.when, state))
+        ]
+
     def known_exits(self, state: GameState) -> list[tuple[Direction, Room | None]]:
         """The exits of the current room in compass order, each with its destination if the player
         knows it: already visited, or named in the description they are reading now. So "vai in
@@ -141,10 +155,14 @@ class Engine:
 
     def _act_on_items(self, state: GameState, action: Action) -> Outcome:
         in_reach = {item.id for item in self.in_reach(state)}
-        if action.target not in in_reach or (action.with_ is not None and action.with_ not in in_reach):
+        in_sight = {item.id for item in self.visible(state)}
+        items = {action.target, action.with_} - {None}
+        if not items <= in_reach | in_sight:
             return Outcome(ok=False, text=NOT_HERE)
         rule = self._find_rule(action)
         if rule is None:
+            if items & in_sight:
+                return Outcome(ok=False, text=OUT_OF_REACH)
             return self._default(state, action.verb, self.world.items[action.target])
         if rule.when is not None and not holds(rule.when, state):
             return Outcome(ok=False, text=rule.otherwise or NOTHING_HAPPENS)

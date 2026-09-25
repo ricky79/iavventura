@@ -59,6 +59,16 @@ def test_key_can_only_be_fished_out_with_the_grapple(castle):
     assert all("corda_con_gancio" in items for rule in fishers for items in items_used_by(rule))
 
 
+def test_the_key_is_seen_at_the_bottom_of_the_well_until_fished_out(castle):
+    engine = Engine(castle)
+    state, _ = engine.new_game()
+    assert [item.id for item in engine.visible(state)] == ["chiave_torre"]
+
+    play(engine, state, UP_TO_THE_KEY)
+
+    assert engine.visible(state) == []
+
+
 def test_tower_opens_only_with_the_key(castle):
     ways_into_tower = [exit_ for room in castle.rooms.values() for exit_ in room.exits.values() if exit_.to == "torre"]
     assert ways_into_tower
@@ -145,3 +155,14 @@ def test_using_the_key_on_the_door_opens_it_too(castle):
 
     assert opened.text == castle.rules["apri_torre"].text
     assert "torre_aperta" in state.flags
+
+
+def test_the_key_can_also_be_taken_with_the_grapple(castle):
+    engine = Engine(castle)
+    state, _ = engine.new_game()
+    play(engine, state, UP_TO_THE_KEY[:-1])
+
+    fished = engine.execute(state, Action(verb="prendi", target="chiave_torre", with_="corda_con_gancio"))
+
+    assert fished.text == castle.rules["pesca_chiave"].text
+    assert state.item_locations["chiave_torre"] == "inventory"

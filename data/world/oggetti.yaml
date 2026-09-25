@@ -75,3 +75,7 @@ items:
     aliases: [chiave]
     description: Una grossa chiave di ferro ad anello, fredda e pesante.
     location: null
+    # In fondo al pozzo: si vede dal cortile, ma solo il rampino ci arriva.
+    visible_from:
+      room: cortile
+      when: {not: {flag: chiave_pescata}}

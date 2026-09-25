@@ -226,3 +226,15 @@ def test_unknown_gender_is_rejected(world_data):
         World.model_validate(world_data)
 
     assert "items.leva.gender" in error_locations(exc.value)
+
+
+def test_an_item_may_be_visible_from_a_room_while_a_condition_holds(world_data):
+    world_data["items"]["chiave"]["visible_from"] = {"room": "cella", "when": {"not": {"flag": "porta_aperta"}}}
+    world_data["items"]["moneta"]["visible_from"] = {"room": "atrio"}
+
+    world = World.model_validate(world_data)
+
+    assert world.items["chiave"].visible_from.room == "cella"
+    assert world.items["chiave"].visible_from.when == Not(not_=FlagSet(flag="porta_aperta"))
+    assert world.items["moneta"].visible_from.when is None
+    assert world.items["leva"].visible_from is None
