@@ -13,9 +13,11 @@ from app.engine.models import (
     Action,
     AllOf,
     AnyOf,
+    Character,
     ClearFlag,
     Command,
     Condition,
+    Conversation,
     Direction,
     Effect,
     FlagSet,
@@ -32,6 +34,8 @@ from app.engine.models import (
     RoomView,
     Rule,
     SetFlag,
+    TextVariant,
+    Topic,
     Verb,
     World,
 )
@@ -41,6 +45,7 @@ from app.engine.parser import significant_words, words_of
 GAME_OVER = "La partita è finita."
 NO_EXIT = "Non puoi andare da quella parte."
 NOT_HERE = "Non vedi niente del genere qui."
+NOBODY_HERE = "Non vedi nessuno del genere qui."
 OUT_OF_REACH = "Non ci arrivi."
 NOTHING_HAPPENS = "Non succede niente."
 DONE = "Fatto."
@@ -122,10 +127,18 @@ class Engine:
             exits.append((direction, destination if destination.id in state.visited or named else None))
         return exits
 
+    def characters_here(self, state: GameState) -> list[tuple[Character, list[Topic]]]:
+        """The characters in the current room, each with the topics the player can ask about now."""
+        return [
+            (character, [topic for topic in character.topics.values() if topic.when is None or holds(topic.when, state)])
+            for character in self.world.characters.values()
+            if character.location == state.current_room
+        ]
+
     def expects(self, action: Action) -> bool:
-        """Whether the world foresees the action: a command, a rule that reacts to it, or a verb that
-        does something by itself (esamina, prendi, lascia) with no tool it would ignore."""
-        if isinstance(action.verb, Command) or self._find_rule(action) is not None:
+        """Whether the world foresees the action: a command, talking, a rule that reacts to it, or a verb
+        that does something by itself (esamina, prendi, lascia) with no tool it would ignore."""
+        if isinstance(action.verb, Command | Conversation) or self._find_rule(action) is not None:
             return True
         return action.with_ is None and action.verb in (Verb.EXAMINE, Verb.TAKE, Verb.DROP)
 
@@ -149,6 +162,8 @@ class Engine:
                 return Outcome(ok=True, room=self._room_view(state, first_visit=False))
             case Command.INVENTORY:
                 return Outcome(ok=True, inventory=tuple(item.id for item in self._items_in(state, INVENTORY)))
+            case Conversation.TALK | Conversation.ASK:
+                return self._talk(state, action)
         return self._act_on_items(state, action)
 
     def _go(self, state: GameState, direction: Direction) -> Outcome:
@@ -162,8 +177,23 @@ class Engine:
         state.visited.add(exit_.to)
         return Outcome(ok=True, room=self._room_view(state, first_visit))
 
+    def _talk(self, state: GameState, action: Action) -> Outcome:
+        """The greeting, or the answer about a topic the character knows; about anything else, `unknown`."""
+        here = next((pair for pair in self.characters_here(state) if pair[0].id == action.target), None)
+        if here is None:
+            return Outcome(ok=False, text=NOBODY_HERE)
+        character, topics = here
+        if action.verb is Conversation.TALK:
+            return Outcome(ok=True, text=character.greeting)
+        topic = next((topic for topic in topics if topic.id == action.topic), None)
+        if topic is None:
+            return Outcome(ok=False, text=character.unknown)
+        for effect in topic.effects:
+            _apply(effect, state)
+        return Outcome(ok=True, text=_first_variant(topic.variants, topic.text, state))
+
     def _act_on_items(self, state: GameState, action: Action) -> Outcome:
-        in_reach = {item.id for item in self.in_reach(state)}
+        in_reach = {item.id for item in self.in_reach(state)} | {person.id for person, _ in self.characters_here(state)}
         in_sight = {item.id for item in self.visible(state)}
         items = {action.target, action.with_} - {None}
         if not items <= in_reach | in_sight:
@@ -172,6 +202,8 @@ class Engine:
         if rule is None:
             if items & in_sight:
                 return Outcome(ok=False, text=OUT_OF_REACH)
+            if action.target in self.world.characters:
+                return self._default_on_character(state, action.verb, self.world.characters[action.target])
             return self._default(state, action.verb, self.world.items[action.target])
         if rule.when is not None and not holds(rule.when, state):
             return Outcome(ok=False, text=rule.otherwise or NOTHING_HAPPENS)
@@ -198,6 +230,17 @@ class Engine:
             case Verb.DROP:
                 state.item_locations[item.id] = state.current_room
                 return Outcome(ok=True, text=DONE)
+        return Outcome(ok=False, text=_NOTHING_WITHOUT_A_RULE.get(verb, NOTHING_HAPPENS))
+
+    def _default_on_character(self, state: GameState, verb: Verb, character: Character) -> Outcome:
+        """Characters can be looked at; the other verbs on them do nothing (rules never name them)."""
+        match verb:
+            case Verb.EXAMINE:
+                return Outcome(ok=True, text=_description(character, state))
+            case Verb.TAKE:
+                return Outcome(ok=False, text=CANT_TAKE)
+            case Verb.DROP:
+                return Outcome(ok=False, text=DONT_HAVE)
         return Outcome(ok=False, text=_NOTHING_WITHOUT_A_RULE.get(verb, NOTHING_HAPPENS))
 
     def _find_rule(self, action: Action) -> Rule | None:
@@ -229,6 +272,7 @@ class Engine:
             items=tuple(item.id for item in self._items_in(state, room.id) if not item.scenery),
             exits=tuple(room.exits),
             first_visit=first_visit,
+            characters=tuple(character.id for character, _ in self.characters_here(state)),
         )
 
     def _items_in(self, state: GameState, *places: str) -> list[Item]:
@@ -267,9 +311,10 @@ def _apply(effect: Effect, state: GameState) -> None:
             state.flags.discard(flag)
 
 
-def _description(thing: Room | Item, state: GameState) -> str:
+def _description(thing: Room | Item | Character, state: GameState) -> str:
     """The first variant whose condition holds, otherwise the plain description."""
-    for variant in thing.variants:
-        if holds(variant.when, state):
-            return variant.text
-    return thing.description
+    return _first_variant(thing.variants, thing.description, state)
+
+
+def _first_variant(variants: tuple[TextVariant, ...], text: str, state: GameState) -> str:
+    return next((variant.text for variant in variants if holds(variant.when, state)), text)

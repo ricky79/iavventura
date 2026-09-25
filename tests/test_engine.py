@@ -736,9 +736,13 @@ def test_exits_come_in_compass_order(data):
         Action(verb="esamina", target="leva"),
         Action(verb="prendi", target="candela"),
         Action(verb="lascia", target="moneta"),
+        Action(verb="parla", target="custode"),
+        Action(verb="chiedi", target="custode", topic="cella"),
+        Action(verb="chiedi", target="custode"),
     ],
-    ids=["go", "look", "inventory", "rule", "rule in the other order", "examine", "take", "drop"],
-)
+    ids=["go", "look", "inventory", "rule", "rule in the other order", "examine", "take", "drop",
+         "talk", "ask", "ask about something unknown"],
+)  # fmt: skip
 def test_commands_rules_and_verbs_that_work_alone_are_expected(data, action):
     engine, state = start(data)
 
@@ -760,3 +764,156 @@ def test_actions_no_rule_reacts_to_are_not_expected(data, action):
     engine, _ = start(data)
 
     assert not engine.expects(action)
+
+
+# --- Characters ----------------------------------------------------------------------------------
+
+
+@pytest.fixture
+def keeper(keeper_world) -> tuple[Engine, GameState]:
+    """The test world with the custode in the atrium, where the game starts."""
+    return start(keeper_world)
+
+
+def test_the_room_shows_the_characters_in_it(keeper):
+    engine, state = keeper
+
+    look = engine.execute(state, Action(verb="guarda"))
+    state.current_room = "cella"
+    elsewhere = engine.execute(state, Action(verb="guarda"))
+
+    assert look.room.characters == ("custode",)
+    assert elsewhere.room.characters == ()
+
+
+def test_characters_here_come_with_the_topics_the_player_can_ask_about(keeper):
+    engine, state = keeper
+
+    before = engine.characters_here(state)
+    state.item_locations["chiave"] = "inventory"
+    with_key = engine.characters_here(state)
+    state.current_room = "cella"
+
+    [(keeper_, topics)] = before
+    assert keeper_.id == "custode"
+    assert [topic.id for topic in topics] == ["cella", "leva"]
+    assert [topic.id for topic in with_key[0][1]] == ["cella", "leva", "chiave"]
+    assert engine.characters_here(state) == []
+
+
+def test_talking_to_a_character_gets_its_greeting(keeper):
+    engine, state = keeper
+    before = snapshot(state)
+
+    outcome = engine.execute(state, Action(verb="parla", target="custode"))
+
+    assert outcome.ok
+    assert outcome.text == "«Buongiorno», dice il custode."
+    assert snapshot(state) == before
+
+
+def test_asking_about_a_topic_gets_its_answer(keeper):
+    engine, state = keeper
+
+    outcome = engine.execute(state, Action(verb="chiedi", target="custode", topic="cella"))
+
+    assert outcome.ok
+    assert outcome.text == "«La cella è a nord.»"
+
+
+def test_the_answer_follows_the_variants_of_the_topic(keeper):
+    engine, state = keeper
+    state.flags.add("porta_aperta")
+
+    outcome = engine.execute(state, Action(verb="chiedi", target="custode", topic="leva"))
+
+    assert outcome.text == "«L'hai tirata, eh?»"
+
+
+def test_asking_about_a_topic_applies_its_effects(keeper):
+    engine, state = keeper
+    state.item_locations["chiave"] = "inventory"
+
+    outcome = engine.execute(state, Action(verb="chiedi", target="custode", topic="chiave"))
+
+    assert outcome.text == "«Quella chiave apre il forziere.»"
+    assert "forziere_noto" in state.flags
+
+
+@pytest.mark.parametrize("topic", [None, "chiave"], ids=["no topic", "topic not known yet"])
+def test_a_topic_the_character_does_not_know_gets_its_unknown_answer(keeper, topic):
+    engine, state = keeper
+    before = snapshot(state)
+
+    outcome = engine.execute(state, Action(verb="chiedi", target="custode", topic=topic))
+
+    assert not outcome.ok
+    assert outcome.text == "Il custode scuote la testa."
+    assert snapshot(state) == before
+
+
+@pytest.mark.parametrize(
+    "action",
+    [Action(verb="parla", target="custode"), Action(verb="chiedi", target="custode", topic="cella")],
+    ids=["talk", "ask"],
+)
+def test_nobody_answers_from_another_room(keeper, action):
+    engine, state = keeper
+    state.current_room = "cella"
+
+    outcome = engine.execute(state, action)
+
+    assert not outcome.ok
+    assert outcome.text == messages.NOBODY_HERE
+
+
+def test_only_characters_answer(keeper):
+    engine, state = keeper
+
+    outcome = engine.execute(state, Action(verb="parla", target="leva"))
+
+    assert not outcome.ok
+    assert outcome.text == messages.NOBODY_HERE
+
+
+def test_a_character_can_be_examined(keeper):
+    engine, state = keeper
+
+    plain = engine.execute(state, Action(verb="esamina", target="custode"))
+    state.flags.add("porta_aperta")
+    surprised = engine.execute(state, Action(verb="esamina", target="custode"))
+
+    assert plain.ok
+    assert plain.text == "Un vecchio custode."
+    assert surprised.text == "Un vecchio custode, a bocca aperta."
+
+
+@pytest.mark.parametrize(
+    ("action", "expected"),
+    [
+        (Action(verb="prendi", target="custode"), messages.CANT_TAKE),
+        (Action(verb="lascia", target="custode"), messages.DONT_HAVE),
+        (Action(verb="apri", target="custode"), messages.CANT_OPEN),
+        (Action(verb="spingi", target="custode"), messages.NOTHING_HAPPENS),
+        (Action(verb="usa", target="moneta", with_="custode"), messages.NOTHING_HAPPENS),
+    ],
+    ids=["take", "drop", "open", "push", "use an item with"],
+)
+def test_other_verbs_on_a_character_do_nothing(keeper, action, expected):
+    engine, state = keeper
+    before = snapshot(state)
+
+    outcome = engine.execute(state, action)
+
+    assert not outcome.ok
+    assert outcome.text == expected
+    assert snapshot(state) == before
+
+
+def test_a_character_in_another_room_is_not_here(keeper):
+    engine, state = keeper
+    state.current_room = "cella"
+
+    outcome = engine.execute(state, Action(verb="esamina", target="custode"))
+
+    assert outcome.text == messages.NOT_HERE

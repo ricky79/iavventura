@@ -1,15 +1,17 @@
 """The LLM interpreter: turns a sentence the classic parser didn't understand into an Action.
 
 The model answers with a JSON object whose values are constrained by a schema built every turn:
-known verbs, the names of the items in reach or in sight, the directions. The answer is then
-checked here, and the engine still validates the action: the model never touches the game state.
+known verbs, the names of the items in reach or in sight and of the characters here, the topics
+they can be asked about, the directions. The answer is then checked here, and the engine still
+validates the action: the model never touches the game state.
 """
 
 import logging
 from collections.abc import Sequence
 from typing import Any, NamedTuple
 
-from app.engine.models import Action, Command, Direction, Item, Room, Verb
+from app.engine.models import Action, Character, Command, Conversation, Direction, Item, Room, Topic, Verb
+from app.engine.parser import find_topic, significant_words
 from app.llm.client import LLMClient, LLMError
 from app.llm.prompts import INTERPRETER_SYSTEM, interpreter_user
 
@@ -20,18 +22,24 @@ NOTHING = "nessuno"
 MAX_TOKENS = 60  # the JSON answer is short: a low cap stops a model that rambles
 
 _VERBS = [verb.value for verb in Verb]
+_CONVERSATION = [verb.value for verb in Conversation]
 _COMMANDS = [Command.GO.value, Command.LOOK.value, Command.INVENTORY.value]
 _DIRECTIONS = [direction.value for direction in Direction]
 
+# The characters here, each with the topics the player can ask about (Engine.characters_here).
+Characters = Sequence[tuple[Character, Sequence[Topic]]]
 
-def interpreter_schema(in_reach: Sequence[Item]) -> dict[str, Any]:
-    names = [item.name for item in in_reach]
+
+def interpreter_schema(in_reach: Sequence[Item], characters: Characters = ()) -> dict[str, Any]:
+    names = [item.name for item in in_reach] + [character.name for character, _ in characters]
+    topics = [topic.name for _, known in characters for topic in known]
     return {
         "type": "object",
         "properties": {
-            "verbo": {"type": "string", "enum": [*_VERBS, *_COMMANDS, NOT_AN_ACTION]},
+            "verbo": {"type": "string", "enum": [*_VERBS, *_CONVERSATION, *_COMMANDS, NOT_AN_ACTION]},
             "bersaglio": {"type": "string", "enum": [*names, *_DIRECTIONS, NOTHING]},
-            "con": {"type": "string", "enum": [*names, NOTHING]},
+            # With "chiedi" the topic; a topic named like an item is offered once.
+            "con": {"type": "string", "enum": list(dict.fromkeys([*names, *topics, NOTHING]))},
         },
         "required": ["verbo", "bersaglio", "con"],
     }
@@ -46,22 +54,28 @@ class NotUnderstood(NamedTuple):
 
 
 def interpret(
-    llm: LLMClient, sentence: str, in_reach: Sequence[Item], exits: Sequence[tuple[Direction, Room | None]] = ()
+    llm: LLMClient,
+    sentence: str,
+    in_reach: Sequence[Item],
+    exits: Sequence[tuple[Direction, Room | None]] = (),
+    characters: Characters = (),
 ) -> Action | NotUnderstood:
     """The action in the sentence, or why there is none: the model is unavailable, or its answer
     isn't an action on what the player can name.
 
     `exits` (Engine.known_exits) tell the model where each exit leads, for "torno nella scuderia".
+    `characters` are those here, with their topics: the model is told about them only if there are any.
     """
     try:
         reply = llm.complete_json(
             INTERPRETER_SYSTEM,
-            interpreter_user(sentence, in_reach, exits),
-            interpreter_schema(in_reach),
+            interpreter_user(sentence, in_reach, exits, characters),
+            interpreter_schema(in_reach, characters),
             max_tokens=MAX_TOKENS,
             temperature=0,
         )
-        result = _to_action(reply, {item.name: item.id for item in in_reach})
+        ids_by_name = {thing.name: thing.id for thing in [*in_reach, *(character for character, _ in characters)]}
+        result = _to_action(reply, ids_by_name, characters)
     except LLMError:
         result = NotUnderstood("il modello non ha dato una risposta valida")
     if isinstance(result, NotUnderstood):
@@ -71,10 +85,12 @@ def interpret(
     return result
 
 
-def _to_action(reply: dict[str, Any], ids_by_name: dict[str, str]) -> Action | NotUnderstood:
+def _to_action(reply: dict[str, Any], ids_by_name: dict[str, str], characters: Characters) -> Action | NotUnderstood:
     verb, target, tool = (str(reply.get(key, "")) for key in ("verbo", "bersaglio", "con"))
     if verb == NOT_AN_ACTION:
         return NotUnderstood("la frase non è un'azione di gioco", not_an_action=True)
+    if verb in _CONVERSATION:
+        return _to_conversation(verb, target, tool, characters)
     if verb == Command.GO:
         if target not in _DIRECTIONS:
             return NotUnderstood(f"direzione non valida {target!r}")
@@ -97,7 +113,31 @@ def _to_action(reply: dict[str, Any], ids_by_name: dict[str, str]) -> Action | N
     return Action(verb=verb, target=ids_by_name[target], with_=with_)
 
 
+def _to_conversation(verb: str, target: str, tool: str, characters: Characters) -> Action | NotUnderstood:
+    """"parla"/"chiedi" to a character here, the only one if the model names none ("salutalo").
+    The topic is looked up among those the character knows, also by alias ("chiave di ferro" for the
+    key the pilgrim talks about); anything else is a topic it doesn't know."""
+    if not characters:
+        # "ciao, come stai?" with nobody around
+        return NotUnderstood("non c'è nessuno con cui parlare", not_an_action=True)
+    found = next(((person, topics) for person, topics in characters if person.name == target), None)
+    if found is None and target == NOTHING and len(characters) == 1:
+        found = characters[0]
+    if found is None:
+        return NotUnderstood(f"nessun personaggio {target!r} qui")
+    character, topics = found
+    if verb == Conversation.TALK:
+        return Action(verb=Conversation.TALK, target=character.id)
+    topic = find_topic(significant_words(tool), topics)
+    return Action(verb=Conversation.ASK, target=character.id, topic=topic.id if topic else None)
+
+
 def describe(action: Action) -> str:
-    """The action with item ids, as the engine receives it: "usa corda_con_gancio con pozzo"."""
-    words = [action.verb, action.direction or action.target or "", f"con {action.with_}" if action.with_ else ""]
+    """The action with ids, as the engine receives it: "usa corda_con_gancio con pozzo", "chiedi pellegrino di torre"."""
+    words = [
+        action.verb,
+        action.direction or action.target or "",
+        f"con {action.with_}" if action.with_ else "",
+        f"di {action.topic}" if action.topic else "",
+    ]
     return " ".join(word for word in words if word)

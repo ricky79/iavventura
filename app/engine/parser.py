@@ -1,16 +1,16 @@
 """The classic parser: turns simple Italian commands into an Action.
 
 It is strict on purpose: a word it doesn't know makes the whole sentence not understood,
-and freer sentences will go to the LLM interpreter. Items are recognised by name or alias,
-ignoring articles and prepositions, preferring the items in reach and the longest name.
+and freer sentences will go to the LLM interpreter. Items and characters are recognised by name
+or alias, ignoring articles and prepositions, preferring those in reach and the longest name.
 """
 
 import re
 from collections.abc import Iterable, Sequence
 from typing import NamedTuple
 
-from app.engine.models import Action, Command, Direction, Item, Room, Verb, World
-from app.engine.text import plain
+from app.engine.models import Action, Character, Command, Conversation, Direction, Item, Room, Topic, Verb, World
+from app.engine.text import Named, plain
 
 STOPWORDS = frozenset(
     """
@@ -40,6 +40,8 @@ DIRECTIONS = {
 GO_WORDS = frozenset({"vai", "va", "cammina"})
 LOOK_WORDS = frozenset({"guarda", "g", "descrivi"})  # with an item they mean "esamina"
 INVENTORY_WORDS = frozenset({"inventario", "inv", "i"})
+TALK_WORDS = frozenset({"parla", "saluta"})
+ASK_WORDS = frozenset({"chiedi", "domanda"})
 
 ITEM_VERBS = {
     "esamina": Verb.EXAMINE,
@@ -66,19 +68,24 @@ ITEM_VERBS = {
 
 
 class Ambiguous(NamedTuple):
-    """Several items in reach answer to the same words: the player has to say which one."""
+    """Several items or characters in reach answer to the same words: the player has to say which one."""
 
-    candidates: tuple[Item, ...]
+    candidates: tuple[Item | Character, ...]
 
 
 def parse(
-    text: str, world: World, in_reach: Sequence[Item], exits: Sequence[tuple[Direction, Room | None]] = ()
+    text: str,
+    world: World,
+    in_reach: Sequence[Item],
+    exits: Sequence[tuple[Direction, Room | None]] = (),
+    characters: Sequence[tuple[Character, Sequence[Topic]]] = (),
 ) -> Action | Ambiguous | None:
     """None when the sentence isn't a simple command made only of known words.
 
     `in_reach` also holds the items in sight (Engine.visible): the parser prefers them all alike.
     `exits` are the current room's exits with the destinations the player knows (Engine.known_exits):
     they let "vai in cucina" go through the exit that leads there.
+    `characters` are those in the room, with the topics the player can ask about (Engine.characters_here).
     """
     words = words_of(text)
     if not words:
@@ -100,11 +107,14 @@ def parse(
         return Action(verb=Command.INVENTORY) if not rest else None
     if first in LOOK_WORDS and not rest:
         return Action(verb=Command.LOOK)
+    if first in TALK_WORDS or first in ASK_WORDS:
+        return _conversation(first in ASK_WORDS, [word for word in rest if word not in STOPWORDS], world, characters)
 
     verb = Verb.EXAMINE if first in LOOK_WORDS else ITEM_VERBS.get(first)
     if verb is None:
         return None
-    mentions = _mentions([word for word in rest if word not in STOPWORDS], world, in_reach)
+    people = [character for character, _ in characters]
+    mentions = _mentions([word for word in rest if word not in STOPWORDS], world, [*in_reach, *people])
     if mentions is None or not 1 <= len(mentions) <= 2:
         return None
     for candidates in mentions:
@@ -114,6 +124,43 @@ def parse(
     if len(set(ids)) < len(ids):
         return None
     return Action(verb=verb, target=ids[0], with_=ids[1] if len(ids) == 2 else None)
+
+
+def find_topic(words: Sequence[str], topics: Iterable[Topic]) -> Topic | None:
+    """The topic whose name or an alias is exactly these significant words."""
+    key = tuple(words)
+    return next(
+        (topic for topic in topics if any(significant_words(name) == key for name in (topic.name, *topic.aliases))),
+        None,
+    )
+
+
+def _conversation(
+    asking: bool, words: list[str], world: World, characters: Sequence[tuple[Character, Sequence[Topic]]]
+) -> Action | Ambiguous | None:
+    """"parla con X", "saluta X", "chiedi a X di Y"; without X, the only character here.
+    A question about something that is no topic the player knows goes to the LLM."""
+    people = [character for character, _ in characters]
+    found = _longest(words, 0, _phrases(people)) if words else None
+    if found is None and words:
+        # A character elsewhere: any one will do, the engine answers that nobody like that is here.
+        found = _longest(words, 0, _phrases(world.characters.values()))
+        if found is not None:
+            found = (found[0], found[1][:1])
+    if found is not None:
+        length, candidates = found
+        if len(candidates) > 1:
+            return Ambiguous(candidates)
+        character, words = candidates[0], words[length:]
+    elif len(people) == 1:
+        character = people[0]
+    else:
+        return None
+    if not asking:
+        return Action(verb=Conversation.TALK, target=character.id) if not words else None
+    topics = next((topics for person, topics in characters if person.id == character.id), ())
+    topic = find_topic(words, topics) if words else None
+    return Action(verb=Conversation.ASK, target=character.id, topic=topic.id) if topic else None
 
 
 def words_of(text: str) -> list[str]:
@@ -126,13 +173,13 @@ def significant_words(text: str) -> tuple[str, ...]:
     return tuple(word for word in words_of(text) if word not in STOPWORDS)
 
 
-_Phrases = dict[tuple[str, ...], list[Item]]
+_Phrases = dict[tuple[str, ...], list[Named]]
 
 
-def _mentions(words: list[str], world: World, in_reach: Sequence[Item]) -> list[tuple[Item, ...]] | None:
-    """The items the words refer to, in order; None if some words match no item at all."""
+def _mentions(words: list[str], world: World, in_reach: Sequence[Named]) -> list[tuple[Named, ...]] | None:
+    """The items (or characters) the words refer to, in order; None if some words match nothing at all."""
     near = _phrases(in_reach)
-    anywhere = _phrases(world.items.values())
+    anywhere = _phrases([*world.items.values(), *world.characters.values()])
     mentions = []
     position = 0
     while position < len(words):
@@ -149,7 +196,7 @@ def _mentions(words: list[str], world: World, in_reach: Sequence[Item]) -> list[
     return mentions
 
 
-def _phrases(items: Iterable[Item]) -> _Phrases:
+def _phrases(items: Iterable[Named]) -> _Phrases:
     """Each name and alias as its significant words -> the items it may refer to."""
     phrases: _Phrases = {}
     for item in items:
@@ -160,7 +207,7 @@ def _phrases(items: Iterable[Item]) -> _Phrases:
     return phrases
 
 
-def _longest(words: list[str], position: int, phrases: _Phrases) -> tuple[int, tuple[Item, ...]] | None:
+def _longest(words: list[str], position: int, phrases: _Phrases) -> tuple[int, tuple[Named, ...]] | None:
     for length in range(len(words) - position, 0, -1):
         candidates = phrases.get(tuple(words[position : position + length]))
         if candidates:

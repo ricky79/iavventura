@@ -3,9 +3,9 @@ from its cache; only the last lines change from turn to turn. Keep it short: on 
 prompt is the slowest part of a call.
 """
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 
-from app.engine.models import Direction, Item, Room
+from app.engine.models import Character, Direction, Item, Room, Topic
 
 INTERPRETER_SYSTEM = """\
 Sei l'interprete di un'avventura testuale. Traduci la frase del giocatore in un'azione.
@@ -15,14 +15,18 @@ Verbi:
 - lascia: posare, mettere giù, buttare
 - usa: usare un oggetto con un altro, legarli, calarne uno in un altro
 - apri, chiudi, spingi, tira, leggi
+- parla: salutare un personaggio, rivolgergli la parola
+- chiedi: fare una domanda a un personaggio
 - vai: spostarsi in una direzione o verso una delle uscite elencate
 - guarda: guardarsi intorno
 - inventario: controllare cosa si ha con sé
 - altro: la frase non è un'azione di gioco
-bersaglio: l'oggetto su cui si agisce; con "vai", la direzione dell'uscita, oppure "nessuno" \
-se il luogo non è tra le uscite.
-con: l'oggetto usato per compiere l'azione, altrimenti "nessuno".
-Scegli solo tra gli oggetti elencati; tra parentesi ci sono gli altri nomi con cui si chiamano.
+bersaglio: l'oggetto o il personaggio su cui si agisce; con "vai", la direzione dell'uscita, \
+oppure "nessuno" se il luogo non è tra le uscite.
+con: l'oggetto usato per compiere l'azione, altrimenti "nessuno"; con "chiedi", l'argomento \
+della domanda, oppure "nessuno" se non è tra gli argomenti.
+Scegli solo tra gli oggetti, i personaggi e gli argomenti elencati; tra parentesi ci sono gli \
+altri nomi con cui si chiamano.
 Per le uscite, tra parentesi c'è il luogo in cui portano, se è noto.
 
 Esempi
@@ -43,13 +47,39 @@ Frase: buongiorno, che ore sono?
 Oggetti: pozzo; portone; corda con gancio (corda, gancio, rampino); chiave di ferro (chiave)
 Uscite: est (Scuderia)
 Frase: usa il rampino per recuperare la chiave dal pozzo
-{"verbo": "usa", "bersaglio": "pozzo", "con": "corda con gancio"}"""
+{"verbo": "usa", "bersaglio": "pozzo", "con": "corda con gancio"}
+Oggetti: mestolo
+Personaggi: cuoca (donna)
+Argomenti: cantina (scantinato); cena
+Uscite: est
+Frase: buongiorno, signora
+{"verbo": "parla", "bersaglio": "cuoca", "con": "nessuno"}
+Frase: cosa sai dello scantinato?
+{"verbo": "chiedi", "bersaglio": "cuoca", "con": "cantina"}
+Frase: le chiedo se ha visto il re
+{"verbo": "chiedi", "bersaglio": "cuoca", "con": "nessuno"}"""
 
 
 def interpreter_user(
-    sentence: str, in_reach: Sequence[Item], exits: Sequence[tuple[Direction, Room | None]] = ()
+    sentence: str,
+    in_reach: Sequence[Item],
+    exits: Sequence[tuple[Direction, Room | None]] = (),
+    characters: Sequence[tuple[Character, Sequence[Topic]]] = (),
 ) -> str:
-    """Items in reach with their aliases, exits with the rooms the player knows, then the sentence."""
-    items = "; ".join(f"{item.name} ({', '.join(item.aliases)})" if item.aliases else item.name for item in in_reach)
+    """Items in reach with their aliases; the characters here and their topics, only if there is
+    someone; exits with the rooms the player knows; then the sentence."""
+    lines = [f"Oggetti: {_names(in_reach) or 'nessuno'}"]
+    if characters:
+        topics = {topic.name: topic for _, known in characters for topic in known}.values()
+        lines += [
+            f"Personaggi: {_names(character for character, _ in characters)}",
+            f"Argomenti: {_names(topics) or 'nessuno'}",
+        ]
     ways = ", ".join(f"{direction} ({room.name})" if room else direction for direction, room in exits)
-    return f"Oggetti: {items or 'nessuno'}\nUscite: {ways or 'nessuna'}\nFrase: {sentence}"
+    lines += [f"Uscite: {ways or 'nessuna'}", f"Frase: {sentence}"]
+    return "\n".join(lines)
+
+
+def _names(things: Iterable[Item | Character | Topic]) -> str:
+    """"pozzo; corda con gancio (corda, gancio, rampino)": each name with its aliases."""
+    return "; ".join(f"{thing.name} ({', '.join(thing.aliases)})" if thing.aliases else thing.name for thing in things)

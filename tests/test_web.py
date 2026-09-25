@@ -113,7 +113,7 @@ def test_the_action_asked_about_travels_with_the_state(castle):
     answered = client.post("/api/turn", json={"line": "sì", "state": asked["state"], "pending": asked["pending"]})
 
     assert asked["text"] == "Vuoi spingere il portone?"
-    assert asked["pending"] == {"verb": "spingi", "target": "portone", "with": None, "direction": None}
+    assert asked["pending"] == {"verb": "spingi", "target": "portone", "with": None, "direction": None, "topic": None}
     assert answered.json()["text"] == "Non succede niente."
     assert answered.json()["pending"] is None
 

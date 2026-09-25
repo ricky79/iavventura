@@ -6,7 +6,22 @@ Every answer the player reads comes from here or from the world's authors: the L
 import unicodedata
 from collections.abc import Iterable
 
-from app.engine.models import Action, Direction, Gender, Item, Outcome, RoomView, Verb, World
+from app.engine.models import (
+    Action,
+    Character,
+    Conversation,
+    Direction,
+    Gender,
+    Item,
+    Outcome,
+    RoomView,
+    Topic,
+    Verb,
+    World,
+)
+
+# Everything with a name and a gender: items, characters and the topics they talk about.
+Named = Item | Character | Topic
 
 _VOWELS = frozenset("aeiou")
 _INFINITIVES = {
@@ -19,24 +34,27 @@ _INFINITIVES = {
     Verb.PUSH: "spingere",
     Verb.PULL: "tirare",
     Verb.READ: "leggere",
+    Conversation.TALK: "parlare",
+    Conversation.ASK: "chiedere",
 }
+# A preposition and the definite article become one word: a + il = al, di + la = della.
+_ARTICULATED = {
+    "a": {"il ": "al ", "lo ": "allo ", "l'": "all'", "la ": "alla ", "i ": "ai ", "gli ": "agli ", "le ": "alle "},
+    "di": {"il ": "del ", "lo ": "dello ", "l'": "dell'", "la ": "della ", "i ": "dei ", "gli ": "degli ", "le ": "delle "},
+}  # fmt: skip
 
 
-def definite(item: Item) -> str:
+def definite(item: Named) -> str:
     """The name with its definite article: il gancio, lo specchio, l'uncino, la corda, gli attrezzi."""
-    feminine = item.gender is Gender.FEMININE
-    if item.plural:
-        article = "le " if feminine else ("gli " if _takes_lo(item.name) or _starts_with_vowel(item.name) else "i ")
-    elif _takes_lo(item.name):
-        article = "la " if feminine else "lo "
-    elif _starts_with_vowel(item.name):
-        article = "l'"
-    else:
-        article = "la " if feminine else "il "
-    return article + item.name
+    return _definite_article(item) + item.name
 
 
-def indefinite(item: Item) -> str:
+def articulated(preposition: str, item: Named) -> str:
+    """The name after "a" or "di", joined to its article: al pellegrino, della torre, dell'uncino."""
+    return _ARTICULATED[preposition][_definite_article(item)] + item.name
+
+
+def indefinite(item: Named) -> str:
     """The name with its indefinite article (partitive in the plural): un gancio, un'ascia, dei sassi."""
     feminine = item.gender is Gender.FEMININE
     if item.plural:
@@ -59,20 +77,15 @@ def join(words: Iterable[str], conjunction: str = "e") -> str:
     return f"{', '.join(words[:-1])} {conjunction} {words[-1]}"
 
 
-def which_one(candidates: Iterable[Item]) -> str:
+def which_one(candidates: Iterable[Named]) -> str:
     return f"Quale intendi: {join((definite(item) for item in candidates), 'o')}?"
 
 
 def action_text(action: Action, world: World) -> str:
-    """The action as a command: "usa la corda con il gancio", "vai a nord"."""
+    """The action as a command: "usa la corda con il gancio", "vai a nord", "chiedi al pellegrino della torre"."""
     if action.direction is not None:
         return f"vai {_to(action.direction)}"
-    words = [action.verb]
-    if action.target is not None:
-        words.append(definite(world.items[action.target]))
-    if action.with_ is not None:
-        words += ["con", definite(world.items[action.with_])]
-    return " ".join(words)
+    return " ".join([action.verb, *_complements(action, world)])
 
 
 def confirmation(action: Action, world: World) -> str:
@@ -80,10 +93,7 @@ def confirmation(action: Action, world: World) -> str:
     "Vuoi usare la corda con il gancio?", "Vuoi andare a ovest?"."""
     if action.direction is not None:
         return f"Vuoi andare {_to(action.direction)}?"
-    words = ["Vuoi", _INFINITIVES[action.verb], definite(world.items[action.target])]
-    if action.with_ is not None:
-        words += ["con", definite(world.items[action.with_])]
-    return " ".join(words) + "?"
+    return " ".join(["Vuoi", _INFINITIVES[action.verb], *_complements(action, world)]) + "?"
 
 
 def render(outcome: Outcome, world: World) -> str:
@@ -106,6 +116,24 @@ def plain(text: str) -> str:
     return "".join(char for char in decomposed if not unicodedata.combining(char))
 
 
+def _complements(action: Action, world: World) -> list[str]:
+    """What follows the verb: "la corda con il gancio", "con il pellegrino", "al pellegrino della torre"."""
+    if action.verb is Conversation.TALK:
+        return ["con", definite(world.thing(action.target))]
+    if action.verb is Conversation.ASK:
+        character = world.characters[action.target]
+        words = [articulated("a", character)]
+        if action.topic is not None:
+            words.append(articulated("di", character.topics[action.topic]))
+        return words
+    words = []
+    if action.target is not None:
+        words.append(definite(world.thing(action.target)))
+    if action.with_ is not None:
+        words += ["con", definite(world.thing(action.with_))]
+    return words
+
+
 def _to(direction: Direction) -> str:
     """"a nord", but "su" and "giù" alone."""
     return str(direction) if direction in (Direction.UP, Direction.DOWN) else f"a {direction}"
@@ -113,6 +141,10 @@ def _to(direction: Direction) -> str:
 
 def _room(room: RoomView, world: World) -> str:
     lines = [room.name, room.description]
+    if room.characters:
+        people = [world.characters[character_id] for character_id in room.characters]
+        there = "Qui c'è" if len(people) == 1 and not people[0].plural else "Qui ci sono"
+        lines.append(f"{there} {join(indefinite(person) for person in people)}.")
     if room.items:
         lines.append(f"Qui vedi {join(indefinite(world.items[item_id]) for item_id in room.items)}.")
     if room.exits:
@@ -126,6 +158,17 @@ def _inventory(item_ids: tuple[str, ...], world: World) -> str:
     if not item_ids:
         return "Non hai niente con te."
     return f"Hai con te {join(indefinite(world.items[item_id]) for item_id in item_ids)}."
+
+
+def _definite_article(item: Named) -> str:
+    feminine = item.gender is Gender.FEMININE
+    if item.plural:
+        return "le " if feminine else ("gli " if _takes_lo(item.name) or _starts_with_vowel(item.name) else "i ")
+    if _takes_lo(item.name):
+        return "la " if feminine else "lo "
+    if _starts_with_vowel(item.name):
+        return "l'"
+    return "la " if feminine else "il "
 
 
 def _starts_with_vowel(name: str) -> bool:

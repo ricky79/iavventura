@@ -38,7 +38,7 @@ rooms:
   scuderia:
     name: Scuderia
     description: >
-      Una scuderia vuota che sa ancora di fieno. Le poste dei cavalli sono
+      Una scuderia senza più cavalli, che sa ancora di fieno. Le poste sono
       deserte e le mangiatoie piene di polvere. Il cortile è a ovest.
     exits:
       ovest: {to: cortile}

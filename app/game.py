@@ -28,6 +28,7 @@ HELP = """Scrivi comandi semplici, per esempio:
   guarda, inventario (oppure i)
   esamina X, prendi X, lascia X, apri X, chiudi X, leggi X, spingi X, tira X
   usa X con Y
+  parla con X, chiedi a X di Y
 Per terminare la partita: fine."""
 
 _HELP_WORDS = frozenset({"aiuto", "help"})
@@ -87,10 +88,12 @@ class Game:
             # Anything else is a new command: the question is dropped.
         if len(words) == 1 and words[0] in _HELP_WORDS:
             return HELP
-        # What the player can name: items in reach, then those only in sight (the key in the well).
+        # What the player can name: items in reach, then those only in sight (the key in the well),
+        # and the characters here with the topics they can be asked about.
         near = self.engine.in_reach(self.state) + self.engine.visible(self.state)
         exits = self.engine.known_exits(self.state)
-        parsed = parse(line, self.world, near, exits)
+        characters = self.engine.characters_here(self.state)
+        parsed = parse(line, self.world, near, exits, characters)
         if isinstance(parsed, Ambiguous):
             return which_one(parsed.candidates)
         if parsed is not None:
@@ -98,7 +101,7 @@ class Game:
         if self.llm is None:
             self._log("parser", None, "non capito", "il parser non la capisce e l'LLM è spento")
             return NOT_UNDERSTOOD
-        interpreted = interpret(self.llm, line, near, exits)
+        interpreted = interpret(self.llm, line, near, exits, characters)
         if isinstance(interpreted, NotUnderstood):
             if interpreted.not_an_action:
                 self._log("llm", None, "altro", interpreted.reason)

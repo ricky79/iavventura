@@ -86,6 +86,15 @@ def test_entering_the_tower_ends_the_game(castle):
     assert any(ending.when == PlayerIn(player_in="torre") for ending in castle.game.endings)
 
 
+
+def test_the_pilgrim_waits_in_the_stable_and_only_gives_hints(castle):
+    pilgrim = castle.characters["pellegrino"]
+
+    assert pilgrim.location == "scuderia"
+    # No topic changes the game: talking can't open a shortcut through the puzzle.
+    assert all(topic.effects == () for topic in pilgrim.topics.values())
+
+
 # --- Playing through the engine -------------------------------------------------
 
 UP_TO_THE_KEY = [

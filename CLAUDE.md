@@ -12,7 +12,8 @@ Il castello, gli enigmi e i personaggi sono **originali**: non copiare contenuti
 - **Niente narratore LLM** (decisione del 2026-09-25): tutto ciò che il giocatore legge è testo
   fisso, scritto dagli autori del mondo o dal motore. Con qwen2.5:3b su CPU il narratore inventava
   eventi, a volte contraddiceva il motore e impiegava 9-17 s. Il tentativo è nel commit 09f4df0.
-- Nei dialoghi, ogni personaggio ha un profilo con cosa sa e cosa può rivelare. L'LLM non deve mai dare la soluzione degli enigmi.
+- Nei dialoghi i personaggi rispondono per argomenti, con testi d'autore: l'LLM sceglie solo
+  personaggio e argomento, quindi non può mai dare la soluzione degli enigmi.
 
 ## Flusso di un turno
 ```
@@ -97,9 +98,6 @@ tests/
 ## Decisioni prese
 - **Formato YAML del mondo** (fase 1, 2026-09-25): descritto in `docs/formato-mondo.md`.
   Mondo di esempio: la Rocca di Serravento in `data/world/`.
-- **Personaggi e dialoghi rimandati** (decisione del 2026-09-25): li affronteremo in una fase
-  successiva. Per ora il formato del mondo non li prevede; andranno aggiunti con il loro profilo
-  (cosa sanno, cosa possono rivelare) quando lavoreremo sui dialoghi.
 
 - **Motore di gioco** (fase 2, 2026-09-25): `Engine` in `app/engine/engine.py`.
   - Schema dell'Azione (`Action` in `models.py`): un solo modello piatto `verb`, `target`,
@@ -180,9 +178,23 @@ tests/
     Lega il prompt fisso alla Rocca: quando ci sarà un secondo mondo, gli esempi andranno nel suo
     YAML.
 
+- **Personaggi e dialoghi** (fase 6, 2026-09-25): sezione `characters` (formato in
+  `docs/formato-mondo.md`), nella Rocca il pellegrino della scuderia (`data/world/personaggi.yaml`).
+  - Si parla **per argomenti**, con testi d'autore: `parla con X` → `greeting`, `chiedi a X di Y`
+    → testo dell'argomento, qualunque altra domanda → `unknown`. Scartate le risposte generate
+    dal modello: con qwen2.5:3b su CPU tornerebbero i problemi del narratore.
+  - Nell'`Action`, "chiedi" ha il personaggio come `target` e un campo `topic` (None: argomento
+    che non conosce). Verbi in un enum a parte, `Conversation`: le regole non reagiscono.
+  - Argomenti con `name` e `gender` (per "della torre"), `when` per nasconderli, `variants`,
+    `effects` come le regole. Il pellegrino dà solo indizi: nessun effetto, niente scorciatoie
+    (lo controlla `tests/test_castello.py`).
+  - Nel prompt: le righe "Personaggi" e "Argomenti" solo se nella stanza c'è qualcuno; l'argomento
+    va nel campo `con`, così lo schema della risposta resta lo stesso. "ciao" senza nessuno
+    intorno: il modello risponde "parla", il gioco lo tratta come "altro".
+  - Fuori da questa fase: personaggi che si spostano, dare o mostrare oggetti ("dai X a Y").
+
 ## Decisioni ancora aperte
-- Dialoghi con i personaggi: senza narratore LLM, le risposte saranno testi d'autore (l'LLM
-  potrebbe solo scegliere l'argomento), oppure servirà un modello più capace.
+- Dare e mostrare oggetti ai personaggi, con regole che li nominano: servirà per un enigma.
 - Hosting pubblico (es. PC di casa + Cloudflare Tunnel) — non prioritario.
 
 ## Comandi utili
@@ -208,14 +220,15 @@ ollama pull qwen2.5:3b
   Con la parte fissa del prompt in testa, Ollama la tiene in cache (dal log: ~460 token su ~470
   già in cache): il grosso del tempo è generare i 25-30 token della risposta JSON.
 - Interprete (fase 4): 4-7 s per frase; la prima chiamata 15-20 s (caricamento del modello,
-  poi tenuto in memoria con `keep_alive: 30m`). `tests/test_ollama.py`: 19 su 19.
+  poi tenuto in memoria con `keep_alive: 30m`). `tests/test_ollama.py`: 25 su 25.
   - Output strutturato con `format` (schema JSON), `temperature: 0`, `num_predict: 60`, `num_ctx: 2048`.
   - Campi: `verbo`, `bersaglio` (su cosa si agisce; per "vai" la direzione), `con` (cosa si usa;
-    "nessuno" se assente). Enum generati a ogni turno: verbi del motore + `altro` (non è
-    un'azione); nomi degli oggetti a portata o in vista + direzioni + `nessuno`.
+    "nessuno" se assente; con "chiedi" l'argomento). Enum generati a ogni turno: verbi del
+    motore + `altro` (non è un'azione); nomi degli oggetti a portata o in vista e dei personaggi
+    presenti + direzioni + `nessuno`; in `con` anche gli argomenti.
   - Nel prompt: glossario dei verbi (senza, il modello usava "usa" per quasi tutto), oggetti con
     gli alias tra parentesi (senza, confondeva "porta" con "portone"), esempi su un mondo
-    inventato, più quello del rampino in fondo.
+    inventato, poi quello del rampino, poi un dialogo con la cuoca.
   - Scambiare bersaglio e strumento non è un problema: le regole accettano i due oggetti in
     qualunque ordine.
   - Frasi con lo scopo ("usa il rampino per recuperare la chiave dal pozzo"): senza esempio il
@@ -231,5 +244,10 @@ ollama pull qwen2.5:3b
     (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
     sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
     invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
-    `tests/test_ollama.py` (oggi 19 su 19, ~110 s).
+    `tests/test_ollama.py` (oggi 25 su 25, ~150 s).
+  - Dialoghi (fase 6): senza l'esempio del dialogo, "chi era il castellano?" diventava "altro";
+    con l'esempio prima di quello del rampino, "getta il rampino nel pozzo" andava al portone.
+    In fondo funziona tutto. Con il dialogo nel prompt, "vai in cucina" dalla scuderia risponde
+    "nessuno" (quindi "Non ho capito.") invece di "ovest". Per provare varianti del prompt senza
+    toccare il codice basta sostituire `interpreter.INTERPRETER_SYSTEM` in uno script.
 - Narratore: provato e scartato (vedi sopra), anche con temperatura 0.2 e senza descrizioni.
