@@ -86,3 +86,24 @@ def test_an_interpreted_sentence_is_shown_before_the_answer(castle):
     output = say(Game(Engine(castle), llm), "dai una spinta al portone")
 
     assert output == "(spingi il portone)\nNon succede niente."
+
+
+def test_going_to_a_named_room_needs_no_llm(castle):
+    llm = FakeLLMClient()
+    game = Game(Engine(castle), llm)
+
+    output = say(game, "vai in cucina")
+
+    assert output.startswith("Cucina\n")
+    assert game.state.current_room == "cucina"
+    assert llm.calls == []
+
+
+def test_the_llm_is_told_where_the_exits_lead(castle):
+    llm = FakeLLMClient(json_replies=[{"verbo": "vai", "bersaglio": "est", "con": "nessuno"}])
+    game = Game(Engine(castle), llm)
+
+    output = say(game, "torno di corsa nella scuderia")
+
+    assert "\nUscite: nord (Torre), est (Scuderia), ovest (Cucina)\n" in llm.calls[0][1]
+    assert output.startswith("(vai a est)\nScuderia\n")

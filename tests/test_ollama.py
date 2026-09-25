@@ -53,6 +53,8 @@ CASES = [
     ("cortile", (), "torna verso ovest", lambda o, s: s.current_room == "cucina"),
     ("cortile", ("corda",), "metti giù la corda", lambda o, s: s.item_locations["corda"] == "cortile"),
     ("cortile", ("corda",), "cosa ho con me?", lambda o, s: o.inventory == ("corda",)),
+    ("cortile", (), "vado in cucina", lambda o, s: s.current_room == "cucina"),
+    ("cortile", (), "torno di corsa nella scuderia", lambda o, s: s.current_room == "scuderia"),
 ]
 
 
@@ -61,16 +63,16 @@ def test_free_sentences_become_the_right_action(llm, room, carried, sentence, ch
     engine, state = game_in(room, *carried)
 
     start = time.perf_counter()
-    action = interpret(llm, sentence, engine.in_reach(state))
+    action = interpret(llm, sentence, engine.in_reach(state), engine.known_exits(state))
     print(f"\n  {time.perf_counter() - start:4.1f}s  {sentence!r} -> {action}")
 
     assert action is not None
     assert check(engine.execute(state, action), state)
 
 
-@pytest.mark.parametrize("sentence", ["ciao, come stai?", "che tempo farà domani?"])
-def test_small_talk_is_not_an_action(llm, sentence):
+@pytest.mark.parametrize("sentence", ["ciao, come stai?", "che tempo farà domani?", "vado nella cantina"])
+def test_small_talk_and_unknown_places_are_not_understood(llm, sentence):
     engine, state = game_in("cortile")
 
-    assert interpret(llm, sentence, engine.in_reach(state)) is None
+    assert interpret(llm, sentence, engine.in_reach(state), engine.known_exits(state)) is None
 

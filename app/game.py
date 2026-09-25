@@ -48,10 +48,11 @@ class Game:
         if len(words) == 1 and words[0] in _HELP_WORDS:
             return HELP
         in_reach = self.engine.in_reach(self.state)
-        result = parse(line, self.world, in_reach)
+        exits = self.engine.known_exits(self.state)
+        result = parse(line, self.world, in_reach, exits)
         shown = ""
         if result is None and self.llm is not None:
-            result = interpret(self.llm, line, in_reach)
+            result = interpret(self.llm, line, in_reach, exits)
             if result is not None:
                 # Show how the sentence was understood: if the model got it wrong, the player sees why.
                 shown = f"({action_text(result, self.world)})\n"

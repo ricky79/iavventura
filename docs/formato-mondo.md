@@ -54,6 +54,13 @@ rooms:
 
 Le uscite sono a senso unico: per tornare indietro serve l'uscita opposta nell'altra stanza.
 
+**Andare in una stanza per nome.** Il giocatore può scrivere "vai in cucina" invece di "ovest"
+se conosce la stanza di destinazione: l'ha già visitata, oppure la descrizione che sta leggendo
+la nomina (tutte le parole del nome, esclusi articoli e preposizioni: "Sala del trono" richiede
+sia "sala" sia "trono"). Le stanze mai viste e mai nominate restano sconosciute, così un nome
+indovinato non rivela dove si trovano. Consiglio per chi scrive: nelle descrizioni nomina le
+stanze vicine con il loro nome ("A ovest una porta bassa dà sulla cucina").
+
 ## `items`
 
 ```yaml

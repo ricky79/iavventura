@@ -9,7 +9,7 @@ import logging
 from collections.abc import Sequence
 from typing import Any
 
-from app.engine.models import Action, Command, Direction, Item, Verb
+from app.engine.models import Action, Command, Direction, Item, Room, Verb
 from app.llm.client import LLMClient, LLMError
 from app.llm.prompts import INTERPRETER_SYSTEM, interpreter_user
 
@@ -37,12 +37,17 @@ def interpreter_schema(in_reach: Sequence[Item]) -> dict[str, Any]:
     }
 
 
-def interpret(llm: LLMClient, sentence: str, in_reach: Sequence[Item]) -> Action | None:
-    """None when the model is unavailable, or its answer isn't an action on what is in reach."""
+def interpret(
+    llm: LLMClient, sentence: str, in_reach: Sequence[Item], exits: Sequence[tuple[Direction, Room | None]] = ()
+) -> Action | None:
+    """None when the model is unavailable, or its answer isn't an action on what is in reach.
+
+    `exits` (Engine.known_exits) tell the model where each exit leads, for "torno nella scuderia".
+    """
     try:
         reply = llm.complete_json(
             INTERPRETER_SYSTEM,
-            interpreter_user(sentence, in_reach),
+            interpreter_user(sentence, in_reach, exits),
             interpreter_schema(in_reach),
             max_tokens=MAX_TOKENS,
             temperature=0,
