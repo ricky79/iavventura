@@ -9,7 +9,7 @@ import re
 from collections.abc import Iterable, Sequence
 from typing import NamedTuple
 
-from app.engine.models import Action, Command, Direction, Item, Verb, World
+from app.engine.models import Action, Command, Direction, Item, Room, Verb, World
 from app.engine.text import plain
 
 STOPWORDS = frozenset(
@@ -71,8 +71,14 @@ class Ambiguous(NamedTuple):
     candidates: tuple[Item, ...]
 
 
-def parse(text: str, world: World, in_reach: Sequence[Item]) -> Action | Ambiguous | None:
-    """None when the sentence isn't a simple command made only of known words."""
+def parse(
+    text: str, world: World, in_reach: Sequence[Item], exits: Sequence[tuple[Direction, Room | None]] = ()
+) -> Action | Ambiguous | None:
+    """None when the sentence isn't a simple command made only of known words.
+
+    `exits` are the current room's exits with the destinations the player knows (Engine.known_exits):
+    they let "vai in cucina" go through the exit that leads there.
+    """
     words = words_of(text)
     if not words:
         return None
@@ -85,6 +91,9 @@ def parse(text: str, world: World, in_reach: Sequence[Item]) -> Action | Ambiguo
         rest = [word for word in rest if word in DIRECTIONS or word not in STOPWORDS]
         if len(rest) == 1 and rest[0] in DIRECTIONS:
             return Action(verb=Command.GO, direction=DIRECTIONS[rest[0]])
+        for direction, room in exits:
+            if room is not None and significant_words(room.name) == tuple(rest):
+                return Action(verb=Command.GO, direction=direction)
         return None
     if first in INVENTORY_WORDS:
         return Action(verb=Command.INVENTORY) if not rest else None
@@ -109,6 +118,11 @@ def parse(text: str, world: World, in_reach: Sequence[Item]) -> Action | Ambiguo
 def words_of(text: str) -> list[str]:
     """Lowercase words without accents or punctuation; apostrophes split words (l'uncino)."""
     return re.findall(r"[a-z0-9]+", plain(text))
+
+
+def significant_words(text: str) -> tuple[str, ...]:
+    """The words without articles and prepositions: "la porta della torre" -> ("porta", "torre")."""
+    return tuple(word for word in words_of(text) if word not in STOPWORDS)
 
 
 _Phrases = dict[tuple[str, ...], list[Item]]
@@ -139,7 +153,7 @@ def _phrases(items: Iterable[Item]) -> _Phrases:
     phrases: _Phrases = {}
     for item in items:
         for name in (item.name, *item.aliases):
-            key = tuple(word for word in words_of(name) if word not in STOPWORDS)
+            key = significant_words(name)
             if item not in phrases.setdefault(key, []):
                 phrases[key].append(item)
     return phrases

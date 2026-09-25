@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.engine.models import Action, World
+from app.engine.models import Action, Direction, World
 from app.engine.parser import Ambiguous, parse
 
 
@@ -165,3 +165,38 @@ def test_two_items_in_reach_with_the_same_name_are_ambiguous(world):
 )
 def test_anything_else_is_not_understood(world, text):
     assert parse_with(world, text, "corda", "gancio", "pozzo") is None
+
+
+# --- Going to a room by its name ----------------------------------------------------------------
+
+
+def exits_to(world: World, *pairs: tuple[str, str | None]):
+    return [(Direction(direction), world.rooms[room] if room else None) for direction, room in pairs]
+
+
+@pytest.mark.parametrize("text", ["vai nella cella", "vai in cella", "va alla cella", "cammina verso la Cella"])
+def test_going_to_a_known_room_by_name(world, text):
+    exits = exits_to(world, ("sud", None), ("ovest", "cella"))
+
+    assert parse(text, world, [], exits) == Action(verb="vai", direction="ovest")
+
+
+def test_directions_still_work_when_rooms_are_known(world):
+    assert parse("vai a sud", world, [], exits_to(world, ("ovest", "cella"))) == Action(verb="vai", direction="sud")
+
+
+def test_a_room_the_player_does_not_know_is_not_understood(world):
+    assert parse("vai nella cella", world, [], exits_to(world, ("ovest", None))) is None
+
+
+def test_a_room_that_is_not_through_an_exit_is_not_understood(world):
+    assert parse("vai nell'atrio", world, [], exits_to(world, ("ovest", "cella"))) is None
+
+
+def test_every_significant_word_of_the_room_name_is_needed(world_data):
+    world_data["rooms"]["cella"]["name"] = "Cella del conte"
+    world = World.model_validate(world_data)
+    exits = exits_to(world, ("ovest", "cella"))
+
+    assert parse("vai nella cella del conte", world, [], exits) == Action(verb="vai", direction="ovest")
+    assert parse("vai nella cella", world, [], exits) is None

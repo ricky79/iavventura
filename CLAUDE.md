@@ -119,6 +119,11 @@ tests/
     pozzo)", così il giocatore vede subito se il modello ha frainteso.
   - Se il modello non risponde o risponde qualcosa senza senso: "Non ho capito."
   - Test col modello vero in `tests/test_ollama.py`, saltati per default (`OLLAMA_TESTS=1`).
+- **Andare in una stanza per nome** (2026-09-25): `Engine.known_exits` dà le uscite con la
+  destinazione solo se il giocatore la conosce (visitata, o nominata nella descrizione attuale).
+  Il parser capisce "vai in cucina"; l'LLM riceve "Uscite: nord (Torre), est (Scuderia), …" e,
+  per un luogo che non è tra le uscite, risponde `bersaglio: nessuno` ("Non ho capito.").
+  Senza le uscite nel prompt il modello tirava a indovinare la direzione.
 
 ## Decisioni ancora aperte
 - Dialoghi con i personaggi: senza narratore LLM, le risposte saranno testi d'autore (l'LLM

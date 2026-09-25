@@ -3,7 +3,7 @@
 import pytest
 
 from app.engine.loader import load_world
-from app.engine.models import Action, Item, World
+from app.engine.models import Action, Direction, Item, World
 from app.llm.client import FakeLLMClient
 from app.llm.interpreter import interpret, interpreter_schema
 
@@ -34,28 +34,31 @@ def test_schema_limits_the_answer_to_known_verbs_items_in_reach_and_directions(i
     assert properties["con"]["enum"] == ["pozzo", "porta della torre", "portone", "corda con gancio", "nessuno"]
 
 
-def test_the_model_gets_a_fixed_system_prompt_and_the_items_with_the_sentence(in_reach):
+def test_the_model_gets_a_fixed_system_prompt_then_items_exits_and_sentence(castle, in_reach):
     fake = FakeLLMClient(json_replies=[{"verbo": "altro"}, {"verbo": "altro"}])
+    rooms = castle.rooms
 
-    interpret(fake, "cala il rampino nel pozzo", in_reach)
-    interpret(fake, "saluta", in_reach[:1])
+    exits = [(Direction.NORTH, rooms["torre"]), (Direction.EAST, rooms["scuderia"]), (Direction.WEST, rooms["cucina"])]
+    interpret(fake, "cala il rampino nel pozzo", in_reach, exits)
+    interpret(fake, "saluta", in_reach[:1], [(Direction.NORTH, None), (Direction.WEST, rooms["cucina"])])
 
     (first_system, first_user), (second_system, second_user) = fake.calls
     assert first_system == second_system  # the fixed part comes first, so Ollama can cache it
     assert first_user == (
         "Oggetti: pozzo; porta della torre (porta, porta di ferro); portone; "
         "corda con gancio (corda, gancio, rampino)\n"
+        "Uscite: nord (Torre), est (Scuderia), ovest (Cucina)\n"
         "Frase: cala il rampino nel pozzo"
     )
-    assert second_user == "Oggetti: pozzo\nFrase: saluta"
+    assert second_user == "Oggetti: pozzo\nUscite: nord, ovest (Cucina)\nFrase: saluta"
 
 
-def test_no_items_in_reach(castle):
+def test_no_items_in_reach_and_no_exits(castle):
     fake = FakeLLMClient(json_replies=[{"verbo": "altro"}])
 
     interpret(fake, "salta", [])
 
-    assert fake.calls[0][1] == "Oggetti: nessuno\nFrase: salta"
+    assert fake.calls[0][1] == "Oggetti: nessuno\nUscite: nessuna\nFrase: salta"
 
 
 @pytest.mark.parametrize(

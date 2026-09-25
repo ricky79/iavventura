@@ -31,6 +31,7 @@ from app.engine.models import (
     Verb,
     World,
 )
+from app.engine.parser import significant_words, words_of
 
 # Engine messages. They never name the item, so they need no article or gender.
 GAME_OVER = "La partita è finita."
@@ -59,6 +60,19 @@ class Engine:
     def in_reach(self, state: GameState) -> list[Item]:
         """Items the player can act on: those in the current room (scenery included) and those carried."""
         return self._items_in(state, state.current_room, INVENTORY)
+
+    def known_exits(self, state: GameState) -> list[tuple[Direction, Room | None]]:
+        """The exits of the current room in compass order, each with its destination if the player
+        knows it: already visited, or named in the description they are reading now. So "vai in
+        cucina" works for a kitchen the courtyard mentions, and doesn't reveal rooms never seen."""
+        room = self.world.rooms[state.current_room]
+        described = set(words_of(_description(room, state)))
+        exits = []
+        for direction in sorted(room.exits, key=list(Direction).index):
+            destination = self.world.rooms[room.exits[direction].to]
+            named = set(significant_words(destination.name)) <= described
+            exits.append((direction, destination if destination.id in state.visited or named else None))
+        return exits
 
     def execute(self, state: GameState, action: Action) -> Outcome:
         """Applies the action to `state` and tells what happened; the first ending that holds closes the game."""

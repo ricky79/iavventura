@@ -522,3 +522,53 @@ def test_default_behaviour_ignores_the_tool(data):
 
     assert outcome.ok
     assert state.item_locations["candela"] == "inventory"
+
+
+# --- Exits and the rooms the player knows about ------------------------------------------------
+
+
+def test_an_exit_to_a_room_never_seen_nor_named_is_only_a_direction(data):
+    engine, state = start(data)
+
+    assert engine.known_exits(state) == [(Direction.NORTH, None)]
+
+
+def test_a_room_named_in_the_description_is_known(data):
+    data["rooms"]["atrio"]["description"] = "Un atrio spoglio. A nord c'è la cella."
+    engine, state = start(data)
+
+    assert engine.known_exits(state) == [(Direction.NORTH, engine.world.rooms["cella"])]
+
+
+def test_only_the_current_description_variant_counts(data):
+    data["rooms"]["atrio"]["variants"] = [{"when": {"flag": "porta_aperta"}, "text": "La porta della cella è aperta."}]
+    engine, state = start(data)
+
+    before = engine.known_exits(state)
+    state.flags.add("porta_aperta")
+
+    assert before == [(Direction.NORTH, None)]
+    assert engine.known_exits(state) == [(Direction.NORTH, engine.world.rooms["cella"])]
+
+
+def test_a_visited_room_is_known(data):
+    engine, state = start(data)
+    state.visited.add("cella")
+
+    assert engine.known_exits(state) == [(Direction.NORTH, engine.world.rooms["cella"])]
+
+
+def test_every_word_of_the_room_name_must_be_named(data):
+    data["rooms"]["cella"]["name"] = "Cella del conte"
+    data["rooms"]["atrio"]["description"] = "Un atrio spoglio. A nord c'è una cella."
+    engine, state = start(data)
+
+    assert engine.known_exits(state) == [(Direction.NORTH, None)]
+
+
+def test_exits_come_in_compass_order(data):
+    data["rooms"]["atrio"]["exits"] = {"ovest": {"to": "cella"}, "su": {"to": "cella"}, "nord": {"to": "atrio"}}
+    engine, state = start(data)
+
+    assert [direction for direction, _ in engine.known_exits(state)] == [Direction.NORTH, Direction.WEST, Direction.UP]
+    assert engine.known_exits(state)[0] == (Direction.NORTH, engine.world.rooms["atrio"])

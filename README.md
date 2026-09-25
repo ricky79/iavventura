@@ -84,7 +84,7 @@ Il gioco capisce subito i comandi semplici, con o senza articoli:
 
 | Per… | Scrivi |
 |---|---|
-| muoverti | `nord`, `sud`, `est`, `ovest`, `su`, `giù` (anche `n`, `s`, `e`, `o`, `vai a nord`) |
+| muoverti | `nord`, `sud`, `est`, `ovest`, `su`, `giù` (anche `n`, `s`, `e`, `o`, `vai a nord`), oppure `vai in cucina` per una stanza che conosci |
 | guardarti intorno | `guarda` |
 | vedere cosa porti | `inventario` (anche `i`) |
 | agire sugli oggetti | `esamina X` (anche `x X`), `prendi X`, `lascia X`, `apri X`, `chiudi X`, `leggi X`, `spingi X`, `tira X` |
