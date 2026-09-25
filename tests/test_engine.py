@@ -376,6 +376,33 @@ def test_a_rule_replaces_the_default_behaviour_of_its_verb(data):
     assert state.item_locations["candela"] == "atrio"
 
 
+def test_every_trigger_of_a_rule_fires_it(data):
+    data["rules"]["tira_leva"]["trigger"] = [
+        {"verb": "tira", "target": "leva"},
+        {"verb": "spingi", "target": "leva", "with": "candela"},
+    ]
+    engine, state = start(data)
+
+    first = engine.execute(state, Action(verb="spingi", target="candela", with_="leva"))
+    again = engine.execute(state, Action(verb="tira", target="leva"))
+
+    assert first.text == "Clac! Qualcosa cade ai tuoi piedi."
+    assert "porta_aperta" in state.flags
+    assert again.text == "La leva non si muove più."
+
+
+def test_use_falls_back_on_any_trigger_of_a_list(data):
+    data["rules"]["tira_leva"]["trigger"] = [
+        {"verb": "tira", "target": "leva"},
+        {"verb": "spingi", "target": "leva", "with": "candela"},
+    ]
+    engine, state = start(data)
+
+    outcome = engine.execute(state, Action(verb="usa", target="leva", with_="candela"))
+
+    assert outcome.text == "Clac! Qualcosa cade ai tuoi piedi."
+
+
 # --- "usa X con Y" falls back on the other verbs ---------------------------------------------
 
 

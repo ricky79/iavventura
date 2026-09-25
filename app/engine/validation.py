@@ -51,9 +51,10 @@ def find_problems(world: World) -> list[str]:
             check_room(f"items.{item.id}.location", item.location)
 
     for rule in world.rules.values():
-        check_item(f"rules.{rule.id}.trigger.target", rule.trigger.target)
-        if rule.trigger.with_ is not None:
-            check_item(f"rules.{rule.id}.trigger.with", rule.trigger.with_)
+        for index, trigger in enumerate(rule.triggers):
+            check_item(f"rules.{rule.id}.trigger.{index}.target", trigger.target)
+            if trigger.with_ is not None:
+                check_item(f"rules.{rule.id}.trigger.{index}.with", trigger.with_)
         for index, effect in enumerate(rule.effects):
             path = f"rules.{rule.id}.effects.{index}"
             match effect:

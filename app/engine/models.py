@@ -235,9 +235,14 @@ class Trigger(_Frozen):
     with_: Id | None = Field(default=None, alias="with")
 
 
+def _one_means_a_list(value: Any) -> Any:
+    return [value] if isinstance(value, dict) else value
+
+
 class Rule(_Frozen):
     id: Id
-    trigger: Trigger
+    # Written `trigger` in YAML: one trigger, or a list of equivalent ways to solve the same puzzle.
+    triggers: Annotated[tuple[Trigger, ...], BeforeValidator(_one_means_a_list)] = Field(alias="trigger", min_length=1)
     when: Condition | None = None
     otherwise: Text | None = None
     effects: tuple[Effect, ...] = ()

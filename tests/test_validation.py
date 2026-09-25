@@ -43,11 +43,17 @@ BROKEN_WORLDS = {
     ),
     "trigger on unknown item": (
         lambda d: d["rules"]["usa_moneta"]["trigger"].update(target="specchio"),
-        ["rules.usa_moneta.trigger.target", "specchio"],
+        ["rules.usa_moneta.trigger.0.target", "specchio"],
     ),
     "trigger with unknown item": (
         lambda d: d["rules"]["usa_moneta"]["trigger"].update({"with": "specchio"}),
-        ["rules.usa_moneta.trigger.with", "specchio"],
+        ["rules.usa_moneta.trigger.0.with", "specchio"],
+    ),
+    "unknown item in the second trigger of a list": (
+        lambda d: d["rules"]["tira_leva"].update(
+            trigger=[{"verb": "tira", "target": "leva"}, {"verb": "spingi", "target": "leva", "with": "specchio"}]
+        ),
+        ["rules.tira_leva.trigger.1.with", "specchio"],
     ),
     "effect gives unknown item": (
         add_effect({"give": "spada"}),

@@ -112,6 +112,13 @@ rules:
 
 - `verb`: uno fra esamina, prendi, lascia, usa, apri, chiudi, spingi, tira, leggi.
 - `target` e `with` sono id di oggetti; `with` è facoltativo.
+- `trigger` può essere anche una **lista** di azioni equivalenti, quando lo stesso enigma si
+  risolve in più modi. Ciascuna fa scattare la regola:
+  ```yaml
+  trigger:
+    - {verb: usa, target: pozzo, with: corda_con_gancio}
+    - {verb: prendi, target: chiave_torre, with: corda_con_gancio}
+  ```
 - Una regola senza effetti è una semplice risposta. Serve per gli indizi, come calare nel pozzo
   la corda senza gancio.
 

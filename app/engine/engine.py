@@ -173,20 +173,23 @@ class Engine:
         return Outcome(ok=False, text=_NOTHING_WITHOUT_A_RULE.get(verb, NOTHING_HAPPENS))
 
     def _find_rule(self, action: Action) -> Rule | None:
-        """The first rule for this verb on exactly these items, in either order.
+        """The first rule with a trigger for this verb on exactly these items, in either order.
 
         "usa X con Y" is what players write for anything: without a rule of its own,
         it takes the first rule of any verb on the same two items (apri porta con chiave).
         """
         items = {action.target, action.with_} - {None}
         same_items = [
-            rule for rule in self.world.rules.values() if {rule.trigger.target, rule.trigger.with_} - {None} == items
+            (rule, trigger)
+            for rule in self.world.rules.values()
+            for trigger in rule.triggers
+            if {trigger.target, trigger.with_} - {None} == items
         ]
-        for rule in same_items:
-            if rule.trigger.verb == action.verb:
+        for rule, trigger in same_items:
+            if trigger.verb == action.verb:
                 return rule
         if action.verb is Verb.USE and action.with_ is not None and same_items:
-            return same_items[0]
+            return same_items[0][0]
         return None
 
     def _room_view(self, state: GameState, first_visit: bool) -> RoomView:

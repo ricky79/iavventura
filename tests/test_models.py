@@ -15,9 +15,10 @@ def test_minimal_world_parses_with_ids_taken_from_keys(world_data):
     assert world.items["chiave"].id == "chiave"
     assert world.rules["tira_leva"].id == "tira_leva"
     assert world.rooms["atrio"].exits[Direction.NORTH].to == "cella"
-    assert world.rules["usa_moneta"].trigger.verb is Verb.USE
-    assert world.rules["usa_moneta"].trigger.with_ == "moneta"
-    assert world.rules["tira_leva"].trigger.with_ is None
+    [use_coin] = world.rules["usa_moneta"].triggers
+    assert use_coin.verb is Verb.USE
+    assert use_coin.with_ == "moneta"
+    assert world.rules["tira_leva"].triggers[0].with_ is None
     assert world.items["chiave"].location is None
     assert world.items["leva"].scenery is True
     assert world.items["moneta"].scenery is False
@@ -63,7 +64,30 @@ def test_unknown_verb_is_rejected(world_data):
     with pytest.raises(ValidationError) as exc:
         World.model_validate(world_data)
 
-    assert "rules.usa_moneta.trigger.verb" in error_locations(exc.value)
+    assert "rules.usa_moneta.trigger.0.verb" in error_locations(exc.value)
+
+
+def test_a_rule_may_have_several_equivalent_triggers(world_data):
+    world_data["rules"]["tira_leva"]["trigger"] = [
+        {"verb": "tira", "target": "leva"},
+        {"verb": "spingi", "target": "leva", "with": "moneta"},
+    ]
+
+    triggers = World.model_validate(world_data).rules["tira_leva"].triggers
+
+    assert [(trigger.verb, trigger.target, trigger.with_) for trigger in triggers] == [
+        (Verb.PULL, "leva", None),
+        (Verb.PUSH, "leva", "moneta"),
+    ]
+
+
+def test_a_rule_needs_at_least_one_trigger(world_data):
+    world_data["rules"]["tira_leva"]["trigger"] = []
+
+    with pytest.raises(ValidationError) as exc:
+        World.model_validate(world_data)
+
+    assert "rules.tira_leva.trigger" in error_locations(exc.value)
 
 
 def test_empty_text_is_rejected(world_data):
