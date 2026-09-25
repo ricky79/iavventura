@@ -133,8 +133,9 @@ tests/
     dall'ultimo salvataggio: la partita ricomincia." Se sono cambiati solo i testi, si continua.
   - Stato non firmato: con un giocatore solo, barare non danneggia nessuno. Firma HMAC se il
     gioco diventerà pubblico.
-  - Pagina: console a fosfori verdi, una sola dimensione di carattere, riga di stato in video
-    invertito (stanza, mosse, «Nuova partita» con conferma nella pagina, niente `confirm()`).
+  - Pagina: console a fosfori (verdi o ambra), una sola dimensione di carattere, titolo sempre
+    visibile in alto, riga di stato in video invertito in fondo (stanza, mosse, colore,
+    «Nuova partita» con conferma nella pagina, niente `confirm()`).
   - Il web scrive il log dell'LLM in `logs/llm-web.log`; la disponibilità di Ollama si ricontrolla
     a ogni nuova partita.
   - `OLLAMA_URL` predefinito `http://127.0.0.1:11434`: con `localhost`, su Windows, ogni nuova

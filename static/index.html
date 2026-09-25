@@ -52,12 +52,26 @@
     text-shadow: 0 0 1px currentColor, 0 0 8px var(--glow);
   }
 
-  /* Status line in reverse video, like the adventures of the '80s: where you are, how many moves. */
+  /* The title stays on screen above the story, as games of the time opened:
+     same size as everything else, underlined with "=". */
+  .title {
+    width: 100%;
+    max-width: calc(var(--measure) + 2ch);
+    margin: 0 auto;
+    padding: max(1rem, env(safe-area-inset-top)) 1ch 0.5rem;
+    color: var(--bright);
+  }
+  .title h1, .title p { margin: 0; font: inherit; }
+
+  .intro p { color: var(--dim); }
+
+  /* Status line in reverse video at the foot of the screen, like the adventures of the '80s:
+     where you are, how many moves. */
   .status {
     display: flex;
     gap: 2ch;
     align-items: baseline;
-    padding: 0.25rem max(1ch, env(safe-area-inset-right)) 0.25rem max(1ch, env(safe-area-inset-left));
+    padding: 0.25rem max(1ch, env(safe-area-inset-right)) calc(0.25rem + env(safe-area-inset-bottom)) max(1ch, env(safe-area-inset-left));
     background: var(--bright);
     color: var(--glass);
     text-shadow: none;
@@ -66,11 +80,6 @@
   .status .moves { white-space: nowrap; }
   .status .controls { display: flex; gap: 2ch; align-items: baseline; white-space: nowrap; }
   .status .colors { display: flex; gap: 1ch; }
-
-  /* Title card, as games of the time opened: same size as everything else, underlined with "=". */
-  .title h1 { margin: 0; font: inherit; color: var(--bright); }
-  .title .rule { color: var(--bright); }
-  .title p { color: var(--dim); }
 
   .screen {
     flex: 1;
@@ -117,7 +126,7 @@
     display: flex;
     align-items: baseline;
     gap: 1ch;
-    padding: 0.5rem 1ch calc(1rem + env(safe-area-inset-bottom));
+    padding: 0.5rem 1ch 0.75rem;
   }
   .prompt label { color: var(--bright); }
   .prompt input {
@@ -163,6 +172,7 @@
 
   @media (max-width: 40rem) {
     :root { --size: 1rem; }
+    .title { padding-top: max(0.5rem, env(safe-area-inset-top)); }
     .screen { padding-top: 1rem; }
     /* Two status lines on a phone: where you are above, the controls below. */
     .status { flex-wrap: wrap; row-gap: 0.25rem; }
@@ -176,22 +186,13 @@
 </style>
 </head>
 <body>
-  <header class="status">
-    <span class="room" id="room"></span>
-    <span class="moves" id="moves"></span>
-    <span class="controls">
-      <span class="colors" role="group" aria-label="Colore del testo">
-        <button type="button" data-color-choice="green" aria-pressed="true">Verde</button>
-        <button type="button" data-color-choice="amber" aria-pressed="false">Ambra</button>
-      </span>
-      <button type="button" id="new-game">Nuova partita</button>
-    </span>
+  <header class="title">
+    <h1>I.A.vventura nel Castello</h1>
+    <p aria-hidden="true">=========================</p>
   </header>
 
   <main class="screen" id="screen">
-    <section class="transcript title">
-      <h1>I.A.vventura nel Castello</h1>
-      <p class="rule" aria-hidden="true">=========================</p>
+    <section class="transcript intro">
       <p>Liberamente ispirata ad «Avventura nel castello», l'avventura testuale di Enrico Colombini del 1982. Il castello, gli enigmi e i testi sono nuovi, e le tue frasi le capisce anche un'intelligenza artificiale.</p>
     </section>
     <div class="transcript" id="transcript" role="log" aria-live="polite"></div>
@@ -211,6 +212,18 @@
       <button type="button" id="keep">Continua</button>
     </span>
   </div>
+
+  <footer class="status">
+    <span class="room" id="room"></span>
+    <span class="moves" id="moves"></span>
+    <span class="controls">
+      <span class="colors" role="group" aria-label="Colore del testo">
+        <button type="button" data-color-choice="green" aria-pressed="true">Verde</button>
+        <button type="button" data-color-choice="amber" aria-pressed="false">Ambra</button>
+      </span>
+      <button type="button" id="new-game">Nuova partita</button>
+    </span>
+  </footer>
 
 <script>
 (() => {
@@ -302,7 +315,7 @@
       say("notice", "[Il server non risponde. Ricarica la pagina tra poco.]");
     }
     status();
-    screen.scrollTop = 0; // a new game opens on the title card and the intro
+    screen.scrollTop = 0; // a new game opens on the presentation and the intro
     input.focus();
   }
 
