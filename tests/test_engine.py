@@ -15,11 +15,12 @@ def data(world_data) -> dict:
     ]
     world_data["items"]["candela"] = {
         "name": "candela",
+        "gender": "f",
         "description": "Una candela spenta.",
         "location": "atrio",
         "variants": [{"when": {"flag": "candela_accesa"}, "text": "Una candela accesa."}],
     }
-    world_data["items"]["libro"] = {"name": "libro", "description": "Un libro.", "location": "cella"}
+    world_data["items"]["libro"] = {"name": "libro", "gender": "m", "description": "Un libro.", "location": "cella"}
     world_data["rules"]["usa_moneta"]["text"] = "La moneta tintinna contro la leva."
     return world_data
 

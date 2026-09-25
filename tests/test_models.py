@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.engine.models import Action, AllOf, Command, Direction, FlagSet, Has, Not, SetFlag, Verb, World
+from app.engine.models import Action, AllOf, Command, Direction, FlagSet, Gender, Has, Not, SetFlag, Verb, World
 
 
 def error_locations(exc: ValidationError) -> list[str]:
@@ -174,3 +174,31 @@ def test_malformed_actions_are_rejected(fields):
 def test_action_verbs_are_parsed_into_their_enums():
     assert Action(verb="vai", direction="giù").verb is Command.GO
     assert Action(verb="leggi", target="libro").verb is Verb.READ
+
+
+# --- Gender and number of items -------------------------------------------------
+
+
+def test_items_declare_gender_and_are_singular_by_default(world_data):
+    world = World.model_validate(world_data)
+
+    assert world.items["moneta"].gender is Gender.FEMININE
+    assert world.items["moneta"].plural is False
+
+
+def test_item_without_gender_is_rejected(world_data):
+    del world_data["items"]["leva"]["gender"]
+
+    with pytest.raises(ValidationError) as exc:
+        World.model_validate(world_data)
+
+    assert "items.leva.gender" in error_locations(exc.value)
+
+
+def test_unknown_gender_is_rejected(world_data):
+    world_data["items"]["leva"]["gender"] = "n"
+
+    with pytest.raises(ValidationError) as exc:
+        World.model_validate(world_data)
+
+    assert "items.leva.gender" in error_locations(exc.value)

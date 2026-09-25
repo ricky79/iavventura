@@ -32,18 +32,21 @@ def world_data() -> dict:
         "items": {
             "leva": {
                 "name": "leva",
+                "gender": "f",
                 "description": "Una leva arrugginita.",
                 "location": "atrio",
                 "scenery": True,
             },
             "moneta": {
                 "name": "moneta",
+                "gender": "f",
                 "aliases": ["soldo"],
                 "description": "Una moneta consumata.",
                 "location": "inventory",
             },
             "chiave": {
                 "name": "chiave",
+                "gender": "f",
                 "description": "Una chiave piccola.",
                 "location": None,
             },

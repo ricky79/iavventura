@@ -57,6 +57,13 @@ class Command(StrEnum):
     INVENTORY = "inventario"
 
 
+class Gender(StrEnum):
+    """Grammatical gender of an item's name: it chooses the article (la corda, il gancio)."""
+
+    MASCULINE = "m"
+    FEMININE = "f"
+
+
 class _Frozen(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, validate_by_name=True, validate_by_alias=True)
 
@@ -211,6 +218,8 @@ class Room(_Frozen):
 class Item(_Frozen):
     id: Id
     name: Text
+    gender: Gender
+    plural: bool = False
     aliases: tuple[Text, ...] = ()
     description: Text
     # A room id, INVENTORY, or None when the item enters play only through an effect.

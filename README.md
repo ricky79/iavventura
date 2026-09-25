@@ -7,10 +7,10 @@ deterministico tiene le regole del gioco.
 
 Il castello, gli enigmi e i personaggi sono originali.
 
-> **Stato:** in sviluppo. Sono pronte la **fase 1** (formato del mondo in YAML, modelli
-> Pydantic, caricamento con validazione e un castello di esempio) e la **fase 2** (il motore di
-> gioco). Il castello si può già giocare fino alla fine, ma solo dai test: parser, LLM e
-> interfaccia web arriveranno nelle prossime fasi.
+> **Stato:** in sviluppo. Sono pronte le prime tre fasi: formato del mondo in YAML, motore di
+> gioco, parser dei comandi semplici con testo fisso. Il castello **si gioca già dal
+> terminale** con comandi semplici; l'LLM (per le frasi libere e la narrazione) e
+> l'interfaccia web arriveranno nelle prossime fasi.
 
 ## Come funziona
 
@@ -73,7 +73,29 @@ python3.12 -m venv .venv
 .venv/bin/python -m pip install "pydantic>=2.11" "pyyaml>=6" "pytest>=8"
 ```
 
-## Uso
+## Come si gioca
+
+Dal terminale, nella cartella del progetto:
+
+```powershell
+.venv\Scripts\python -m app.cli
+```
+
+Per ora il gioco capisce comandi semplici, con o senza articoli:
+
+| Per… | Scrivi |
+|---|---|
+| muoverti | `nord`, `sud`, `est`, `ovest`, `su`, `giù` (anche `n`, `s`, `e`, `o`, `vai a nord`) |
+| guardarti intorno | `guarda` |
+| vedere cosa porti | `inventario` (anche `i`) |
+| agire sugli oggetti | `esamina X` (anche `x X`), `prendi X`, `lascia X`, `apri X`, `chiudi X`, `leggi X`, `spingi X`, `tira X` |
+| combinare due oggetti | `usa X con Y`, `apri X con Y` |
+| aiuto / terminare | `aiuto` / `fine` |
+
+Le frasi più libere ("prova a sfondare il portone") per ora ricevono "Non ho capito.": se ne
+occuperà l'LLM nella fase 4.
+
+## Sviluppo
 
 Eseguire i test:
 
@@ -98,6 +120,9 @@ app/
     loader.py       # lettura dei file YAML e validazione
     validation.py   # controlli incrociati (riferimenti, flag, raggiungibilità)
     engine.py       # il motore: esegue le azioni e aggiorna lo stato
+    parser.py       # comandi semplici in italiano -> azioni
+    text.py         # articoli e testo fisso degli esiti
+  cli.py            # la partita nel terminale
 data/world/         # il castello di esempio
 docs/               # documentazione del formato e delle regole
 tests/              # test pytest
@@ -107,7 +132,7 @@ tests/              # test pytest
 
 1. ~~Formato del mondo, modelli e castello di esempio~~
 2. ~~Motore di gioco: esecuzione delle azioni, regole e condizioni~~
-3. Parser classico dei comandi semplici
+3. ~~Parser classico dei comandi semplici, testo fisso e gioco da terminale~~
 4. LLM interprete e narratore (Ollama)
 5. Interfaccia web in stile console retrò, con streaming
 6. Personaggi e dialoghi
