@@ -1,11 +1,12 @@
-# Avventura nel castello
+# I.A.vventura nel Castello
 
 Un'avventura testuale in stile anni '80/'90, ambientata in un castello e giocabile dal browser.
 Si gioca scrivendo in italiano naturale ("prendi la corda", "cala il secchio nel pozzo"):
 un modello linguistico locale capisce le frasi, mentre un motore deterministico tiene le
 regole del gioco e tutti i testi sono scritti a mano.
 
-Il castello, gli enigmi e i personaggi sono originali.
+Liberamente ispirata ad «Avventura nel castello», l'avventura testuale di Enrico Colombini del
+1982. Il castello, gli enigmi e i testi sono originali.
 
 > **Stato:** in sviluppo. Sono pronte le prime cinque fasi: formato del mondo in YAML, motore
 > di gioco, parser dei comandi semplici con testo fisso, LLM che interpreta le frasi libere,
@@ -84,6 +85,8 @@ La partita si salva da sola nel browser (`localStorage`): ricaricando la pagina 
 eri. Il server non tiene nessuna partita, quindi riavviarlo non perde niente; ogni browser ha la
 sua. «Nuova partita», nella riga in alto, ricomincia da capo dopo una conferma. Se nel frattempo
 il mondo è cambiato (stanze o oggetti diversi nei file YAML), la partita salvata ricomincia.
+Sempre nella riga in alto scegli il colore dello schermo, fosfori verdi o ambra, come i monitor
+dell'epoca; la scelta resta anche per le partite successive.
 
 **Nel terminale**:
 

@@ -4,7 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>Avventura nel castello</title>
+<title>I.A.vventura nel Castello</title>
+<script>
+  // The chosen phosphor, set before the page is drawn so it never flashes green first.
+  try {
+    if (localStorage.getItem("castle-adventure.color") === "amber") document.documentElement.dataset.color = "amber";
+  } catch { /* storage disabled: green */ }
+</script>
 <style>
   /* A monochrome terminal: one phosphor at three intensities, one type size.
      Hierarchy comes from intensity and reverse video, as on the real thing. */
@@ -18,6 +24,15 @@
     --size: 1.125rem;
     --line: 1.5;
     --measure: 72ch;           /* a nod to the 80-column screen */
+  }
+
+  /* The other monitor of the time: amber phosphor, on warmer glass. */
+  :root[data-color="amber"] {
+    --glass: #120b03;
+    --phosphor: #ffb23e;
+    --bright: #ffe2ad;
+    --dim: #a8701c;
+    --glow: rgba(255, 178, 62, 0.35);
   }
 
   * { box-sizing: border-box; }
@@ -49,6 +64,13 @@
   }
   .status .room { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .status .moves { white-space: nowrap; }
+  .status .controls { display: flex; gap: 2ch; align-items: baseline; white-space: nowrap; }
+  .status .colors { display: flex; gap: 1ch; }
+
+  /* Title card, as games of the time opened: same size as everything else, underlined with "=". */
+  .title h1 { margin: 0; font: inherit; color: var(--bright); }
+  .title .rule { color: var(--bright); }
+  .title p { color: var(--dim); }
 
   .screen {
     flex: 1;
@@ -133,11 +155,18 @@
   button:hover, button:focus-visible { background: var(--bright); color: var(--glass); text-shadow: none; }
   .status button { color: var(--glass); text-decoration: underline; text-underline-offset: 0.2em; }
   .status button:hover, .status button:focus-visible { background: var(--glass); color: var(--bright); }
+  /* The phosphor in use is shown in reverse video; the other one is only underlined on hover. */
+  .status .colors button { text-decoration: none; }
+  .status .colors button[aria-pressed="true"] { background: var(--glass); color: var(--bright); }
+  .status .colors button[aria-pressed="false"]:hover { background: transparent; color: var(--glass); text-decoration: underline; }
   :focus-visible { outline: 1px dashed var(--bright); outline-offset: 2px; }
 
   @media (max-width: 40rem) {
     :root { --size: 1rem; }
     .screen { padding-top: 1rem; }
+    /* Two status lines on a phone: where you are above, the controls below. */
+    .status { flex-wrap: wrap; row-gap: 0.25rem; }
+    .status .controls { flex-basis: 100%; justify-content: space-between; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -150,10 +179,21 @@
   <header class="status">
     <span class="room" id="room"></span>
     <span class="moves" id="moves"></span>
-    <button type="button" id="new-game">Nuova partita</button>
+    <span class="controls">
+      <span class="colors" role="group" aria-label="Colore del testo">
+        <button type="button" data-color-choice="green" aria-pressed="true">Verde</button>
+        <button type="button" data-color-choice="amber" aria-pressed="false">Ambra</button>
+      </span>
+      <button type="button" id="new-game">Nuova partita</button>
+    </span>
   </header>
 
   <main class="screen" id="screen">
+    <section class="transcript title">
+      <h1>I.A.vventura nel Castello</h1>
+      <p class="rule" aria-hidden="true">=========================</p>
+      <p>Liberamente ispirata ad «Avventura nel castello», l'avventura testuale di Enrico Colombini del 1982. Il castello, gli enigmi e i testi sono nuovi, e le tue frasi le capisce anche un'intelligenza artificiale.</p>
+    </section>
     <div class="transcript" id="transcript" role="log" aria-live="polite"></div>
     <p class="transcript waiting" id="waiting" hidden aria-label="Attendi"><span>.</span><span>.</span><span>.</span></p>
   </main>
@@ -262,15 +302,16 @@
       say("notice", "[Il server non risponde. Ricarica la pagina tra poco.]");
     }
     status();
-    scrollToEnd();
+    screen.scrollTop = 0; // a new game opens on the title card and the intro
     input.focus();
   }
 
   async function play(line) {
     say("typed", line);
     scrollToEnd();
+    let reply = null;
     try {
-      const reply = await withWaiting(() => post("/api/turn", { line, state: save.state }));
+      reply = await withWaiting(() => post("/api/turn", { line, state: save.state }));
       if (reply.restarted) {
         transcript.replaceChildren();
         save.lines = [];
@@ -287,7 +328,8 @@
       input.value = line;
     }
     status();
-    scrollToEnd();
+    if (reply?.restarted) screen.scrollTop = 0;
+    else scrollToEnd();
     input.focus();
   }
 
@@ -310,6 +352,21 @@
   $("keep").addEventListener("click", () => askRestart(false));
   $("restart").addEventListener("click", () => { askRestart(false); newGame(); });
   confirmBar.addEventListener("keydown", (event) => { if (event.key === "Escape") askRestart(false); });
+
+  // Green or amber: kept apart from the game, so a new game doesn't change it.
+  const COLOR_KEY = "castle-adventure.color";
+  const colorButtons = document.querySelectorAll("[data-color-choice]");
+  function showColor(color) {
+    for (const button of colorButtons) button.setAttribute("aria-pressed", String(button.dataset.colorChoice === color));
+  }
+  function setColor(color) {
+    if (color === "amber") document.documentElement.dataset.color = "amber";
+    else delete document.documentElement.dataset.color;
+    showColor(color);
+    try { localStorage.setItem(COLOR_KEY, color); } catch { /* not remembered, still applied */ }
+  }
+  for (const button of colorButtons) button.addEventListener("click", () => setColor(button.dataset.colorChoice));
+  showColor(document.documentElement.dataset.color === "amber" ? "amber" : "green");
 
   const saved = load();
   if (saved) {
