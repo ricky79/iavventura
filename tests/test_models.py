@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.engine.models import AllOf, Direction, FlagSet, Has, Not, SetFlag, Verb, World
+from app.engine.models import Action, AllOf, Command, Direction, FlagSet, Has, Not, SetFlag, Verb, World
 
 
 def error_locations(exc: ValidationError) -> list[str]:
@@ -133,3 +133,44 @@ def test_game_needs_at_least_one_ending(world_data):
         World.model_validate(world_data)
 
     assert "game.endings" in error_locations(exc.value)
+
+
+# --- Action -------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"verb": "vai", "direction": "nord"},
+        {"verb": "guarda"},
+        {"verb": "inventario"},
+        {"verb": "prendi", "target": "moneta"},
+        {"verb": "usa", "target": "moneta", "with": "leva"},
+    ],
+)
+def test_well_formed_actions_are_accepted(fields):
+    Action.model_validate(fields)
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"verb": "vai"},
+        {"verb": "vai", "direction": "nord", "target": "moneta"},
+        {"verb": "guarda", "target": "leva"},
+        {"verb": "inventario", "direction": "sud"},
+        {"verb": "prendi"},
+        {"verb": "prendi", "with": "moneta"},
+        {"verb": "esamina", "target": "leva", "direction": "nord"},
+        {"verb": "usa", "target": "moneta", "with": "moneta"},
+        {"verb": "salta"},
+    ],
+)
+def test_malformed_actions_are_rejected(fields):
+    with pytest.raises(ValidationError):
+        Action.model_validate(fields)
+
+
+def test_action_verbs_are_parsed_into_their_enums():
+    assert Action(verb="vai", direction="giù").verb is Command.GO
+    assert Action(verb="leggi", target="libro").verb is Verb.READ

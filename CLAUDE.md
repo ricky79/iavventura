@@ -82,11 +82,19 @@ tests/
   successiva. Per ora il formato del mondo non li prevede; andranno aggiunti con il loro profilo
   (cosa sanno, cosa possono rivelare) quando lavoreremo sui dialoghi.
 
+- **Motore di gioco** (fase 2, 2026-09-25): `Engine` in `app/engine/engine.py`.
+  - Schema dell'Azione (`Action` in `models.py`): un solo modello piatto `verb`, `target`,
+    `with`, `direction`, con gli **id** degli oggetti. `verb` è un `Verb` (verbi sugli oggetti,
+    a cui reagiscono le regole) o un `Command` (`vai`, `guarda`, `inventario`).
+    Da nomi e alias agli id ci pensa il parser (fase 3), usando `Engine.in_reach`.
+  - `usa X con Y` senza una regola `usa` ricade sulla prima regola di qualunque verbo sugli
+    stessi due oggetti.
+  - I messaggi del motore non nominano l'oggetto ("Fatto.", "Non si può prendere."): articoli e
+    genere si decidono nella fase 3, insieme al testo di stanze e inventario.
+  - Regole e comportamento predefinito dei verbi: in `docs/formato-mondo.md`.
+
 ## Decisioni ancora aperte
-- Schema dell'Azione: verbi supportati e parametri. Per ora le regole usano l'enum
-  provvisorio `Verb` in `app/engine/models.py`.
-- Se `usa X con Y` debba far scattare anche le regole di altri verbi sugli stessi oggetti
-  (es. `apri porta_torre con chiave_torre`): da decidere con il motore.
+- Articoli e genere degli oggetti, per scrivere "Qui vedi una corda" (fase 3).
 - Hosting pubblico (es. PC di casa + Cloudflare Tunnel) — non prioritario.
 
 ## Comandi utili

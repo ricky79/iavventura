@@ -36,7 +36,7 @@ class Direction(StrEnum):
 
 
 class Verb(StrEnum):
-    """Verbs a rule can react to. Provisional: the Action schema comes with the engine."""
+    """Verbs on items: rules react to them, otherwise the engine applies a default behaviour."""
 
     EXAMINE = "esamina"
     TAKE = "prendi"
@@ -47,6 +47,14 @@ class Verb(StrEnum):
     PUSH = "spingi"
     PULL = "tira"
     READ = "leggi"
+
+
+class Command(StrEnum):
+    """Verbs without items: the engine handles them itself and rules can't react to them."""
+
+    GO = "vai"
+    LOOK = "guarda"
+    INVENTORY = "inventario"
 
 
 class _Frozen(BaseModel):
@@ -297,3 +305,55 @@ class GameState(BaseModel):
             item_locations={item.id: item.location for item in world.items.values()},
             visited={world.game.start_room},
         )
+
+
+# --- Actions and outcomes -----------------------------------------------------
+
+
+class Action(_Frozen):
+    """What the player wants to do, with items already resolved to ids (by the parser or the LLM)."""
+
+    verb: Verb | Command
+    target: Id | None = None
+    with_: Id | None = Field(default=None, alias="with")
+    direction: Direction | None = None
+
+    @model_validator(mode="after")
+    def _fields_fit_the_verb(self) -> "Action":
+        if self.verb is Command.GO:
+            if self.direction is None or self.target is not None or self.with_ is not None:
+                raise ValueError("'vai' needs a direction and no items")
+        elif isinstance(self.verb, Command):
+            if self.direction is not None or self.target is not None or self.with_ is not None:
+                raise ValueError(f"'{self.verb}' takes neither items nor a direction")
+        else:
+            if self.target is None or self.direction is not None:
+                raise ValueError(f"'{self.verb}' needs a target and no direction")
+            if self.with_ == self.target:
+                raise ValueError("target and with must be two different items")
+        return self
+
+
+class RoomView(_Frozen):
+    """The room as the player sees it now: description variant chosen, only portable items listed."""
+
+    id: Id
+    name: Text
+    description: Text
+    items: tuple[Id, ...]
+    exits: tuple[Direction, ...]
+    first_visit: bool
+
+
+class Outcome(_Frozen):
+    """What an action produced, for the narrator: the engine has already applied it to the state."""
+
+    # False when the engine refused the action or nothing reacted to it; the state is then unchanged.
+    ok: bool
+    # Rule text, item description or engine message.
+    text: Text | None = None
+    # Set when the player enters a room, looks around, or starts the game.
+    room: RoomView | None = None
+    inventory: tuple[Id, ...] | None = None
+    # Set on the action that ends the game.
+    ending: Text | None = None
