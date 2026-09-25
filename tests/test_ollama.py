@@ -54,6 +54,9 @@ CASES = [
     ("cucina", (), "raccogli quel vecchio gancio", lambda o, s: s.item_locations["gancio"] == "inventory"),
     ("scuderia", ("gancio",), "lega la corda al gancio", lambda o, s: o.text == RULE["lega_gancio"]),
     ("cortile", ("corda_con_gancio",), "cala il rampino giù nel pozzo", lambda o, s: o.text == RULE["pesca_chiave"]),
+    # Found while playing: "butta" and "getta" come back as "lascia" with both items.
+    ("cortile", ("corda_con_gancio",), "butta il rampino nel pozzo", lambda o, s: o.text == RULE["pesca_chiave"]),
+    ("cortile", ("corda_con_gancio",), "getta il rampino nel pozzo", lambda o, s: o.text == RULE["pesca_chiave"]),
     ("cortile", ("chiave_torre",), "provo ad aprire la porta usando la chiave", lambda o, s: o.text == RULE["apri_torre"]),
     ("cortile", (), "dai un'occhiata al pozzo", lambda o, s: o.text == CASTLE.items["pozzo"].description),
     ("cortile", (), "torna verso ovest", lambda o, s: s.current_room == "cucina"),
@@ -105,12 +108,20 @@ def test_small_talk_is_not_understood(llm, sentence):
     assert isinstance(interpret(llm, sentence, near(engine, state), engine.known_exits(state)), NotUnderstood)
 
 
-def test_an_unknown_place_does_not_move_the_player(llm):
-    engine, state = game_in("cortile")
+@pytest.mark.parametrize(
+    ("room", "sentence"),
+    [
+        ("cortile", "vado nella cantina"),
+        # Found while playing: the kitchen is past the courtyard, and the model answers "ovest".
+        ("scuderia", "vai in cucina"),
+    ],
+)
+def test_a_place_that_is_not_an_exit_does_not_move_the_player(llm, room, sentence):
+    engine, state = game_in(room)
     game = Game(engine, llm, state=state)
 
-    answer = game.turn("vado nella cantina")
-    print(f"\n  'vado nella cantina' -> {answer!r}")
+    answer = game.turn(sentence)
+    print(f"\n  {sentence!r} -> {answer!r}")
 
-    assert state.current_room == "cortile"
+    assert state.current_room == room
 

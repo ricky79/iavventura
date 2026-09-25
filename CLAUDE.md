@@ -208,7 +208,7 @@ ollama pull qwen2.5:3b
   Con la parte fissa del prompt in testa, Ollama la tiene in cache (dal log: ~460 token su ~470
   già in cache): il grosso del tempo è generare i 25-30 token della risposta JSON.
 - Interprete (fase 4): 4-7 s per frase; la prima chiamata 15-20 s (caricamento del modello,
-  poi tenuto in memoria con `keep_alive: 30m`). `tests/test_ollama.py`: 16 su 16.
+  poi tenuto in memoria con `keep_alive: 30m`). `tests/test_ollama.py`: 19 su 19.
   - Output strutturato con `format` (schema JSON), `temperature: 0`, `num_predict: 60`, `num_ctx: 2048`.
   - Campi: `verbo`, `bersaglio` (su cosa si agisce; per "vai" la direzione), `con` (cosa si usa;
     "nessuno" se assente). Enum generati a ogni turno: verbi del motore + `altro` (non è
@@ -222,9 +222,14 @@ ollama pull qwen2.5:3b
     modello ripiega su un oggetto a caso, spesso il portone, anche con la chiave nell'enum.
     Aggiungere istruzioni non aiutava; un esempio generico (baule e monete) nemmeno. L'esempio
     del rampino ripara la frase e le sue varianti.
+  - "butta/getta il rampino nel pozzo": il modello risponde `lascia` con i due oggetti giusti,
+    anche spostando "buttare" sotto `usa` nel glossario (e "lancia la corda nel pozzo"
+    peggiorava). Ripara l'interprete: `lascia X con Y` diventa `usa X con Y`, perché buttare una
+    cosa in un'altra è usarle insieme. "vai in cucina" dalla scuderia (la cucina è oltre il
+    cortile) diventa "ovest": lo ferma la conferma sugli spostamenti.
   - Il modello è fragile: ogni riga in più nel prompt sposta altri casi. Con l'esempio del rampino
     (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
     sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
     invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
-    `tests/test_ollama.py` (oggi 16 su 16, ~85 s).
+    `tests/test_ollama.py` (oggi 19 su 19, ~110 s).
 - Narratore: provato e scartato (vedi sopra), anche con temperatura 0.2 e senza descrizioni.
