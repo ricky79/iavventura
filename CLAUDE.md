@@ -19,6 +19,7 @@ Il castello, gli enigmi e i personaggi sono **originali**: non copiare contenuti
 input giocatore
   → parser classico (comandi semplici: "nord", "prendi X", "inventario")
   → se non riconosciuto: LLM interprete → Azione (JSON), mostrata al giocatore tra parentesi
+    (se il mondo non la prevede: "Vuoi usare X con Y?" e si esegue solo dopo un sì)
   → motore: valida ed esegue → Esito
   → testo fisso (app/engine/text.py)
 ```
@@ -39,12 +40,17 @@ input giocatore
   - `FakeLLMClient` (risposte predefinite, per i test)
   - `OpenAICompatibleClient` (per provider esterni): rimandato a quando ne sceglieremo uno.
 - Configurazione via variabili d'ambiente (`app/config.py`): `LLM` (ollama | off), `OLLAMA_URL`,
-  `LLM_MODEL`, `LLM_LOG`. Se Ollama non risponde, il gioco avvisa e prosegue con i soli comandi
-  semplici.
+  `LLM_MODEL`, `LLM_LOG`, `COMMAND_LOG`. Se Ollama non risponde, il gioco avvisa e prosegue con i
+  soli comandi semplici.
 - Log delle chiamate (logger `app.llm`): il terminale lo scrive in `logs/llm.log` (esclusa da
   git; `LLM_LOG=off` per spegnerlo). Per ogni chiamata: messaggio inviato (`>>>`), risposta
   grezza (`<<<`), tempo e token di Ollama (anche quelli in cache), azione risultante o motivo del
   "non capito" (`===`). Il prompt di sistema solo quando cambia; lo schema mai.
+- Log dei comandi andati male (logger `app.commands`): `logs/comandi.jsonl`, un oggetto JSON per
+  riga, per terminale e web insieme (`COMMAND_LOG=off` per spegnerlo). Una riga per ogni frase non
+  capita, "altro", azione rifiutata dal motore o richiesta di conferma, con ora, origine, stanza,
+  frase, `da` (parser | llm), azione (con gli id), esito e dettaglio. Serve a trovare le frasi da
+  sistemare.
 
 ### Vincoli dovuti alla CPU
 - Prompt **corti**: passa solo gli oggetti a portata (con i loro alias), mai il mondo intero.
@@ -84,6 +90,8 @@ tests/
 - Codice e identificatori in inglese; testi di gioco, prompt e commenti rivolti al giocatore in italiano.
 - Il motore non importa nulla da `llm/`: deve essere testabile senza modello.
 - Ogni regola o enigma nuovo va accompagnato da un test sul motore.
+- Una frase libera che il modello sbaglia giocando diventa un caso di `tests/test_ollama.py`,
+  con il test sul client finto accanto (`tests/test_interpreter.py` o `tests/test_game.py`).
 - Nessun costo di infrastruttura: niente servizi a pagamento senza chiedere.
 
 ## Decisioni prese
@@ -141,6 +149,33 @@ tests/
   - `OLLAMA_URL` predefinito `http://127.0.0.1:11434`: con `localhost`, su Windows, ogni nuova
     connessione costava ~2 s (prova prima IPv6).
 
+- **Interprete più robusto** (2026-09-25, dopo il bug del rampino: "usa il rampino per
+  recuperare la chiave dal pozzo" diventava "usa il portone"). Il pozzo era nell'enum: la causa era
+  la frase con lo scopo, che il modello da 3B non sa agganciare all'oggetto giusto.
+  - **Più soluzioni per un enigma**: `trigger` di una regola può essere una lista di azioni
+    equivalenti (`pesca_chiave`: "usa pozzo con corda con gancio" e "prendi chiave con corda con
+    gancio").
+  - **Oggetti in vista ma non a portata**: campo `visible_from: {room, when}` (la chiave in fondo al
+    pozzo). Parser e interprete li ricevono dopo quelli a portata (`Engine.visible`); solo le regole
+    agiscono su di loro, senza regola "Non ci arrivi.".
+  - **Alias**: c'erano già (`aliases`, anche per gli arredi, che sono oggetti con `scenery: true`),
+    mostrati al modello tra parentesi e riconosciuti dal parser.
+  - **"altro"**: il modello lo sceglie quando la frase non è un'azione di gioco; lo stato non cambia
+    e il gioco risponde con un testo fisso ("Non sembra un'azione del gioco. Scrivi «aiuto»…"),
+    non con un narratore. L'interprete restituisce l'`Action` oppure `NotUnderstood` col motivo.
+  - **Conferma**: un'azione interpretata dall'LLM che il mondo non prevede (`Engine.expects`:
+    nessuna regola, e non è esamina/prendi/lascia senza strumento) non si esegue, il gioco chiede
+    "Vuoi usare la corda con gancio con il portone?". Anche uno spostamento interpretato che la
+    frase non nomina (né direzione né stanza): "vado in cantina" → "Vuoi andare a ovest?".
+    "sì"/"certo"/"ok" eseguono, "no" annulla, altro è un comando nuovo ("s" e "n" restano sud e
+    nord). Le azioni del parser non chiedono mai conferma: il giocatore ha scritto proprio quello.
+  - **Azione in sospeso**: `Game.pending`; nel web viaggia accanto allo stato (campo `pending` di
+    richiesta e risposta, tenuto dal browser), non dentro `GameState`, che resta solo del motore.
+    Lo stesso meccanismo potrà servire a rispondere a "Quale intendi: …?".
+  - **Esempio nel prompt**: la frase del rampino, in fondo agli esempi (vedi i risultati sotto).
+    Lega il prompt fisso alla Rocca: quando ci sarà un secondo mondo, gli esempi andranno nel suo
+    YAML.
+
 ## Decisioni ancora aperte
 - Dialoghi con i personaggi: senza narratore LLM, le risposte saranno testi d'autore (l'LLM
   potrebbe solo scegliere l'argomento), oppure servirà un modello più capace.
@@ -169,16 +204,23 @@ ollama pull qwen2.5:3b
   Con la parte fissa del prompt in testa, Ollama la tiene in cache (dal log: ~460 token su ~470
   già in cache): il grosso del tempo è generare i 25-30 token della risposta JSON.
 - Interprete (fase 4): 4-7 s per frase; la prima chiamata 15-20 s (caricamento del modello,
-  poi tenuto in memoria con `keep_alive: 30m`). `tests/test_ollama.py`: 10 su 10.
+  poi tenuto in memoria con `keep_alive: 30m`). `tests/test_ollama.py`: 16 su 16.
   - Output strutturato con `format` (schema JSON), `temperature: 0`, `num_predict: 60`, `num_ctx: 2048`.
   - Campi: `verbo`, `bersaglio` (su cosa si agisce; per "vai" la direzione), `con` (cosa si usa;
     "nessuno" se assente). Enum generati a ogni turno: verbi del motore + `altro` (non è
-    un'azione); nomi degli oggetti a portata + direzioni + `nessuno`.
+    un'azione); nomi degli oggetti a portata o in vista + direzioni + `nessuno`.
   - Nel prompt: glossario dei verbi (senza, il modello usava "usa" per quasi tutto), oggetti con
-    gli alias tra parentesi (senza, confondeva "porta" con "portone"), quattro esempi.
+    gli alias tra parentesi (senza, confondeva "porta" con "portone"), esempi su un mondo
+    inventato, più quello del rampino in fondo.
   - Scambiare bersaglio e strumento non è un problema: le regole accettano i due oggetti in
     qualunque ordine.
-  - Limite noto: una frase con lo scopo ("cala il rampino nel pozzo per ripescare la chiave") può
-    confondere il modello; la stessa frase senza lo scopo funziona. Aggiungere istruzioni al
-    prompt non ha aiutato.
+  - Frasi con lo scopo ("usa il rampino per recuperare la chiave dal pozzo"): senza esempio il
+    modello ripiega su un oggetto a caso, spesso il portone, anche con la chiave nell'enum.
+    Aggiungere istruzioni non aiutava; un esempio generico (baule e monete) nemmeno. L'esempio
+    del rampino ripara la frase e le sue varianti.
+  - Il modello è fragile: ogni riga in più nel prompt sposta altri casi. Con l'esempio del rampino
+    (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
+    sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
+    invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
+    `tests/test_ollama.py` (oggi 16 su 16, ~85 s).
 - Narratore: provato e scartato (vedi sopra), anche con temperatura 0.2 e senza descrizioni.
