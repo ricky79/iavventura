@@ -1,13 +1,14 @@
-"""Invariants of the sample castle's puzzle: they fail if a data change opens a shortcut.
+"""The sample castle: invariants of its puzzle, then the game played through the engine.
 
-Chain: gancio + corda -> corda_con_gancio -> fish chiave_torre out of the well
--> open the tower door -> entering the tower ends the game.
+The invariants fail if a data change opens a shortcut. Chain: gancio + corda -> corda_con_gancio
+-> fish chiave_torre out of the well -> open the tower door -> entering the tower ends the game.
 """
 
 import pytest
 
+from app.engine.engine import Engine
 from app.engine.loader import load_world
-from app.engine.models import FlagSet, Give, Place, PlayerIn, Remove, Rule, SetFlag, World
+from app.engine.models import Action, FlagSet, GameState, Give, Place, PlayerIn, Remove, Rule, SetFlag, World
 
 
 @pytest.fixture(scope="module")
@@ -70,3 +71,76 @@ def test_tower_opens_only_with_the_key(castle):
 
 def test_entering_the_tower_ends_the_game(castle):
     assert any(ending.when == PlayerIn(player_in="torre") for ending in castle.game.endings)
+
+
+# --- Playing through the engine -------------------------------------------------
+
+UP_TO_THE_KEY = [
+    Action(verb="vai", direction="ovest"),
+    Action(verb="prendi", target="gancio"),
+    Action(verb="vai", direction="est"),
+    Action(verb="vai", direction="est"),
+    Action(verb="prendi", target="corda"),
+    Action(verb="usa", target="corda", with_="gancio"),
+    Action(verb="vai", direction="ovest"),
+    Action(verb="usa", target="pozzo", with_="corda_con_gancio"),
+]
+
+
+def play(engine: Engine, state: GameState, actions: list[Action]) -> None:
+    for action in actions:
+        outcome = engine.execute(state, action)
+        assert outcome.ok, f"{action} was refused: {outcome.text}"
+
+
+def test_whole_game_can_be_played_to_the_end(castle):
+    engine = Engine(castle)
+    state, intro = engine.new_game()
+    assert intro.room.id == "cortile"
+
+    locked = engine.execute(state, Action(verb="vai", direction="nord"))
+    assert not locked.ok
+    assert locked.text == "La porta della torre è chiusa a chiave."
+
+    play(engine, state, UP_TO_THE_KEY)
+    assert engine.execute(state, Action(verb="inventario")).inventory == ("corda_con_gancio", "chiave_torre")
+
+    play(engine, state, [Action(verb="apri", target="porta_torre", with_="chiave_torre")])
+    last = engine.execute(state, Action(verb="vai", direction="nord"))
+
+    assert last.room.id == "torre"
+    assert last.ending == castle.game.endings[0].text
+    assert state.finished
+
+
+def test_one_piece_alone_only_gives_a_hint(castle):
+    engine = Engine(castle)
+    state, _ = engine.new_game()
+    play(engine, state, UP_TO_THE_KEY[:2] + [Action(verb="vai", direction="est")])
+
+    hint = engine.execute(state, Action(verb="usa", target="gancio", with_="pozzo"))
+
+    assert hint.text == castle.rules["cala_gancio"].text
+    assert state.item_locations["chiave_torre"] is None
+
+
+def test_the_key_can_be_fished_out_only_once(castle):
+    engine = Engine(castle)
+    state, _ = engine.new_game()
+    play(engine, state, UP_TO_THE_KEY)
+
+    again = engine.execute(state, Action(verb="usa", target="pozzo", with_="corda_con_gancio"))
+
+    assert not again.ok
+    assert again.text == castle.rules["pesca_chiave"].otherwise
+
+
+def test_using_the_key_on_the_door_opens_it_too(castle):
+    engine = Engine(castle)
+    state, _ = engine.new_game()
+    play(engine, state, UP_TO_THE_KEY)
+
+    opened = engine.execute(state, Action(verb="usa", target="chiave_torre", with_="porta_torre"))
+
+    assert opened.text == castle.rules["apri_torre"].text
+    assert "torre_aperta" in state.flags

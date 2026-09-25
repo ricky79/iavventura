@@ -89,18 +89,36 @@ rules:
     text: Testo dell'esito.
 ```
 
-- `verb`: uno fra esamina, prendi, lascia, usa, apri, chiudi, spingi, tira, leggi
-  (elenco provvisorio, da confermare con lo schema dell'Azione).
+- `verb`: uno fra esamina, prendi, lascia, usa, apri, chiudi, spingi, tira, leggi.
 - `target` e `with` sono id di oggetti; `with` è facoltativo.
 - Una regola senza effetti è una semplice risposta. Serve per gli indizi, come calare nel pozzo
   la corda senza gancio.
 
-**Come le userà il motore** (fase 2, da confermare quando lo scriveremo):
+**Come le usa il motore:**
+- gli oggetti dell'azione devono essere a portata, cioè nell'inventario o nella stanza (arredi
+  compresi); altrimenti il motore risponde "Non vedi niente del genere qui.";
 - `target` e `with` valgono in qualunque ordine: "usa corda con gancio" = "usa gancio con corda";
-- una regola senza `with` scatta solo per azioni senza strumento;
-- gli oggetti del trigger devono essere a portata: nell'inventario o nella stanza;
-- vale la prima regola che corrisponde. Se il suo `when` è falso si mostra `otherwise`, oppure
-  una risposta generica del motore.
+- una regola senza `with` scatta solo per azioni senza strumento, e viceversa;
+- vale la prima regola che corrisponde, nell'ordine dei file. Se il suo `when` è falso si mostra
+  `otherwise` (oppure "Non succede niente.") e lo stato non cambia: le regole successive non
+  vengono provate;
+- **"usa X con Y"** è il verbo generico dei giocatori: se nessuna regola `usa` corrisponde, vale
+  la prima regola di qualunque verbo sugli stessi due oggetti. Così "usa la chiave con la porta"
+  fa scattare `apri: porta_torre con chiave_torre` senza scrivere una regola doppia;
+- una regola **sostituisce** il comportamento predefinito del verbo (vedi sotto): una regola su
+  "prendi X" che deve dare l'oggetto al giocatore lo fa con `give: X`.
+
+**Senza regole**, i verbi fanno così (lo strumento, se c'è, viene ignorato):
+
+| Verbo | Comportamento predefinito |
+|---|---|
+| esamina | mostra la descrizione dell'oggetto, con la variante valida |
+| prendi | mette l'oggetto nell'inventario; rifiuta gli arredi e gli oggetti che hai già |
+| lascia | posa l'oggetto nella stanza; rifiuta gli oggetti che non hai |
+| apri, chiudi, leggi | "Non si può aprire." / "Non si può chiudere." / "Non c'è niente da leggere." |
+| usa, spingi, tira | "Non succede niente." |
+
+I messaggi del motore non nominano mai l'oggetto, così non servono articolo e genere.
 
 ## Condizioni
 
@@ -149,3 +167,7 @@ Tutti gli errori vengono raccolti e mostrati insieme, ciascuno con il percorso
 posizione di ogni oggetto, flag attivi, stanze visitate, turni, fine partita.
 `GameState.new(world)` crea lo stato iniziale, che si salva e rilegge in JSON.
 Il mondo invece è immutabile.
+
+Solo il motore (`app/engine/engine.py`) modifica lo stato. Ogni azione, anche se rifiutata,
+conta come un turno; dopo ogni azione il primo finale la cui condizione è vera chiude la
+partita. Le uscite chiuse mostrano il loro `otherwise`, oppure "Non puoi andare da quella parte."
