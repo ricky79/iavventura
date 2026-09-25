@@ -28,7 +28,8 @@ input giocatore
 - Frontend: un solo HTML con JS/CSS minimale in stile console retrò, senza framework
 - Dati del mondo in YAML (PyYAML), validati con modelli Pydantic al caricamento
 - Test: pytest
-- Persistenza: stato partita serializzato in JSON; SQLite quando serviranno più utenti
+- Persistenza: stato partita serializzato in JSON. Nel web lo tiene il browser (`localStorage`);
+  SQLite solo se serviranno partite legate a un account e condivise tra dispositivi
 
 ## LLM
 - Sviluppo: **Ollama in locale, solo CPU (niente GPU)**. Modello piccolo da 3-4B (es. famiglia Qwen o Llama, versione recente).
@@ -55,7 +56,7 @@ input giocatore
 ## Struttura proposta
 ```
 app/
-  main.py            # FastAPI: endpoint, file statici (fase 5)
+  main.py            # FastAPI: la pagina e due endpoint (/api/new, /api/turn)
   config.py          # variabili d'ambiente
   game.py            # un turno: parser → interprete LLM → motore → testo fisso
   cli.py             # la partita nel terminale
@@ -124,18 +125,31 @@ tests/
   Il parser capisce "vai in cucina"; l'LLM riceve "Uscite: nord (Torre), est (Scuderia), …" e,
   per un luogo che non è tra le uscite, risponde `bersaglio: nessuno` ("Non ho capito.").
   Senza le uscite nel prompt il modello tirava a indovinare la direzione.
+- **Interfaccia web** (fase 5, 2026-09-25): `app/main.py` + `static/index.html`.
+  - Server **senza memoria**: il browser tiene stato e testo a schermo nel `localStorage` e manda
+    lo stato con ogni riga; il server lo controlla (`Engine.restore`), gioca il turno con `Game` e
+    restituisce testo, stato, nome della stanza e `finished`. Una richiesta per turno, niente SSE.
+  - Stato che non va più bene per il mondo (stanze o oggetti cambiati): "Il mondo è cambiato
+    dall'ultimo salvataggio: la partita ricomincia." Se sono cambiati solo i testi, si continua.
+  - Stato non firmato: con un giocatore solo, barare non danneggia nessuno. Firma HMAC se il
+    gioco diventerà pubblico.
+  - Pagina: console a fosfori verdi, una sola dimensione di carattere, riga di stato in video
+    invertito (stanza, mosse, «Nuova partita» con conferma nella pagina, niente `confirm()`).
+  - Il web scrive il log dell'LLM in `logs/llm-web.log`; la disponibilità di Ollama si ricontrolla
+    a ogni nuova partita.
+  - `OLLAMA_URL` predefinito `http://127.0.0.1:11434`: con `localhost`, su Windows, ogni nuova
+    connessione costava ~2 s (prova prima IPv6).
 
 ## Decisioni ancora aperte
 - Dialoghi con i personaggi: senza narratore LLM, le risposte saranno testi d'autore (l'LLM
   potrebbe solo scegliere l'argomento), oppure servirà un modello più capace.
-- Interfaccia web: lo streaming SSE serviva al narratore; senza, basta una richiesta per turno.
 - Hosting pubblico (es. PC di casa + Cloudflare Tunnel) — non prioritario.
 
 ## Comandi utili
 ```
 # ambiente: Python 3.12 installato per l'utente (launcher `py`), ambiente virtuale in .venv
 py -3.12 -m venv .venv
-.venv\Scripts\python -m pip install "pydantic>=2.11" "pyyaml>=6" "httpx>=0.27" "pytest>=8"
+.venv\Scripts\python -m pip install "pydantic>=2.11" "pyyaml>=6" "httpx>=0.27" "fastapi>=0.115" "uvicorn>=0.30" "pytest>=8"
 .venv\Scripts\python -m pytest
 
 .venv\Scripts\python -m app.cli      # giocare nel terminale (con Ollama acceso, anche frasi libere)
@@ -144,14 +158,15 @@ $env:LLM="off"                       # giocare senza LLM
 $env:OLLAMA_TESTS=1; .venv\Scripts\python -m pytest tests/test_ollama.py -v -s   # test col modello vero
 
 ollama pull qwen2.5:3b
-uvicorn app.main:app --reload
+.venv\Scripts\python -m app.main          # giocare nel browser: http://127.0.0.1:8000
 ```
 
 
 ### Risultati dei test (qwen2.5:3b su CPU, Windows)
 - Ambiente di sviluppo: Windows, PowerShell.
 - Velocità misurate: generazione ~6-7 token/s, lettura prompt ~30 token/s.
-  La lettura del prompt è il collo di bottiglia: prompt minimi, parte fissa in testa (cache).
+  Con la parte fissa del prompt in testa, Ollama la tiene in cache (dal log: ~460 token su ~470
+  già in cache): il grosso del tempo è generare i 25-30 token della risposta JSON.
 - Interprete (fase 4): 4-7 s per frase; la prima chiamata 15-20 s (caricamento del modello,
   poi tenuto in memoria con `keep_alive: 30m`). `tests/test_ollama.py`: 10 su 10.
   - Output strutturato con `format` (schema JSON), `temperature: 0`, `num_predict: 60`, `num_ctx: 2048`.

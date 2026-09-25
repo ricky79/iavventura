@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Avventura nel castello</title>
+<style>
+  /* A monochrome terminal: one phosphor at three intensities, one type size.
+     Hierarchy comes from intensity and reverse video, as on the real thing. */
+  :root {
+    --glass: #03100a;          /* the unlit tube */
+    --phosphor: #4be37a;       /* normal intensity: the story */
+    --bright: #b4ffc6;         /* high intensity: what the player types, the status line */
+    --dim: #2b8a4b;            /* low intensity: notices and page controls */
+    --glow: rgba(75, 227, 122, 0.35);
+    --font: ui-monospace, "Cascadia Mono", Consolas, Menlo, "DejaVu Sans Mono", monospace;
+    --size: 1.125rem;
+    --line: 1.5;
+    --measure: 72ch;           /* a nod to the 80-column screen */
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--glass);
+    color: var(--phosphor);
+    font: var(--size) / var(--line) var(--font);
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    text-shadow: 0 0 1px currentColor, 0 0 8px var(--glow);
+  }
+
+  /* Status line in reverse video, like the adventures of the '80s: where you are, how many moves. */
+  .status {
+    display: flex;
+    gap: 2ch;
+    align-items: baseline;
+    padding: 0.25rem max(1ch, env(safe-area-inset-right)) 0.25rem max(1ch, env(safe-area-inset-left));
+    background: var(--bright);
+    color: var(--glass);
+    text-shadow: none;
+  }
+  .status .room { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .status .moves { white-space: nowrap; }
+
+  .screen {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem 1ch 0;
+    scroll-padding-bottom: 1.5rem;
+    scrollbar-gutter: stable both-edges; /* keeps the text column where the prompt is */
+  }
+
+  .transcript {
+    max-width: var(--measure);
+    margin: 0 auto;
+  }
+
+  /* Same column as the transcript: the side padding sits outside the measure. */
+  .prompt, .confirm {
+    max-width: calc(var(--measure) + 2ch);
+    margin: 0 auto;
+  }
+
+  .transcript p {
+    margin: 0 0 calc(var(--line) * 1em);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .transcript .typed { color: var(--bright); margin-bottom: calc(var(--line) * 0.5em); }
+  .transcript .typed::before { content: "> "; }
+  .transcript .notice { color: var(--dim); }
+
+  /* New text lights up and settles, like fresh phosphor. */
+  .transcript .fresh { animation: settle 0.6s ease-out; }
+  @keyframes settle {
+    from { color: var(--bright); text-shadow: 0 0 1px var(--bright), 0 0 14px var(--glow); }
+  }
+
+  .waiting { color: var(--dim); }
+  .waiting span { animation: dot 1.2s infinite; opacity: 0; }
+  .waiting span:nth-child(2) { animation-delay: 0.2s; }
+  .waiting span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dot { 30%, 70% { opacity: 1; } }
+
+  .prompt, .confirm {
+    width: 100%; /* auto margins in the body's flex column would otherwise shrink them */
+    display: flex;
+    align-items: baseline;
+    gap: 1ch;
+    padding: 0.5rem 1ch calc(1rem + env(safe-area-inset-bottom));
+  }
+  .prompt label { color: var(--bright); }
+  .prompt input {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--bright);
+    font: inherit;
+    font-size: max(16px, 1em); /* below 16px phones zoom in on focus */
+    text-shadow: inherit;
+    caret-color: var(--bright);
+    caret-shape: block;
+  }
+  .prompt input:disabled { color: var(--dim); }
+  .prompt input::placeholder { color: var(--dim); opacity: 1; }
+
+  .confirm { color: var(--bright); flex-wrap: wrap; }
+  .confirm .choices { display: flex; gap: 1ch; white-space: nowrap; }
+  .confirm button::before { content: "["; }
+  .confirm button::after { content: "]"; }
+  .confirm[hidden], .prompt[hidden] { display: none; }
+
+  button {
+    padding: 0 0.5ch;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-shadow: inherit;
+    cursor: pointer;
+  }
+  button:hover, button:focus-visible { background: var(--bright); color: var(--glass); text-shadow: none; }
+  .status button { color: var(--glass); text-decoration: underline; text-underline-offset: 0.2em; }
+  .status button:hover, .status button:focus-visible { background: var(--glass); color: var(--bright); }
+  :focus-visible { outline: 1px dashed var(--bright); outline-offset: 2px; }
+
+  @media (max-width: 40rem) {
+    :root { --size: 1rem; }
+    .screen { padding-top: 1rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .transcript .fresh, .waiting span { animation: none; }
+    .waiting span { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+  <header class="status">
+    <span class="room" id="room"></span>
+    <span class="moves" id="moves"></span>
+    <button type="button" id="new-game">Nuova partita</button>
+  </header>
+
+  <main class="screen" id="screen">
+    <div class="transcript" id="transcript" role="log" aria-live="polite"></div>
+    <p class="transcript waiting" id="waiting" hidden aria-label="Attendi"><span>.</span><span>.</span><span>.</span></p>
+  </main>
+
+  <form class="prompt" id="prompt" autocomplete="off">
+    <label for="line" aria-hidden="true">&gt;</label>
+    <input id="line" name="line" maxlength="500" enterkeyhint="send"
+           autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Il tuo comando">
+  </form>
+
+  <div class="confirm" id="confirm" hidden>
+    <span>Ricominciare? La partita in corso andrà persa.</span>
+    <span class="choices">
+      <button type="button" id="restart">Ricomincia</button>
+      <button type="button" id="keep">Continua</button>
+    </span>
+  </div>
+
+<script>
+(() => {
+  const SAVE_KEY = "castle-adventure.save";
+  const MAX_LINES = 200;         // what the page keeps of the transcript
+  const WAIT_DELAY_MS = 300;     // simple commands answer at once: show the dots only for the LLM
+
+  const $ = (id) => document.getElementById(id);
+  const screen = $("screen"), transcript = $("transcript"), waiting = $("waiting");
+  const prompt = $("prompt"), input = $("line"), confirmBar = $("confirm");
+
+  // Everything the page needs to pick the game up again: the engine's state and what is on screen.
+  let save = { state: null, room: "", finished: false, lines: [] };
+
+  function load() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(SAVE_KEY));
+      if (saved && saved.state && Array.isArray(saved.lines)) return saved;
+    } catch { /* private browsing or a broken save: start over */ }
+    return null;
+  }
+
+  function store() {
+    save.lines = save.lines.slice(-MAX_LINES);
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch { /* storage full or disabled */ }
+  }
+
+  function show(kind, text, fresh = true) {
+    const p = document.createElement("p");
+    p.className = kind + (fresh ? " fresh" : "");
+    p.textContent = text;
+    transcript.append(p);
+  }
+
+  function say(kind, text) {
+    if (!text) return;
+    save.lines.push({ kind, text });
+    show(kind, text);
+  }
+
+  function scrollToEnd() {
+    screen.scrollTop = screen.scrollHeight;
+  }
+
+  function status() {
+    $("room").textContent = save.room;
+    $("moves").textContent = save.state ? `Mosse: ${save.state.turns}` : "";
+  }
+
+  function setBusy(busy) {
+    input.disabled = busy || save.finished;
+    input.placeholder = save.finished ? "La partita è finita." : "";
+  }
+
+  async function post(url, body) {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+  }
+
+  async function withWaiting(work) {
+    setBusy(true);
+    const timer = setTimeout(() => { waiting.hidden = false; scrollToEnd(); }, WAIT_DELAY_MS);
+    try {
+      return await work();
+    } finally {
+      clearTimeout(timer);
+      waiting.hidden = true;
+      setBusy(false);
+    }
+  }
+
+  async function newGame() {
+    transcript.replaceChildren();
+    save = { state: null, room: "", finished: false, lines: [] };
+    status();
+    try {
+      const reply = await withWaiting(() => post("/api/new"));
+      save.state = reply.state;
+      save.room = reply.room;
+      if (reply.notice) say("notice", `[${reply.notice}]`);
+      say("story", reply.text);
+      store();
+    } catch {
+      say("notice", "[Il server non risponde. Ricarica la pagina tra poco.]");
+    }
+    status();
+    scrollToEnd();
+    input.focus();
+  }
+
+  async function play(line) {
+    say("typed", line);
+    scrollToEnd();
+    try {
+      const reply = await withWaiting(() => post("/api/turn", { line, state: save.state }));
+      if (reply.restarted) {
+        transcript.replaceChildren();
+        save.lines = [];
+      }
+      save.state = reply.state;
+      save.room = reply.room;
+      save.finished = reply.finished;
+      say("story", reply.text);
+      if (reply.finished) say("notice", "[Fine. Per giocare ancora scegli «Nuova partita».]");
+      store();
+      setBusy(false);
+    } catch {
+      say("notice", "[Il server non risponde: il comando non è stato eseguito. Riprova.]");
+      input.value = line;
+    }
+    status();
+    scrollToEnd();
+    input.focus();
+  }
+
+  prompt.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const line = input.value.trim();
+    if (!line || input.disabled) return;
+    input.value = "";
+    play(line);
+  });
+
+  // "Nuova partita" asks first, in the page, in place of the prompt.
+  function askRestart(asking) {
+    confirmBar.hidden = !asking;
+    prompt.hidden = asking;
+    scrollToEnd();
+    (asking ? $("keep") : input).focus();
+  }
+  $("new-game").addEventListener("click", () => askRestart(true));
+  $("keep").addEventListener("click", () => askRestart(false));
+  $("restart").addEventListener("click", () => { askRestart(false); newGame(); });
+  confirmBar.addEventListener("keydown", (event) => { if (event.key === "Escape") askRestart(false); });
+
+  const saved = load();
+  if (saved) {
+    save = saved;
+    for (const { kind, text } of save.lines) show(kind, text, false);
+    status();
+    setBusy(false);
+    scrollToEnd();
+    input.focus();
+  } else {
+    newGame();
+  }
+})();
+</script>
+</body>
+</html>

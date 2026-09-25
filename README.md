@@ -7,9 +7,9 @@ regole del gioco e tutti i testi sono scritti a mano.
 
 Il castello, gli enigmi e i personaggi sono originali.
 
-> **Stato:** in sviluppo. Sono pronte le prime quattro fasi: formato del mondo in YAML, motore
-> di gioco, parser dei comandi semplici con testo fisso, LLM che interpreta le frasi libere.
-> Il castello **si gioca già dal terminale**; l'interfaccia web arriverà nella prossima fase.
+> **Stato:** in sviluppo. Sono pronte le prime cinque fasi: formato del mondo in YAML, motore
+> di gioco, parser dei comandi semplici con testo fisso, LLM che interpreta le frasi libere,
+> interfaccia web. Il castello **si gioca dal browser o dal terminale**.
 
 ## Come funziona
 
@@ -62,23 +62,36 @@ Su Windows (PowerShell):
 
 ```powershell
 py -3.12 -m venv .venv
-.venv\Scripts\python -m pip install "pydantic>=2.11" "pyyaml>=6" "httpx>=0.27" "pytest>=8"
+.venv\Scripts\python -m pip install "pydantic>=2.11" "pyyaml>=6" "httpx>=0.27" "fastapi>=0.115" "uvicorn>=0.30" "pytest>=8"
 ```
 
 Su Linux o macOS:
 
 ```bash
 python3.12 -m venv .venv
-.venv/bin/python -m pip install "pydantic>=2.11" "pyyaml>=6" "httpx>=0.27" "pytest>=8"
+.venv/bin/python -m pip install "pydantic>=2.11" "pyyaml>=6" "httpx>=0.27" "fastapi>=0.115" "uvicorn>=0.30" "pytest>=8"
 ```
 
 ## Come si gioca
 
-Dal terminale, nella cartella del progetto:
+**Nel browser**: avvia il server dalla cartella del progetto e apri <http://127.0.0.1:8000>.
+
+```powershell
+.venv\Scripts\python -m app.main
+```
+
+La partita si salva da sola nel browser (`localStorage`): ricaricando la pagina riprendi da dove
+eri. Il server non tiene nessuna partita, quindi riavviarlo non perde niente; ogni browser ha la
+sua. «Nuova partita», nella riga in alto, ricomincia da capo dopo una conferma. Se nel frattempo
+il mondo è cambiato (stanze o oggetti diversi nei file YAML), la partita salvata ricomincia.
+
+**Nel terminale**:
 
 ```powershell
 .venv\Scripts\python -m app.cli
 ```
+
+I due modi usano lo stesso motore e possono essere usati insieme, ognuno con la sua partita.
 
 Il gioco capisce subito i comandi semplici, con o senza articoli:
 
@@ -89,7 +102,7 @@ Il gioco capisce subito i comandi semplici, con o senza articoli:
 | vedere cosa porti | `inventario` (anche `i`) |
 | agire sugli oggetti | `esamina X` (anche `x X`), `prendi X`, `lascia X`, `apri X`, `chiudi X`, `leggi X`, `spingi X`, `tira X` |
 | combinare due oggetti | `usa X con Y`, `apri X con Y` |
-| aiuto / terminare | `aiuto` / `fine` |
+| aiuto / terminare | `aiuto` / `fine` (nel terminale) |
 
 Le frasi più libere ("dai un'occhiata al pozzo", "metti giù la corda") passano all'LLM, se
 Ollama è acceso: il gioco mostra tra parentesi come le ha capite, poi risponde. Ogni frase
@@ -101,9 +114,9 @@ Configurazione, con variabili d'ambiente:
 | Variabile | Valore predefinito | Significato |
 |---|---|---|
 | `LLM` | `ollama` | `off` per giocare senza LLM |
-| `OLLAMA_URL` | `http://localhost:11434` | dove risponde Ollama |
+| `OLLAMA_URL` | `http://127.0.0.1:11434` | dove risponde Ollama (meglio `127.0.0.1` di `localhost`: su Windows `localhost` rallenta ogni connessione di circa 2 s) |
 | `LLM_MODEL` | `qwen2.5:3b` | il modello da usare |
-| `LLM_LOG` | `logs/llm.log` | file dove finisce ciò che viene passato al modello e ciò che torna; `off` per non scriverlo |
+| `LLM_LOG` | `logs/llm.log` (terminale), `logs/llm-web.log` (browser) | file dove finisce ciò che viene passato al modello e ciò che torna; `off` per non scriverlo |
 
 Il log dell'LLM riporta, per ogni frase libera, gli oggetti e la frase inviati (`>>>`), la
 risposta del modello (`<<<`), i tempi e i token, e com'è stata tradotta in azione (`===`). Il
@@ -149,6 +162,8 @@ app/
   config.py         # variabili d'ambiente
   game.py           # un turno: parser, interprete, motore, testo
   cli.py            # la partita nel terminale
+  main.py           # la partita nel browser: server FastAPI
+static/index.html   # la pagina del gioco
 data/world/         # il castello di esempio
 docs/               # documentazione del formato e delle regole
 tests/              # test pytest
@@ -160,5 +175,5 @@ tests/              # test pytest
 2. ~~Motore di gioco: esecuzione delle azioni, regole e condizioni~~
 3. ~~Parser classico dei comandi semplici, testo fisso e gioco da terminale~~
 4. ~~LLM interprete delle frasi libere (Ollama)~~
-5. Interfaccia web in stile console retrò
+5. ~~Interfaccia web in stile console retrò~~
 6. Personaggi e dialoghi

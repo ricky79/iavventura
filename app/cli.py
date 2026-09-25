@@ -9,9 +9,8 @@ doesn't understand; without it the game goes on with simple commands only.
 import logging
 import sys
 from collections.abc import Callable
-from pathlib import Path
 
-from app.config import Settings, make_client
+from app.config import Settings, make_client, start_llm_log
 from app.engine.engine import Engine
 from app.engine.loader import load_world
 from app.engine.parser import words_of
@@ -47,19 +46,6 @@ def run(game: Game, read_line: Callable[[], str], write: Callable[[str], None]) 
                 write(answer)
     except EOFError:
         return
-
-
-def start_llm_log(path: str) -> None:
-    """Appends what goes to the model and what comes back to `path` ("off": no log)."""
-    if path == "off":
-        return
-    log_file = Path(path)
-    log_file.parent.mkdir(parents=True, exist_ok=True)
-    handler = logging.FileHandler(log_file, encoding="utf-8")
-    handler.setFormatter(logging.Formatter("%(asctime)s  %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
-    logger = logging.getLogger("app.llm")
-    logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
 
 
 def main() -> None:

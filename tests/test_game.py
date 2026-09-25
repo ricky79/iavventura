@@ -107,3 +107,23 @@ def test_the_llm_is_told_where_the_exits_lead(castle):
 
     assert "\nUscite: nord (Torre), est (Scuderia), ovest (Cucina)\n" in llm.calls[0][1]
     assert output.startswith("(vai a est)\nScuderia\n")
+
+
+def test_a_game_can_go_on_from_a_saved_state(castle):
+    engine = Engine(castle)
+    state, _ = engine.new_game()
+    state.current_room = "cucina"
+    state.visited.add("cucina")
+
+    game = Game(engine, state=state)
+
+    assert say(game, "est").startswith("Cortile\n")
+    assert game.state is state
+
+
+def test_only_a_new_game_has_an_opening(castle):
+    engine = Engine(castle)
+    state, _ = engine.new_game()
+
+    with pytest.raises(ValueError):
+        Game(engine, state=state).opening()
