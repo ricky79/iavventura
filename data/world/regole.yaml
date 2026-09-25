@@ -25,7 +25,9 @@ rules:
     text: Il gancio da solo non arriva nemmeno a metà del pozzo.
 
   pesca_chiave:
-    trigger: {verb: usa, target: pozzo, with: corda_con_gancio}
+    trigger:
+      - {verb: usa, target: pozzo, with: corda_con_gancio}
+      - {verb: prendi, target: chiave_torre, with: corda_con_gancio}
     when: {not: {flag: chiave_pescata}}
     otherwise: Nel pozzo non è rimasto niente da ripescare.
     effects:

@@ -215,6 +215,13 @@ class Room(_Frozen):
     exits: dict[Direction, Exit] = {}
 
 
+class Visibility(_Frozen):
+    """Where an item is seen without being within reach (the key at the bottom of the well)."""
+
+    room: Id
+    when: Condition | None = None
+
+
 class Item(_Frozen):
     id: Id
     name: Text
@@ -227,6 +234,11 @@ class Item(_Frozen):
     # Scenery can't be taken and isn't listed: the room description already mentions it.
     scenery: bool = False
     variants: tuple[TextVariant, ...] = ()
+    # Seen from a room while out of reach: the player can name it, only rules can act on it.
+    # It has to be seen first: another item's description reveals it (the well shows the key).
+    visible_from: Visibility | None = None
+    # Items its description shows, when the player examines it: from then on they are seen.
+    reveals: tuple[Id, ...] = ()
 
 
 class Trigger(_Frozen):
@@ -235,9 +247,14 @@ class Trigger(_Frozen):
     with_: Id | None = Field(default=None, alias="with")
 
 
+def _one_means_a_list(value: Any) -> Any:
+    return [value] if isinstance(value, dict) else value
+
+
 class Rule(_Frozen):
     id: Id
-    trigger: Trigger
+    # Written `trigger` in YAML: one trigger, or a list of equivalent ways to solve the same puzzle.
+    triggers: Annotated[tuple[Trigger, ...], BeforeValidator(_one_means_a_list)] = Field(alias="trigger", min_length=1)
     when: Condition | None = None
     otherwise: Text | None = None
     effects: tuple[Effect, ...] = ()
@@ -304,6 +321,8 @@ class GameState(BaseModel):
     item_locations: dict[Id, Id | None]
     flags: set[Id] = Field(default_factory=set)
     visited: set[Id] = Field(default_factory=set)
+    # Items out of reach the player has seen (Item.reveals): only these can be named from afar.
+    seen: set[Id] = Field(default_factory=set)
     turns: int = 0
     finished: bool = False
 

@@ -5,7 +5,8 @@ import pytest
 from app.engine.loader import load_world
 from app.engine.models import Action, Direction, Item, World
 from app.llm.client import FakeLLMClient
-from app.llm.interpreter import interpret, interpreter_schema
+from app.llm.interpreter import NotUnderstood, interpret, interpreter_schema
+from app.llm.prompts import INTERPRETER_SYSTEM
 
 
 @pytest.fixture(scope="module")
@@ -46,7 +47,7 @@ def test_the_model_gets_a_fixed_system_prompt_then_items_exits_and_sentence(cast
     assert first_system == second_system  # the fixed part comes first, so Ollama can cache it
     assert first_user == (
         "Oggetti: pozzo; porta della torre (porta, porta di ferro); portone; "
-        "corda con gancio (corda, gancio, rampino)\n"
+        "corda con gancio (corda, fune, gancio, uncino, rampino)\n"
         "Uscite: nord (Torre), est (Scuderia), ovest (Cucina)\n"
         "Frase: cala il rampino nel pozzo"
     )
@@ -80,10 +81,17 @@ def test_replies_become_actions_on_item_ids(in_reach, reply, expected):
     assert interpret(FakeLLMClient(json_replies=[reply]), "frase", in_reach) == expected
 
 
+def test_the_model_may_say_the_sentence_is_not_a_game_action(in_reach):
+    reply = {"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}
+
+    result = interpret(FakeLLMClient(json_replies=[reply]), "che ore sono?", in_reach)
+
+    assert result == NotUnderstood("la frase non è un'azione di gioco", not_an_action=True)
+
+
 @pytest.mark.parametrize(
     "reply",
     [
-        {"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"},
         {"verbo": "prendi", "bersaglio": "nessuno", "con": "nessuno"},
         {"verbo": "prendi", "bersaglio": "nord", "con": "nessuno"},
         {"verbo": "prendi", "bersaglio": "chiave di ferro", "con": "nessuno"},
@@ -92,15 +100,20 @@ def test_replies_become_actions_on_item_ids(in_reach, reply, expected):
         {"verbo": ["usa"], "bersaglio": {"x": 1}, "con": None},
         {},
     ],
-    ids=["not an action", "no target", "direction as target", "item out of reach", "go to an item",
+    ids=["no target", "direction as target", "item out of reach", "go to an item",
          "unknown verb", "wrong types", "empty"],
 )  # fmt: skip
 def test_replies_that_make_no_sense_are_not_understood(in_reach, reply):
-    assert interpret(FakeLLMClient(json_replies=[reply]), "frase", in_reach) is None
+    result = interpret(FakeLLMClient(json_replies=[reply]), "frase", in_reach)
+
+    assert isinstance(result, NotUnderstood)
+    assert not result.not_an_action
 
 
 def test_a_broken_model_means_not_understood(in_reach):
-    assert interpret(FakeLLMClient(), "frase", in_reach) is None
+    result = interpret(FakeLLMClient(), "frase", in_reach)
+
+    assert result == NotUnderstood("il modello non ha dato una risposta valida")
 
 
 # --- Log of how the answer was understood ---------------------------------------------------------
@@ -134,3 +147,25 @@ def test_a_broken_model_is_logged_as_not_understood(in_reach, caplog):
         interpret(FakeLLMClient(), "frase", in_reach)
 
     assert caplog.records[-1].getMessage() == "=== non capito: il modello non ha dato una risposta valida"
+
+
+# --- The sentence with a purpose (bug found while playing) ------------------------------------------
+
+
+def test_the_prompt_shows_a_sentence_with_a_purpose(castle):
+    # Without this example qwen2.5:3b aimed the grapple at the door: "per recuperare la chiave" confused it.
+    assert INTERPRETER_SYSTEM.endswith(
+        "Frase: usa il rampino per recuperare la chiave dal pozzo\n"
+        '{"verbo": "usa", "bersaglio": "pozzo", "con": "corda con gancio"}'
+    )
+
+
+def test_the_grapple_sentence_becomes_fishing_in_the_well(castle, in_reach):
+    near = [*in_reach, castle.items["chiave_torre"]]
+    fake = FakeLLMClient(json_replies=[{"verbo": "usa", "bersaglio": "pozzo", "con": "corda con gancio"}])
+
+    action = interpret(fake, "usa il rampino per recuperare la chiave dal pozzo", near)
+
+    assert action == Action(verb="usa", target="pozzo", with_="corda_con_gancio")
+    assert fake.calls[0][1].startswith("Oggetti: pozzo; porta della torre (porta, porta di ferro); portone; ")
+    assert "; chiave di ferro (chiave)\n" in fake.calls[0][1]

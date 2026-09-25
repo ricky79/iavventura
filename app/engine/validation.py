@@ -49,11 +49,21 @@ def find_problems(world: World) -> list[str]:
     for item in world.items.values():
         if item.location not in (None, INVENTORY):
             check_room(f"items.{item.id}.location", item.location)
+        if item.visible_from is not None:
+            check_room(f"items.{item.id}.visible_from.room", item.visible_from.room)
+        for index, item_id in enumerate(item.reveals):
+            check_item(f"items.{item.id}.reveals.{index}", item_id)
+
+    revealed = {item_id for item in world.items.values() for item_id in item.reveals}
+    for item in world.items.values():
+        if item.visible_from is not None and item.id not in revealed:
+            report(f"items.{item.id}.visible_from", "no item reveals it (reveals), so it is never seen")
 
     for rule in world.rules.values():
-        check_item(f"rules.{rule.id}.trigger.target", rule.trigger.target)
-        if rule.trigger.with_ is not None:
-            check_item(f"rules.{rule.id}.trigger.with", rule.trigger.with_)
+        for index, trigger in enumerate(rule.triggers):
+            check_item(f"rules.{rule.id}.trigger.{index}.target", trigger.target)
+            if trigger.with_ is not None:
+                check_item(f"rules.{rule.id}.trigger.{index}.with", trigger.with_)
         for index, effect in enumerate(rule.effects):
             path = f"rules.{rule.id}.effects.{index}"
             match effect:
@@ -115,6 +125,8 @@ def _conditions(world: World) -> Iterator[tuple[str, Condition]]:
     for item in world.items.values():
         for index, variant in enumerate(item.variants):
             yield f"items.{item.id}.variants.{index}.when", variant.when
+        if item.visible_from is not None and item.visible_from.when is not None:
+            yield f"items.{item.id}.visible_from.when", item.visible_from.when
     for rule in world.rules.values():
         if rule.when is not None:
             yield f"rules.{rule.id}.when", rule.when

@@ -6,9 +6,20 @@ Every answer the player reads comes from here or from the world's authors: the L
 import unicodedata
 from collections.abc import Iterable
 
-from app.engine.models import Action, Direction, Gender, Item, Outcome, RoomView, World
+from app.engine.models import Action, Direction, Gender, Item, Outcome, RoomView, Verb, World
 
 _VOWELS = frozenset("aeiou")
+_INFINITIVES = {
+    Verb.EXAMINE: "esaminare",
+    Verb.TAKE: "prendere",
+    Verb.DROP: "lasciare",
+    Verb.USE: "usare",
+    Verb.OPEN: "aprire",
+    Verb.CLOSE: "chiudere",
+    Verb.PUSH: "spingere",
+    Verb.PULL: "tirare",
+    Verb.READ: "leggere",
+}
 
 
 def definite(item: Item) -> str:
@@ -55,14 +66,24 @@ def which_one(candidates: Iterable[Item]) -> str:
 def action_text(action: Action, world: World) -> str:
     """The action as a command: "usa la corda con il gancio", "vai a nord"."""
     if action.direction is not None:
-        vertical = action.direction in (Direction.UP, Direction.DOWN)
-        return f"vai {action.direction}" if vertical else f"vai a {action.direction}"
+        return f"vai {_to(action.direction)}"
     words = [action.verb]
     if action.target is not None:
         words.append(definite(world.items[action.target]))
     if action.with_ is not None:
         words += ["con", definite(world.items[action.with_])]
     return " ".join(words)
+
+
+def confirmation(action: Action, world: World) -> str:
+    """The question before an interpreted action the world doesn't foresee:
+    "Vuoi usare la corda con il gancio?", "Vuoi andare a ovest?"."""
+    if action.direction is not None:
+        return f"Vuoi andare {_to(action.direction)}?"
+    words = ["Vuoi", _INFINITIVES[action.verb], definite(world.items[action.target])]
+    if action.with_ is not None:
+        words += ["con", definite(world.items[action.with_])]
+    return " ".join(words) + "?"
 
 
 def render(outcome: Outcome, world: World) -> str:
@@ -83,6 +104,11 @@ def plain(text: str) -> str:
     """Lowercase and without accents, for comparing words: "Giù" -> "giu"."""
     decomposed = unicodedata.normalize("NFD", text.casefold())
     return "".join(char for char in decomposed if not unicodedata.combining(char))
+
+
+def _to(direction: Direction) -> str:
+    """"a nord", but "su" and "giù" alone."""
+    return str(direction) if direction in (Direction.UP, Direction.DOWN) else f"a {direction}"
 
 
 def _room(room: RoomView, world: World) -> str:

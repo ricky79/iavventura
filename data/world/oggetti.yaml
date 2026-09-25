@@ -12,6 +12,7 @@ items:
       anello, posata tra i sassi. Troppo in basso per arrivarci con il braccio.
     location: cortile
     scenery: true
+    reveals: [chiave_torre]
     variants:
       - when: {flag: chiave_pescata}
         text: Un pozzo asciutto e profondo. Sul fondo restano solo sassi e foglie secche.
@@ -65,7 +66,7 @@ items:
   corda_con_gancio:
     name: corda con gancio
     gender: f
-    aliases: [corda, gancio, rampino]
+    aliases: [corda, fune, gancio, uncino, rampino]
     description: La corda con il gancio da macellaio legato a un capo. Un rampino improvvisato.
     location: null
 
@@ -75,3 +76,7 @@ items:
     aliases: [chiave]
     description: Una grossa chiave di ferro ad anello, fredda e pesante.
     location: null
+    # In fondo al pozzo: si vede dal cortile, ma solo il rampino ci arriva.
+    visible_from:
+      room: cortile
+      when: {not: {flag: chiave_pescata}}

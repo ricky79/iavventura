@@ -25,8 +25,9 @@ def rules_bringing_in(world: World, item_id: str) -> list[Rule]:
     ]
 
 
-def items_used_by(rule: Rule) -> set[str]:
-    return {rule.trigger.target, rule.trigger.with_} - {None}
+def items_used_by(rule: Rule) -> list[set[str]]:
+    """The items of each trigger: a puzzle may be solved in more than one way."""
+    return [{trigger.target, trigger.with_} - {None} for trigger in rule.triggers]
 
 
 def test_castle_has_four_rooms_and_starts_in_the_courtyard(castle):
@@ -44,7 +45,7 @@ def test_grapple_exists_only_by_combining_hook_and_rope(castle):
 
     [combine] = rules_bringing_in(castle, "corda_con_gancio")
 
-    assert items_used_by(combine) == {"gancio", "corda"}
+    assert items_used_by(combine) == [{"gancio", "corda"}]
     assert Remove(remove="gancio") in combine.effects
     assert Remove(remove="corda") in combine.effects
 
@@ -55,7 +56,19 @@ def test_key_can_only_be_fished_out_with_the_grapple(castle):
     fishers = rules_bringing_in(castle, "chiave_torre")
 
     assert fishers
-    assert all("corda_con_gancio" in items_used_by(rule) for rule in fishers)
+    assert all("corda_con_gancio" in items for rule in fishers for items in items_used_by(rule))
+
+
+def test_the_key_is_in_sight_once_the_well_is_examined_until_fished_out(castle):
+    engine = Engine(castle)
+    state, _ = engine.new_game()
+    assert engine.visible(state) == []
+
+    play(engine, state, [LOOK_IN_THE_WELL])
+    assert [item.id for item in engine.visible(state)] == ["chiave_torre"]
+
+    play(engine, state, UP_TO_THE_KEY)
+    assert engine.visible(state) == []
 
 
 def test_tower_opens_only_with_the_key(castle):
@@ -66,7 +79,7 @@ def test_tower_opens_only_with_the_key(castle):
         assert isinstance(exit_.when, FlagSet)
         openers = [rule for rule in castle.rules.values() if SetFlag(set_flag=exit_.when.flag) in rule.effects]
         assert openers
-        assert all("chiave_torre" in items_used_by(rule) for rule in openers)
+        assert all("chiave_torre" in items for rule in openers for items in items_used_by(rule))
 
 
 def test_entering_the_tower_ends_the_game(castle):
@@ -85,6 +98,9 @@ UP_TO_THE_KEY = [
     Action(verb="vai", direction="ovest"),
     Action(verb="usa", target="pozzo", with_="corda_con_gancio"),
 ]
+
+
+LOOK_IN_THE_WELL = Action(verb="esamina", target="pozzo")
 
 
 def play(engine: Engine, state: GameState, actions: list[Action]) -> None:
@@ -144,3 +160,18 @@ def test_using_the_key_on_the_door_opens_it_too(castle):
 
     assert opened.text == castle.rules["apri_torre"].text
     assert "torre_aperta" in state.flags
+
+
+def test_the_key_can_also_be_taken_with_the_grapple_once_seen(castle):
+    engine = Engine(castle)
+    state, _ = engine.new_game()
+    play(engine, state, UP_TO_THE_KEY[:-1])
+    take_the_key = Action(verb="prendi", target="chiave_torre", with_="corda_con_gancio")
+
+    unseen = engine.execute(state, take_the_key)
+    play(engine, state, [LOOK_IN_THE_WELL])
+    fished = engine.execute(state, take_the_key)
+
+    assert unseen.text == "Non vedi niente del genere qui."
+    assert fished.text == castle.rules["pesca_chiave"].text
+    assert state.item_locations["chiave_torre"] == "inventory"

@@ -10,7 +10,7 @@ import logging
 import sys
 from collections.abc import Callable
 
-from app.config import Settings, make_client, start_llm_log
+from app.config import Settings, make_client, start_command_log, start_llm_log
 from app.engine.engine import Engine
 from app.engine.loader import load_world
 from app.engine.parser import words_of
@@ -54,6 +54,7 @@ def main() -> None:
     except ValueError as exc:
         sys.exit(str(exc))
     start_llm_log(settings.llm_log)
+    start_command_log(settings.command_log, origin="terminale")
     llm = make_client(settings)
     if llm is not None and (reason := llm.unavailable_reason()):
         print(f"[{reason} Si gioca con i soli comandi semplici.]\n")

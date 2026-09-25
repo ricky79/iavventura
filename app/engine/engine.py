@@ -41,6 +41,7 @@ from app.engine.parser import significant_words, words_of
 GAME_OVER = "La partita è finita."
 NO_EXIT = "Non puoi andare da quella parte."
 NOT_HERE = "Non vedi niente del genere qui."
+OUT_OF_REACH = "Non ci arrivi."
 NOTHING_HAPPENS = "Non succede niente."
 DONE = "Fatto."
 CANT_TAKE = "Non si può prendere."
@@ -85,6 +86,7 @@ class Engine:
             elif location not in (None, INVENTORY) and location not in rooms:
                 problems.append(f"item '{item_id}' in unknown room '{location}'")
         problems += [f"unknown visited room '{room_id}'" for room_id in sorted(state.visited) if room_id not in rooms]
+        problems += [f"unknown seen item '{item_id}'" for item_id in sorted(state.seen) if item_id not in items]
         if problems:
             raise StateError("; ".join(problems))
         return state
@@ -92,6 +94,20 @@ class Engine:
     def in_reach(self, state: GameState) -> list[Item]:
         """Items the player can act on: those in the current room (scenery included) and those carried."""
         return self._items_in(state, state.current_room, INVENTORY)
+
+    def visible(self, state: GameState) -> list[Item]:
+        """Items in sight from the current room but out of reach (`visible_from`), once the player
+        has seen them: they can be named, and only rules can act on them."""
+        in_reach = {item.id for item in self.in_reach(state)}
+        return [
+            item
+            for item in self.world.items.values()
+            if item.visible_from is not None
+            and item.id in state.seen
+            and item.visible_from.room == state.current_room
+            and item.id not in in_reach
+            and (item.visible_from.when is None or holds(item.visible_from.when, state))
+        ]
 
     def known_exits(self, state: GameState) -> list[tuple[Direction, Room | None]]:
         """The exits of the current room in compass order, each with its destination if the player
@@ -105,6 +121,13 @@ class Engine:
             named = set(significant_words(destination.name)) <= described
             exits.append((direction, destination if destination.id in state.visited or named else None))
         return exits
+
+    def expects(self, action: Action) -> bool:
+        """Whether the world foresees the action: a command, a rule that reacts to it, or a verb that
+        does something by itself (esamina, prendi, lascia) with no tool it would ignore."""
+        if isinstance(action.verb, Command) or self._find_rule(action) is not None:
+            return True
+        return action.with_ is None and action.verb in (Verb.EXAMINE, Verb.TAKE, Verb.DROP)
 
     def execute(self, state: GameState, action: Action) -> Outcome:
         """Applies the action to `state` and tells what happened; the first ending that holds closes the game."""
@@ -141,10 +164,14 @@ class Engine:
 
     def _act_on_items(self, state: GameState, action: Action) -> Outcome:
         in_reach = {item.id for item in self.in_reach(state)}
-        if action.target not in in_reach or (action.with_ is not None and action.with_ not in in_reach):
+        in_sight = {item.id for item in self.visible(state)}
+        items = {action.target, action.with_} - {None}
+        if not items <= in_reach | in_sight:
             return Outcome(ok=False, text=NOT_HERE)
         rule = self._find_rule(action)
         if rule is None:
+            if items & in_sight:
+                return Outcome(ok=False, text=OUT_OF_REACH)
             return self._default(state, action.verb, self.world.items[action.target])
         if rule.when is not None and not holds(rule.when, state):
             return Outcome(ok=False, text=rule.otherwise or NOTHING_HAPPENS)
@@ -157,6 +184,7 @@ class Engine:
         location = state.item_locations[item.id]
         match verb:
             case Verb.EXAMINE:
+                state.seen.update(item.reveals)
                 return Outcome(ok=True, text=_description(item, state))
             case Verb.TAKE if item.scenery:
                 return Outcome(ok=False, text=CANT_TAKE)
@@ -173,20 +201,23 @@ class Engine:
         return Outcome(ok=False, text=_NOTHING_WITHOUT_A_RULE.get(verb, NOTHING_HAPPENS))
 
     def _find_rule(self, action: Action) -> Rule | None:
-        """The first rule for this verb on exactly these items, in either order.
+        """The first rule with a trigger for this verb on exactly these items, in either order.
 
         "usa X con Y" is what players write for anything: without a rule of its own,
         it takes the first rule of any verb on the same two items (apri porta con chiave).
         """
         items = {action.target, action.with_} - {None}
         same_items = [
-            rule for rule in self.world.rules.values() if {rule.trigger.target, rule.trigger.with_} - {None} == items
+            (rule, trigger)
+            for rule in self.world.rules.values()
+            for trigger in rule.triggers
+            if {trigger.target, trigger.with_} - {None} == items
         ]
-        for rule in same_items:
-            if rule.trigger.verb == action.verb:
+        for rule, trigger in same_items:
+            if trigger.verb == action.verb:
                 return rule
         if action.verb is Verb.USE and action.with_ is not None and same_items:
-            return same_items[0]
+            return same_items[0][0]
         return None
 
     def _room_view(self, state: GameState, first_visit: bool) -> RoomView:

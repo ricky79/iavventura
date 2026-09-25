@@ -243,6 +243,127 @@ def test_using_an_item_out_of_reach_is_refused(data):
     assert outcome.text == messages.NOT_HERE
 
 
+# --- Items in sight but out of reach -------------------------------------------------------------
+
+
+@pytest.fixture
+def data_with_ring(data) -> dict:
+    """A ring at the bottom of a little well in the atrio: examining the well shows it, and from
+    then on it is in sight from the atrio until it is fished out with the coin."""
+    data["items"]["pozzetto"] = {
+        "name": "pozzetto",
+        "gender": "m",
+        "description": "Sul fondo luccica un anello.",
+        "location": "atrio",
+        "scenery": True,
+        "reveals": ["anello"],
+    }
+    data["items"]["anello"] = {
+        "name": "anello",
+        "gender": "m",
+        "description": "Un anello d'oro.",
+        "location": None,
+        "visible_from": {"room": "atrio", "when": {"not": {"flag": "anello_preso"}}},
+    }
+    data["rules"]["pesca_anello"] = {
+        "trigger": {"verb": "prendi", "target": "anello", "with": "moneta"},
+        "effects": [{"give": "anello"}, {"set_flag": "anello_preso"}],
+        "text": "Agganci l'anello con il bordo della moneta.",
+    }
+    return data
+
+
+def seen_ring(data_with_ring) -> tuple[Engine, GameState]:
+    engine, state = start(data_with_ring)
+    state.seen.add("anello")
+    return engine, state
+
+
+def test_an_item_is_in_sight_only_once_seen(data_with_ring):
+    engine, state = start(data_with_ring)
+    assert engine.visible(state) == []
+
+    outcome = engine.execute(state, Action(verb="esamina", target="pozzetto"))
+
+    assert outcome.text == "Sul fondo luccica un anello."
+    assert "anello" in state.seen
+    assert [item.id for item in engine.visible(state)] == ["anello"]
+
+
+def test_an_item_not_seen_yet_is_not_here(data_with_ring):
+    engine, state = start(data_with_ring)
+
+    outcome = engine.execute(state, Action(verb="prendi", target="anello", with_="moneta"))
+
+    assert outcome.text == messages.NOT_HERE
+    assert state.item_locations["anello"] is None
+
+
+def test_a_rule_on_examining_shows_its_own_text_and_reveals_nothing(data_with_ring):
+    data_with_ring["rules"]["esamina_pozzetto"] = {
+        "trigger": {"verb": "esamina", "target": "pozzetto"},
+        "text": "È troppo buio per vedere il fondo.",
+    }
+    engine, state = start(data_with_ring)
+
+    engine.execute(state, Action(verb="esamina", target="pozzetto"))
+
+    assert engine.visible(state) == []
+
+
+def test_items_in_sight_are_seen_only_from_their_room_while_the_condition_holds(data_with_ring):
+    engine, state = seen_ring(data_with_ring)
+
+    assert [item.id for item in engine.visible(state)] == ["anello"]
+    assert "anello" not in [item.id for item in engine.in_reach(state)]
+
+    state.current_room = "cella"
+    assert engine.visible(state) == []
+
+    state.current_room = "atrio"
+    state.flags.add("anello_preso")
+    assert engine.visible(state) == []
+
+
+def test_a_rule_can_act_on_an_item_in_sight(data_with_ring):
+    engine, state = seen_ring(data_with_ring)
+
+    outcome = engine.execute(state, Action(verb="prendi", target="anello", with_="moneta"))
+
+    assert outcome.text == "Agganci l'anello con il bordo della moneta."
+    assert state.item_locations["anello"] == "inventory"
+    assert engine.visible(state) == []
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        Action(verb="prendi", target="anello"),
+        Action(verb="esamina", target="anello"),
+        Action(verb="usa", target="candela", with_="anello"),
+    ],
+    ids=["take", "examine", "as a tool"],
+)
+def test_without_a_rule_an_item_in_sight_is_out_of_reach(data_with_ring, action):
+    engine, state = seen_ring(data_with_ring)
+    before = snapshot(state)
+
+    outcome = engine.execute(state, action)
+
+    assert not outcome.ok
+    assert outcome.text == messages.OUT_OF_REACH
+    assert snapshot(state) == before
+
+
+def test_an_item_no_longer_in_sight_is_not_here(data_with_ring):
+    engine, state = seen_ring(data_with_ring)
+    state.flags.add("anello_preso")
+
+    outcome = engine.execute(state, Action(verb="prendi", target="anello", with_="moneta"))
+
+    assert outcome.text == messages.NOT_HERE
+
+
 # --- Rules --------------------------------------------------------------------------------
 
 
@@ -374,6 +495,33 @@ def test_a_rule_replaces_the_default_behaviour_of_its_verb(data):
 
     assert outcome.text == "È incollata al pavimento con la cera."
     assert state.item_locations["candela"] == "atrio"
+
+
+def test_every_trigger_of_a_rule_fires_it(data):
+    data["rules"]["tira_leva"]["trigger"] = [
+        {"verb": "tira", "target": "leva"},
+        {"verb": "spingi", "target": "leva", "with": "candela"},
+    ]
+    engine, state = start(data)
+
+    first = engine.execute(state, Action(verb="spingi", target="candela", with_="leva"))
+    again = engine.execute(state, Action(verb="tira", target="leva"))
+
+    assert first.text == "Clac! Qualcosa cade ai tuoi piedi."
+    assert "porta_aperta" in state.flags
+    assert again.text == "La leva non si muove più."
+
+
+def test_use_falls_back_on_any_trigger_of_a_list(data):
+    data["rules"]["tira_leva"]["trigger"] = [
+        {"verb": "tira", "target": "leva"},
+        {"verb": "spingi", "target": "leva", "with": "candela"},
+    ]
+    engine, state = start(data)
+
+    outcome = engine.execute(state, Action(verb="usa", target="leva", with_="candela"))
+
+    assert outcome.text == "Clac! Qualcosa cade ai tuoi piedi."
 
 
 # --- "usa X con Y" falls back on the other verbs ---------------------------------------------
@@ -572,3 +720,43 @@ def test_exits_come_in_compass_order(data):
 
     assert [direction for direction, _ in engine.known_exits(state)] == [Direction.NORTH, Direction.WEST, Direction.UP]
     assert engine.known_exits(state)[0] == (Direction.NORTH, engine.world.rooms["atrio"])
+
+
+# --- Actions the world foresees ------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        Action(verb="vai", direction="nord"),
+        Action(verb="guarda"),
+        Action(verb="inventario"),
+        Action(verb="tira", target="leva"),
+        Action(verb="usa", target="moneta", with_="leva"),
+        Action(verb="esamina", target="leva"),
+        Action(verb="prendi", target="candela"),
+        Action(verb="lascia", target="moneta"),
+    ],
+    ids=["go", "look", "inventory", "rule", "rule in the other order", "examine", "take", "drop"],
+)
+def test_commands_rules_and_verbs_that_work_alone_are_expected(data, action):
+    engine, state = start(data)
+
+    assert engine.expects(action)
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        Action(verb="usa", target="candela"),
+        Action(verb="spingi", target="leva"),
+        Action(verb="apri", target="candela"),
+        Action(verb="usa", target="candela", with_="moneta"),
+        Action(verb="prendi", target="candela", with_="moneta"),
+    ],
+    ids=["use", "push", "open", "use with", "take with a tool"],
+)
+def test_actions_no_rule_reacts_to_are_not_expected(data, action):
+    engine, _ = start(data)
+
+    assert not engine.expects(action)

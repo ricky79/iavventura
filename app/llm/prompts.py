@@ -39,7 +39,11 @@ Frase: torno in biblioteca
 Frase: vado in cantina
 {"verbo": "vai", "bersaglio": "nessuno", "con": "nessuno"}
 Frase: buongiorno, che ore sono?
-{"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}"""
+{"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}
+Oggetti: pozzo; portone; corda con gancio (corda, gancio, rampino); chiave di ferro (chiave)
+Uscite: est (Scuderia)
+Frase: usa il rampino per recuperare la chiave dal pozzo
+{"verbo": "usa", "bersaglio": "pozzo", "con": "corda con gancio"}"""
 
 
 def interpreter_user(

@@ -94,11 +94,37 @@ def test_a_turn_returns_the_answer_and_the_new_state(client):
 
 
 def test_free_sentences_go_to_the_llm(castle):
+    llm = FakeLLMClient(json_replies=[{"verbo": "esamina", "bersaglio": "portone", "con": "nessuno"}])
+    client = TestClient(create_app(Engine(castle), llm=llm))
+    state = new_game(client)["state"]
+
+    reply = turn(client, "dai un'occhiata al portone", state)
+
+    assert reply["text"] == f"(esamina il portone)\n{castle.items['portone'].description}"
+    assert reply["pending"] is None
+
+
+def test_the_action_asked_about_travels_with_the_state(castle):
     llm = FakeLLMClient(json_replies=[{"verbo": "spingi", "bersaglio": "portone", "con": "nessuno"}])
     client = TestClient(create_app(Engine(castle), llm=llm))
     state = new_game(client)["state"]
 
-    assert turn(client, "dai una spinta al portone", state)["text"] == "(spingi il portone)\nNon succede niente."
+    asked = turn(client, "dai una spinta al portone", state)
+    answered = client.post("/api/turn", json={"line": "sì", "state": asked["state"], "pending": asked["pending"]})
+
+    assert asked["text"] == "Vuoi spingere il portone?"
+    assert asked["pending"] == {"verb": "spingi", "target": "portone", "with": None, "direction": None}
+    assert answered.json()["text"] == "Non succede niente."
+    assert answered.json()["pending"] is None
+
+
+def test_a_broken_pending_action_is_ignored(client):
+    state = new_game(client)["state"]
+
+    response = client.post("/api/turn", json={"line": "sì", "state": state, "pending": {"verb": "vola"}})
+
+    assert response.status_code == 200
+    assert response.json()["state"]["turns"] == 0
 
 
 def test_an_empty_line_changes_nothing(client):

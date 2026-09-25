@@ -76,6 +76,7 @@ def parse(
 ) -> Action | Ambiguous | None:
     """None when the sentence isn't a simple command made only of known words.
 
+    `in_reach` also holds the items in sight (Engine.visible): the parser prefers them all alike.
     `exits` are the current room's exits with the destinations the player knows (Engine.known_exits):
     they let "vai in cucina" go through the exit that leads there.
     """

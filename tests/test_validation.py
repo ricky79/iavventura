@@ -43,11 +43,17 @@ BROKEN_WORLDS = {
     ),
     "trigger on unknown item": (
         lambda d: d["rules"]["usa_moneta"]["trigger"].update(target="specchio"),
-        ["rules.usa_moneta.trigger.target", "specchio"],
+        ["rules.usa_moneta.trigger.0.target", "specchio"],
     ),
     "trigger with unknown item": (
         lambda d: d["rules"]["usa_moneta"]["trigger"].update({"with": "specchio"}),
-        ["rules.usa_moneta.trigger.with", "specchio"],
+        ["rules.usa_moneta.trigger.0.with", "specchio"],
+    ),
+    "unknown item in the second trigger of a list": (
+        lambda d: d["rules"]["tira_leva"].update(
+            trigger=[{"verb": "tira", "target": "leva"}, {"verb": "spingi", "target": "leva", "with": "specchio"}]
+        ),
+        ["rules.tira_leva.trigger.1.with", "specchio"],
     ),
     "effect gives unknown item": (
         add_effect({"give": "spada"}),
@@ -84,6 +90,22 @@ BROKEN_WORLDS = {
     "item variant condition is checked": (
         lambda d: d["items"]["leva"].update(variants=[{"when": {"has": "spada"}, "text": "Altro."}]),
         ["items.leva.variants.0.when", "spada"],
+    ),
+    "item revealing an unknown item": (
+        lambda d: d["items"]["leva"].update(reveals=["specchio"]),
+        ["items.leva.reveals", "specchio"],
+    ),
+    "item in sight that nothing reveals": (
+        lambda d: d["items"]["chiave"].update(visible_from={"room": "atrio"}),
+        ["items.chiave.visible_from", "reveals"],
+    ),
+    "item visible from an unknown room": (
+        lambda d: d["items"]["chiave"].update(visible_from={"room": "cantina"}),
+        ["items.chiave.visible_from.room", "cantina"],
+    ),
+    "visibility condition is checked": (
+        lambda d: d["items"]["chiave"].update(visible_from={"room": "atrio", "when": {"flag": "pozzo_vuoto"}}),
+        ["items.chiave.visible_from.when", "pozzo_vuoto"],
     ),
     "flag read but never set (typo)": (
         lambda d: d["rooms"]["atrio"]["exits"]["nord"].update(when={"flag": "porta_apreta"}),
@@ -137,3 +159,10 @@ def test_all_problems_are_reported_together(world_data):
 
     assert any("salone" in problem for problem in problems)
     assert any("cantina" in problem for problem in problems)
+
+
+def test_an_item_in_sight_revealed_by_another_is_fine(world_data):
+    world_data["items"]["chiave"]["visible_from"] = {"room": "atrio", "when": {"not": {"flag": "porta_aperta"}}}
+    world_data["items"]["leva"]["reveals"] = ["chiave"]
+
+    assert problems_for(world_data) == []

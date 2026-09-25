@@ -74,6 +74,10 @@ items:
     location: cucina             # una stanza, inventory, oppure null
     scenery: false               # true = arredo: non si prende e non viene elencato
     variants: []                 # come per le stanze
+    visible_from:                # facoltativo: si vede da una stanza, ma non ci si arriva
+      room: cortile
+      when: {not: {flag: chiave_pescata}}   # facoltativo
+    reveals: []                  # facoltativo: oggetti lontani che la sua descrizione mostra
 ```
 
 - `location: inventory`: l'oggetto parte nelle mani del giocatore.
@@ -84,11 +88,24 @@ items:
   la corda / una corda, gli attrezzi / degli attrezzi.
 - Il nome e gli alias si scrivono senza articolo: "gancio da macellaio", non "il gancio".
 - Gli alias possono ripetersi: dopo la combinazione, "corda" deve indicare la corda con gancio.
+- `visible_from`: l'oggetto **si vede ma non si raggiunge** (la chiave in fondo al pozzo). Dalla
+  stanza indicata, finché la condizione è vera e l'oggetto non è a portata, il giocatore lo può
+  nominare, e parser e interprete lo riconoscono, ma **solo dopo averlo visto** (vedi `reveals`):
+  prima, il motore risponde "Non vedi niente del genere qui.". Solo le regole agiscono su di lui:
+  senza una regola il motore risponde "Non ci arrivi.". Tipicamente l'oggetto parte fuori gioco
+  e una regola lo consegna (`give`), attivando il flag che lo toglie dalla vista.
+- `reveals`: gli oggetti lontani che la descrizione di questo oggetto mostra. Quando il giocatore
+  lo esamina, li vede, e da allora può nominarli:
+  ```yaml
+  pozzo:
+    reveals: [chiave_torre]    # esaminando il pozzo vedi la chiave in fondo
+  ```
+  Vale solo per la descrizione: una regola su "esamina" che la sostituisce non rivela niente.
 
 **Come il parser riconosce gli oggetti.** Nel comando del giocatore articoli e preposizioni
 (il, la, con, sul, nella…) vengono ignorati, e così anche nei nomi: "usa la corda con gancio
 nel pozzo" confronta le parole "corda gancio pozzo". Il parser sceglie:
-- prima gli oggetti **a portata**, e fra questi il nome o alias più lungo: se la corda con
+- prima gli oggetti **a portata o in vista**, e fra questi il nome o alias più lungo: se la corda con
   gancio è fuori gioco, "usa la corda con il gancio" indica la corda e il gancio separati;
 - se due oggetti a portata rispondono alle stesse parole, chiede "Quale intendi: …?";
 - un oggetto non a portata arriva al motore, che risponde "Non vedi niente del genere qui."
@@ -112,12 +129,20 @@ rules:
 
 - `verb`: uno fra esamina, prendi, lascia, usa, apri, chiudi, spingi, tira, leggi.
 - `target` e `with` sono id di oggetti; `with` è facoltativo.
+- `trigger` può essere anche una **lista** di azioni equivalenti, quando lo stesso enigma si
+  risolve in più modi. Ciascuna fa scattare la regola:
+  ```yaml
+  trigger:
+    - {verb: usa, target: pozzo, with: corda_con_gancio}
+    - {verb: prendi, target: chiave_torre, with: corda_con_gancio}
+  ```
 - Una regola senza effetti è una semplice risposta. Serve per gli indizi, come calare nel pozzo
   la corda senza gancio.
 
 **Come le usa il motore:**
 - gli oggetti dell'azione devono essere a portata, cioè nell'inventario o nella stanza (arredi
-  compresi); altrimenti il motore risponde "Non vedi niente del genere qui.";
+  compresi), oppure in vista (`visible_from`); altrimenti il motore risponde "Non vedi niente del
+  genere qui.". Su un oggetto in vista agiscono solo le regole: senza, "Non ci arrivi.";
 - `target` e `with` valgono in qualunque ordine: "usa corda con gancio" = "usa gancio con corda";
 - una regola senza `with` scatta solo per azioni senza strumento, e viceversa;
 - vale la prima regola che corrisponde, nell'ordine dei file. Se il suo `when` è falso si mostra
@@ -140,6 +165,15 @@ rules:
 | usa, spingi, tira | "Non succede niente." |
 
 I messaggi del motore non nominano mai l'oggetto, così non servono articolo e genere.
+
+**Azioni non previste.** Se una frase libera, interpretata dall'LLM, diventa un'azione a cui
+nessuna regola reagisce (tranne esamina, prendi e lascia senza strumento, che fanno qualcosa da
+sole), il gioco non la esegue subito ma chiede conferma: "Vuoi usare la corda con gancio con il
+portone?". Il modello potrebbe aver frainteso. Lo stesso per uno spostamento interpretato verso
+una direzione che la frase non nomina, né con la direzione né con la stanza in cui porta ("vado
+in cantina" → "Vuoi andare a ovest?"). Le azioni scritte con i comandi semplici si eseguono
+senza domande. Per chi scrive: le azioni che i giocatori tenteranno davvero meritano una
+regola, anche solo un indizio.
 
 ## Condizioni
 
@@ -180,12 +214,14 @@ Tutti gli errori vengono raccolti e mostrati insieme, ciascuno con il percorso
 - Riferimenti: stanza iniziale, uscite, posizioni, oggetti e stanze citati in trigger,
   condizioni ed effetti devono esistere; `inventory` non può essere l'id di una stanza.
 - Coerenza: flag letti ma mai attivati; oggetti fuori gioco che nessun effetto fa entrare;
-  stanze irraggiungibili dall'inizio; nomi canonici duplicati (maiuscole comprese).
+  oggetti con `visible_from` che nessun `reveals` mostra; stanze irraggiungibili dall'inizio;
+  nomi canonici duplicati (maiuscole comprese).
 
 ## Stato della partita
 
 `GameState` (in `models.py`) contiene tutto ciò che cambia durante la partita: stanza corrente,
-posizione di ogni oggetto, flag attivi, stanze visitate, turni, fine partita.
+posizione di ogni oggetto, flag attivi, stanze visitate, oggetti lontani già visti, turni, fine
+partita.
 `GameState.new(world)` crea lo stato iniziale, che si salva e rilegge in JSON.
 Il mondo invece è immutabile.
 
