@@ -7,9 +7,10 @@ deterministico tiene le regole del gioco.
 
 Il castello, gli enigmi e i personaggi sono originali.
 
-> **Stato:** in sviluppo. È pronta la **fase 1**: formato del mondo in YAML, modelli Pydantic,
-> caricamento con validazione e un castello di esempio. Motore, parser, LLM e interfaccia web
-> arriveranno nelle prossime fasi: per ora non c'è ancora niente da giocare.
+> **Stato:** in sviluppo. Sono pronte la **fase 1** (formato del mondo in YAML, modelli
+> Pydantic, caricamento con validazione e un castello di esempio) e la **fase 2** (il motore di
+> gioco). Il castello si può già giocare fino alla fine, ma solo dai test: parser, LLM e
+> interfaccia web arriveranno nelle prossime fasi.
 
 ## Come funziona
 
@@ -44,6 +45,11 @@ finali). Il formato è documentato in [`docs/formato-mondo.md`](docs/formato-mon
 quello per scrivere un nuovo castello senza toccare il codice. Al caricamento il mondo viene
 controllato a fondo (riferimenti, flag mai attivati, stanze irraggiungibili…) e tutti gli errori
 vengono mostrati insieme, con il punto esatto in cui correggerli.
+
+Il motore riceve azioni già strutturate (verbo, oggetti, direzione), applica le regole del mondo
+e restituisce un esito: il testo da mostrare, la stanza in cui si trova il giocatore e,
+all'ultima mossa, il finale. Cosa fanno i verbi e come scattano le regole è spiegato nello
+stesso documento del formato.
 
 ## Requisiti
 
@@ -88,18 +94,19 @@ Se il mondo contiene errori, il comando li elenca tutti.
 ```
 app/
   engine/
-    models.py       # modelli Pydantic del mondo e stato della partita
+    models.py       # modelli Pydantic: mondo, stato della partita, azione ed esito
     loader.py       # lettura dei file YAML e validazione
     validation.py   # controlli incrociati (riferimenti, flag, raggiungibilità)
+    engine.py       # il motore: esegue le azioni e aggiorna lo stato
 data/world/         # il castello di esempio
-docs/               # documentazione del formato
+docs/               # documentazione del formato e delle regole
 tests/              # test pytest
 ```
 
 ## Prossime fasi
 
 1. ~~Formato del mondo, modelli e castello di esempio~~
-2. Motore di gioco: esecuzione delle azioni, regole e condizioni
+2. ~~Motore di gioco: esecuzione delle azioni, regole e condizioni~~
 3. Parser classico dei comandi semplici
 4. LLM interprete e narratore (Ollama)
 5. Interfaccia web in stile console retrò, con streaming
