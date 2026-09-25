@@ -200,3 +200,82 @@ def test_every_significant_word_of_the_room_name_is_needed(world_data):
 
     assert parse("vai nella cella del conte", world, [], exits) == Action(verb="vai", direction="ovest")
     assert parse("vai nella cella", world, [], exits) is None
+
+
+# --- Talking to characters -----------------------------------------------------------------------
+
+
+@pytest.fixture
+def keeper(keeper_world) -> World:
+    return World.model_validate(keeper_world)
+
+
+def parse_near_keeper(world: World, text: str, topics: tuple[str, ...] = ("cella", "leva")):
+    """The custode is here, and the player can ask about `topics`."""
+    custode = world.characters["custode"]
+    return parse(text, world, [], (), [(custode, [custode.topics[topic_id] for topic_id in topics])])
+
+
+@pytest.mark.parametrize(
+    "text", ["parla con il custode", "parla al guardiano", "saluta il vecchio", "parla", "saluta"]
+)
+def test_talking_to_a_character(keeper, text):
+    assert parse_near_keeper(keeper, text) == Action(verb="parla", target="custode")
+
+
+@pytest.mark.parametrize(
+    ("text", "topic"),
+    [
+        ("chiedi al custode della cella", "cella"),
+        ("domanda al guardiano della prigione", "cella"),
+        ("chiedi al vecchio della leva", "leva"),
+        ("chiedi della cella", "cella"),  # to the only character here
+    ],
+)
+def test_asking_a_character_about_a_topic(keeper, text, topic):
+    assert parse_near_keeper(keeper, text) == Action(verb="chiedi", target="custode", topic=topic)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "chiedi al custode della chiave",  # a topic the player can't ask about yet
+        "chiedi al custode del tempo",  # the LLM decides: unknown topic, or a way of naming a known one
+        "chiedi al custode",
+        "parla con il custode della cella",
+    ],
+)
+def test_questions_without_a_known_topic_are_left_to_the_llm(keeper, text):
+    assert parse_near_keeper(keeper, text) is None
+
+
+def test_with_nobody_here_there_is_no_one_to_talk_to(keeper):
+    assert parse("parla", keeper, [], (), []) is None
+    assert parse("chiedi della cella", keeper, [], (), []) is None
+
+
+def test_a_character_in_another_room_still_reaches_the_engine(keeper):
+    assert parse("parla con il custode", keeper, [], (), []) == Action(verb="parla", target="custode")
+
+
+def test_a_character_can_be_examined(keeper):
+    assert parse_near_keeper(keeper, "esamina il custode") == Action(verb="esamina", target="custode")
+    assert parse_near_keeper(keeper, "guarda il vecchio") == Action(verb="esamina", target="custode")
+
+
+def test_two_characters_with_the_same_name_are_ambiguous(keeper_world):
+    keeper_world["characters"]["eremita"] = {
+        "name": "eremita",
+        "gender": "m",
+        "aliases": ["vecchio"],
+        "description": "Un eremita.",
+        "location": "atrio",
+        "greeting": "«Pace.»",
+        "unknown": "«Chissà.»",
+    }
+    world = World.model_validate(keeper_world)
+    here = [(character, []) for character in world.characters.values()]
+
+    parsed = parse("parla con il vecchio", world, [], (), here)
+
+    assert parsed == Ambiguous((world.characters["custode"], world.characters["eremita"]))

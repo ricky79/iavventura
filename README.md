@@ -105,12 +105,17 @@ Il gioco capisce subito i comandi semplici, con o senza articoli:
 | vedere cosa porti | `inventario` (anche `i`) |
 | agire sugli oggetti | `esamina X` (anche `x X`), `prendi X`, `lascia X`, `apri X`, `chiudi X`, `leggi X`, `spingi X`, `tira X` |
 | combinare due oggetti | `usa X con Y`, `apri X con Y` |
+| parlare con i personaggi | `parla con X` (anche `saluta X`), `chiedi a X di Y` |
 | aiuto / terminare | `aiuto` / `fine` (nel terminale) |
 
 Le frasi più libere ("dai un'occhiata al pozzo", "metti giù la corda") passano all'LLM, se
 Ollama è acceso: il gioco mostra tra parentesi come le ha capite, poi risponde. Ogni frase
 libera richiede qualche secondo su CPU (4-7 s nelle nostre prove; la prima, che carica il
 modello, fino a 20 s).
+
+Anche ai personaggi si può parlare liberamente ("pellegrino, cosa sai della torre?"): l'LLM
+sceglie solo a chi ti rivolgi e di cosa chiedi, la risposta è sempre un testo scritto per il
+gioco. Così nessun personaggio può inventare fatti o svelare la soluzione.
 
 Configurazione, con variabili d'ambiente:
 
@@ -179,4 +184,4 @@ tests/              # test pytest
 3. ~~Parser classico dei comandi semplici, testo fisso e gioco da terminale~~
 4. ~~LLM interprete delle frasi libere (Ollama)~~
 5. ~~Interfaccia web in stile console retrò~~
-6. Personaggi e dialoghi
+6. ~~Personaggi e dialoghi~~

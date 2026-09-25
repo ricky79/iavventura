@@ -57,8 +57,15 @@ class Command(StrEnum):
     INVENTORY = "inventario"
 
 
+class Conversation(StrEnum):
+    """Verbs on characters: the character answers with its author's texts; rules can't react to them."""
+
+    TALK = "parla"
+    ASK = "chiedi"
+
+
 class Gender(StrEnum):
-    """Grammatical gender of an item's name: it chooses the article (la corda, il gancio)."""
+    """Grammatical gender of a name: it chooses the article (la corda, il gancio)."""
 
     MASCULINE = "m"
     FEMININE = "f"
@@ -261,6 +268,44 @@ class Rule(_Frozen):
     text: Text
 
 
+class Topic(_Frozen):
+    """Something a character can be asked about. Name and gender make "chiedi al pellegrino della torre"."""
+
+    id: Id
+    name: Text
+    gender: Gender
+    plural: bool = False
+    aliases: tuple[Text, ...] = ()
+    # While false the character doesn't know the topic: it answers `unknown`, and the LLM isn't told.
+    when: Condition | None = None
+    text: Text
+    variants: tuple[TextVariant, ...] = ()
+    effects: tuple[Effect, ...] = ()
+
+
+class Character(_Frozen):
+    """Someone the player can talk to: it greets, and answers about its topics with fixed texts."""
+
+    id: Id
+    name: Text
+    gender: Gender
+    plural: bool = False
+    aliases: tuple[Text, ...] = ()
+    description: Text
+    variants: tuple[TextVariant, ...] = ()
+    location: Id  # a room: characters don't move
+    greeting: Text  # "parla con X"
+    unknown: Text  # the answer about anything else
+    topics: dict[Id, Topic] = {}
+
+    @model_validator(mode="before")
+    @classmethod
+    def _topic_ids_from_keys(cls, data: Any) -> Any:
+        if isinstance(data, dict) and isinstance(data.get("topics"), dict):
+            data = {**data, "topics": {key: _with_id("topics", key, value) for key, value in data["topics"].items()}}
+        return data
+
+
 class Ending(_Frozen):
     when: Condition
     text: Text
@@ -286,6 +331,7 @@ class World(_Frozen):
     rooms: dict[Id, Room]
     items: dict[Id, Item] = {}
     rules: dict[Id, Rule] = {}
+    characters: dict[Id, Character] = {}
 
     @model_validator(mode="before")
     @classmethod
@@ -293,11 +339,15 @@ class World(_Frozen):
         if not isinstance(data, dict):
             return data
         data = dict(data)
-        for section in ("rooms", "items", "rules"):
+        for section in ("rooms", "items", "rules", "characters"):
             entries = data.get(section)
             if isinstance(entries, dict):
                 data[section] = {key: _with_id(section, key, value) for key, value in entries.items()}
         return data
+
+    def thing(self, thing_id: str) -> Item | Character:
+        """An item or a character: actions name both by id (esamina il pellegrino)."""
+        return self.items.get(thing_id) or self.characters[thing_id]
 
 
 def _with_id(section: str, key: str, value: Any) -> Any:
@@ -339,16 +389,23 @@ class GameState(BaseModel):
 
 
 class Action(_Frozen):
-    """What the player wants to do, with items already resolved to ids (by the parser or the LLM)."""
+    """What the player wants to do, with items and characters already resolved to ids (by the parser
+    or the LLM). "chiedi" has the character as target and a topic of its own, None if it doesn't know it."""
 
-    verb: Verb | Command
+    verb: Verb | Command | Conversation
     target: Id | None = None
     with_: Id | None = Field(default=None, alias="with")
     direction: Direction | None = None
+    topic: Id | None = None
 
     @model_validator(mode="after")
     def _fields_fit_the_verb(self) -> "Action":
-        if self.verb is Command.GO:
+        if self.topic is not None and self.verb is not Conversation.ASK:
+            raise ValueError("only 'chiedi' has a topic")
+        if isinstance(self.verb, Conversation):
+            if self.target is None or self.with_ is not None or self.direction is not None:
+                raise ValueError(f"'{self.verb}' needs a character and nothing else")
+        elif self.verb is Command.GO:
             if self.direction is None or self.target is not None or self.with_ is not None:
                 raise ValueError("'vai' needs a direction and no items")
         elif isinstance(self.verb, Command):
@@ -371,6 +428,7 @@ class RoomView(_Frozen):
     items: tuple[Id, ...]
     exits: tuple[Direction, ...]
     first_visit: bool
+    characters: tuple[Id, ...] = ()
 
 
 class Outcome(_Frozen):

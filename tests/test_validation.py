@@ -161,6 +161,76 @@ def test_all_problems_are_reported_together(world_data):
     assert any("cantina" in problem for problem in problems)
 
 
+def keeper(d: dict) -> dict:
+    return d["characters"]["custode"]
+
+
+def topic(d: dict, topic_id: str) -> dict:
+    return keeper(d)["topics"][topic_id]
+
+
+BROKEN_KEEPERS = {
+    "character in an unknown room": (
+        lambda d: keeper(d).update(location="cantina"),
+        ["characters.custode.location", "cantina"],
+    ),
+    "character with the id of an item": (
+        lambda d: d["characters"].update(leva=d["characters"].pop("custode")),
+        ["characters.leva", "item"],
+    ),
+    "character with the name of an item": (
+        lambda d: keeper(d).update(name="Moneta"),
+        ["characters.custode.name", "moneta"],
+    ),
+    "two topics of a character with the same name": (
+        lambda d: topic(d, "leva").update(name="Cella"),
+        ["characters.custode.topics.leva.name", "cella"],
+    ),
+    "topic giving an unknown item": (
+        lambda d: topic(d, "cella").update(effects=[{"give": "spada"}]),
+        ["characters.custode.topics.cella.effects.0.give", "spada"],
+    ),
+    "topic known on a flag never set": (
+        lambda d: topic(d, "cella").update(when={"flag": "amici"}),
+        ["characters.custode.topics.cella.when", "amici"],
+    ),
+    "topic variant is checked": (
+        lambda d: topic(d, "leva")["variants"][0].update(when={"has": "spada"}),
+        ["characters.custode.topics.leva.variants.0.when", "spada"],
+    ),
+    "character variant is checked": (
+        lambda d: keeper(d)["variants"][0].update(when={"flag": "allarme"}),
+        ["characters.custode.variants.0.when", "allarme"],
+    ),
+}
+
+
+def test_a_world_with_a_character_has_no_problems(keeper_world):
+    assert problems_for(keeper_world) == []
+
+
+@pytest.mark.parametrize(("break_world", "expected_words"), BROKEN_KEEPERS.values(), ids=BROKEN_KEEPERS.keys())
+def test_broken_character_is_reported(keeper_world, break_world, expected_words):
+    break_world(keeper_world)
+
+    problems = problems_for(keeper_world)
+
+    assert any(all(word in problem for word in expected_words) for problem in problems), problems
+
+
+def test_a_flag_set_by_a_topic_may_be_read_elsewhere(keeper_world):
+    keeper_world["rooms"]["atrio"]["variants"] = [{"when": {"flag": "forziere_noto"}, "text": "Un atrio."}]
+
+    assert problems_for(keeper_world) == []
+
+
+def test_an_item_given_by_a_topic_is_brought_into_play(keeper_world):
+    keeper_world["items"]["mappa"] = {"name": "mappa", "gender": "f", "description": "Una mappa.", "location": None}
+    topic(keeper_world, "cella")["effects"] = [{"give": "mappa"}]
+
+    assert problems_for(keeper_world) == []
+
+
 def test_an_item_in_sight_revealed_by_another_is_fine(world_data):
     world_data["items"]["chiave"]["visible_from"] = {"room": "atrio", "when": {"not": {"flag": "porta_aperta"}}}
     world_data["items"]["leva"]["reveals"] = ["chiave"]

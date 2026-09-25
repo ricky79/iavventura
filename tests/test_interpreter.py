@@ -26,7 +26,7 @@ def test_schema_limits_the_answer_to_known_verbs_items_in_reach_and_directions(i
     assert schema["required"] == ["verbo", "bersaglio", "con"]
     assert properties["verbo"]["enum"] == [
         "esamina", "prendi", "lascia", "usa", "apri", "chiudi", "spingi", "tira", "leggi",
-        "vai", "guarda", "inventario", "altro",
+        "parla", "chiedi", "vai", "guarda", "inventario", "altro",
     ]  # fmt: skip
     assert properties["bersaglio"]["enum"] == [
         "pozzo", "porta della torre", "portone", "corda con gancio",
@@ -156,10 +156,10 @@ def test_a_broken_model_is_logged_as_not_understood(in_reach, caplog):
 
 def test_the_prompt_shows_a_sentence_with_a_purpose(castle):
     # Without this example qwen2.5:3b aimed the grapple at the door: "per recuperare la chiave" confused it.
-    assert INTERPRETER_SYSTEM.endswith(
+    assert (
         "Frase: usa il rampino per recuperare la chiave dal pozzo\n"
-        '{"verbo": "usa", "bersaglio": "pozzo", "con": "corda con gancio"}'
-    )
+        '{"verbo": "usa", "bersaglio": "pozzo", "con": "corda con gancio"}\n'
+    ) in INTERPRETER_SYSTEM
 
 
 def test_the_grapple_sentence_becomes_fishing_in_the_well(castle, in_reach):
@@ -184,3 +184,114 @@ def test_dropping_one_thing_into_another_is_using_them_together(in_reach):
     action = interpret(fake, "butta il rampino nel pozzo", in_reach)
 
     assert action == Action(verb="usa", target="pozzo", with_="corda_con_gancio")
+
+
+# --- Characters ----------------------------------------------------------------------------------
+
+
+@pytest.fixture
+def keeper(keeper_world) -> World:
+    return World.model_validate(keeper_world)
+
+
+def near_keeper(world: World) -> tuple[list[Item], list]:
+    """The atrium of the test world: the lever and the coin, and the custode with two topics."""
+    custode = world.characters["custode"]
+    return [world.items["leva"], world.items["moneta"]], [(custode, [custode.topics["cella"], custode.topics["leva"]])]
+
+
+def test_the_schema_adds_the_characters_here_and_their_topics(keeper):
+    items, characters = near_keeper(keeper)
+
+    properties = interpreter_schema(items, characters)["properties"]
+
+    assert properties["bersaglio"]["enum"] == [
+        "leva", "moneta", "custode", "nord", "sud", "est", "ovest", "su", "giù", "nessuno",
+    ]  # fmt: skip
+    # "leva" is both an item and a topic: it is offered once.
+    assert properties["con"]["enum"] == ["leva", "moneta", "custode", "cella", "nessuno"]
+
+
+def test_the_model_is_told_about_the_characters_only_when_someone_is_here(keeper):
+    items, characters = near_keeper(keeper)
+    fake = FakeLLMClient(json_replies=[{"verbo": "altro"}, {"verbo": "altro"}])
+
+    interpret(fake, "salve", items, [(Direction.NORTH, None)], characters)
+    interpret(fake, "salve", items, [(Direction.NORTH, None)])
+
+    assert fake.calls[0][1] == (
+        "Oggetti: leva; moneta (soldo)\n"
+        "Personaggi: custode (guardiano, vecchio)\n"
+        "Argomenti: cella (prigione); leva\n"
+        "Uscite: nord\n"
+        "Frase: salve"
+    )
+    assert fake.calls[1][1] == "Oggetti: leva; moneta (soldo)\nUscite: nord\nFrase: salve"
+
+
+@pytest.mark.parametrize(
+    ("reply", "expected"),
+    [
+        ({"verbo": "parla", "bersaglio": "custode", "con": "nessuno"}, Action(verb="parla", target="custode")),
+        ({"verbo": "chiedi", "bersaglio": "custode", "con": "cella"},
+         Action(verb="chiedi", target="custode", topic="cella")),
+        ({"verbo": "chiedi", "bersaglio": "custode", "con": "leva"},
+         Action(verb="chiedi", target="custode", topic="leva")),
+        ({"verbo": "chiedi", "bersaglio": "custode", "con": "nessuno"}, Action(verb="chiedi", target="custode")),
+        ({"verbo": "chiedi", "bersaglio": "custode", "con": "moneta"}, Action(verb="chiedi", target="custode")),
+        ({"verbo": "chiedi", "bersaglio": "nessuno", "con": "cella"},
+         Action(verb="chiedi", target="custode", topic="cella")),
+        ({"verbo": "parla", "bersaglio": "nessuno", "con": "nessuno"}, Action(verb="parla", target="custode")),
+        ({"verbo": "esamina", "bersaglio": "custode", "con": "nessuno"}, Action(verb="esamina", target="custode")),
+        ({"verbo": "usa", "bersaglio": "moneta", "con": "custode"},
+         Action(verb="usa", target="moneta", with_="custode")),
+    ],
+    ids=["talk", "ask", "ask about a topic named like an item", "ask about nothing known",
+         "ask about an item that is no topic", "ask the only one here", "talk to the only one here",
+         "examine", "use an item with"],
+)  # fmt: skip
+def test_replies_about_characters_become_actions(keeper, reply, expected):
+    items, characters = near_keeper(keeper)
+
+    assert interpret(FakeLLMClient(json_replies=[reply]), "frase", items, (), characters) == expected
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        {"verbo": "parla", "bersaglio": "moneta", "con": "nessuno"},
+        {"verbo": "chiedi", "bersaglio": "leva", "con": "cella"},
+    ],
+    ids=["talk to an item", "ask an item"],
+)
+def test_only_characters_can_be_talked_to(keeper, reply):
+    items, characters = near_keeper(keeper)
+
+    assert isinstance(interpret(FakeLLMClient(json_replies=[reply]), "frase", items, (), characters), NotUnderstood)
+
+
+def test_with_nobody_here_talking_is_no_game_action(keeper):
+    # "ciao, come stai?" with nobody around: qwen2.5:3b answers "parla", the game says it isn't an action.
+    items, _ = near_keeper(keeper)
+    reply = {"verbo": "parla", "bersaglio": "nessuno", "con": "nessuno"}
+
+    result = interpret(FakeLLMClient(json_replies=[reply]), "ciao, come stai?", items)
+
+    assert result == NotUnderstood("non c'è nessuno con cui parlare", not_an_action=True)
+
+
+def test_a_question_is_logged_with_its_topic(keeper, caplog):
+    items, characters = near_keeper(keeper)
+    reply = {"verbo": "chiedi", "bersaglio": "custode", "con": "cella"}
+
+    with caplog.at_level("INFO", logger="app.llm"):
+        interpret(FakeLLMClient(json_replies=[reply]), "frase", items, (), characters)
+
+    assert caplog.records[-1].getMessage() == "=== azione: chiedi custode di cella"
+
+
+def test_the_prompt_shows_how_to_talk_to_a_character():
+    assert "- parla: " in INTERPRETER_SYSTEM
+    assert "- chiedi: " in INTERPRETER_SYSTEM
+    # Last, after the grapple: anywhere before it, "getta il rampino nel pozzo" went to the door.
+    assert INTERPRETER_SYSTEM.endswith('{"verbo": "chiedi", "bersaglio": "cuoca", "con": "nessuno"}')

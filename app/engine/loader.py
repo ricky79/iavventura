@@ -1,6 +1,6 @@
 """Loads the world from data/world/*.yaml and validates it.
 
-Every file may contain any of the top-level sections (game, rooms, items, rules):
+Every file may contain any of the top-level sections (game, rooms, items, rules, characters):
 the sections are merged, so how the world is split across files is only a convention.
 """
 
@@ -42,7 +42,7 @@ def load_world(directory: Path = DEFAULT_WORLD_DIR) -> World:
         if content is None:
             continue
         if not isinstance(content, dict):
-            problems.append(f"{path.name}: expected a mapping of sections (game, rooms, items, rules)")
+            problems.append(f"{path.name}: expected a mapping of sections (game, rooms, items, rules, characters)")
             continue
 
         for section, value in content.items():

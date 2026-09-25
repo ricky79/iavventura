@@ -23,6 +23,8 @@ pytestmark = pytest.mark.skipif(os.environ.get("OLLAMA_TESTS") != "1", reason="n
 
 CASTLE = load_world()
 RULE = {rule_id: rule.text for rule_id, rule in CASTLE.rules.items()}
+PILGRIM = CASTLE.characters["pellegrino"]
+ANSWER = {topic_id: topic.text for topic_id, topic in PILGRIM.topics.items()}
 
 
 @pytest.fixture(scope="module")
@@ -36,6 +38,14 @@ def llm():
 def near(engine: Engine, state: GameState) -> list[Item]:
     """What the game passes to the interpreter: items in reach, then those in sight."""
     return engine.in_reach(state) + engine.visible(state)
+
+
+def understood(llm, engine: Engine, state: GameState, sentence: str) -> Action | NotUnderstood:
+    """The sentence interpreted as the game does it, with the time the call took."""
+    start = time.perf_counter()
+    action = interpret(llm, sentence, near(engine, state), engine.known_exits(state), engine.characters_here(state))
+    print(f"\n  {time.perf_counter() - start:4.1f}s  {sentence!r} -> {action}")
+    return action
 
 
 def game_in(room: str, *carried: str) -> tuple[Engine, GameState]:
@@ -71,9 +81,7 @@ CASES = [
 def test_free_sentences_become_the_right_action(llm, room, carried, sentence, check):
     engine, state = game_in(room, *carried)
 
-    start = time.perf_counter()
-    action = interpret(llm, sentence, near(engine, state), engine.known_exits(state))
-    print(f"\n  {time.perf_counter() - start:4.1f}s  {sentence!r} -> {action}")
+    action = understood(llm, engine, state, sentence)
 
     assert isinstance(action, Action)
     assert check(engine.execute(state, action), state)
@@ -93,9 +101,7 @@ def test_the_grapple_fishes_the_key_seen_in_the_well(llm, sentence):
     engine, state = game_in("cortile", "corda_con_gancio")
     engine.execute(state, Action(verb="esamina", target="pozzo"))
 
-    start = time.perf_counter()
-    action = interpret(llm, sentence, near(engine, state), engine.known_exits(state))
-    print(f"\n  {time.perf_counter() - start:4.1f}s  {sentence!r} -> {action}")
+    action = understood(llm, engine, state, sentence)
 
     assert isinstance(action, Action)
     assert engine.execute(state, action).text == RULE["pesca_chiave"]
@@ -105,7 +111,11 @@ def test_the_grapple_fishes_the_key_seen_in_the_well(llm, sentence):
 def test_small_talk_is_not_understood(llm, sentence):
     engine, state = game_in("cortile")
 
-    assert isinstance(interpret(llm, sentence, near(engine, state), engine.known_exits(state)), NotUnderstood)
+    result = understood(llm, engine, state, sentence)
+
+    # With nobody around, "ciao" is no game action either (the model may answer "parla").
+    assert isinstance(result, NotUnderstood)
+    assert result.not_an_action
 
 
 @pytest.mark.parametrize(
@@ -124,4 +134,26 @@ def test_a_place_that_is_not_an_exit_does_not_move_the_player(llm, room, sentenc
     print(f"\n  {sentence!r} -> {answer!r}")
 
     assert state.current_room == room
+
+
+# --- The pilgrim in the stable -------------------------------------------------------------------
+
+DIALOGUE = [
+    ("salve, pellegrino!", PILGRIM.greeting),
+    ("pellegrino, cosa sai della torre?", ANSWER["torre"]),
+    ("gli chiedo del pozzo", ANSWER["pozzo"]),
+    ("chi era il castellano?", ANSWER["rocca"]),
+    ("chiedo al vecchio come si esce da qui", ANSWER["portone"]),
+    ("gli chiedo se ha fame", PILGRIM.unknown),
+]
+
+
+@pytest.mark.parametrize(("sentence", "answer"), DIALOGUE, ids=[case[0] for case in DIALOGUE])
+def test_the_pilgrim_answers_free_questions(llm, sentence, answer):
+    engine, state = game_in("scuderia")
+
+    action = understood(llm, engine, state, sentence)
+
+    assert isinstance(action, Action)
+    assert engine.execute(state, action).text == answer
 

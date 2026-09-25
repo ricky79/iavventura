@@ -1,7 +1,20 @@
 import pytest
 from pydantic import ValidationError
 
-from app.engine.models import Action, AllOf, Command, Direction, FlagSet, Gender, Has, Not, SetFlag, Verb, World
+from app.engine.models import (
+    Action,
+    AllOf,
+    Command,
+    Conversation,
+    Direction,
+    FlagSet,
+    Gender,
+    Has,
+    Not,
+    SetFlag,
+    Verb,
+    World,
+)
 
 
 def error_locations(exc: ValidationError) -> list[str]:
@@ -170,6 +183,9 @@ def test_game_needs_at_least_one_ending(world_data):
         {"verb": "inventario"},
         {"verb": "prendi", "target": "moneta"},
         {"verb": "usa", "target": "moneta", "with": "leva"},
+        {"verb": "parla", "target": "custode"},
+        {"verb": "chiedi", "target": "custode", "topic": "cella"},
+        {"verb": "chiedi", "target": "custode"},  # about something the character doesn't know
     ],
 )
 def test_well_formed_actions_are_accepted(fields):
@@ -188,6 +204,12 @@ def test_well_formed_actions_are_accepted(fields):
         {"verb": "esamina", "target": "leva", "direction": "nord"},
         {"verb": "usa", "target": "moneta", "with": "moneta"},
         {"verb": "salta"},
+        {"verb": "parla"},
+        {"verb": "parla", "target": "custode", "topic": "cella"},
+        {"verb": "chiedi", "target": "custode", "with": "moneta"},
+        {"verb": "chiedi", "target": "custode", "direction": "nord"},
+        {"verb": "esamina", "target": "leva", "topic": "cella"},
+        {"verb": "guarda", "topic": "cella"},
     ],
 )
 def test_malformed_actions_are_rejected(fields):
@@ -198,6 +220,44 @@ def test_malformed_actions_are_rejected(fields):
 def test_action_verbs_are_parsed_into_their_enums():
     assert Action(verb="vai", direction="giù").verb is Command.GO
     assert Action(verb="leggi", target="libro").verb is Verb.READ
+    assert Action(verb="chiedi", target="custode").verb is Conversation.ASK
+
+
+# --- Characters -------------------------------------------------------------------
+
+
+def test_characters_and_their_topics_take_their_ids_from_the_keys(keeper_world):
+    keeper = World.model_validate(keeper_world).characters["custode"]
+
+    assert keeper.id == "custode"
+    assert keeper.location == "atrio"
+    assert keeper.aliases == ("guardiano", "vecchio")
+    assert list(keeper.topics) == ["cella", "leva", "chiave"]
+    assert keeper.topics["cella"].id == "cella"
+    assert keeper.topics["chiave"].effects == (SetFlag(set_flag="forziere_noto"),)
+
+
+@pytest.mark.parametrize("field", ["greeting", "unknown", "location", "gender"])
+def test_a_character_needs_its_texts_a_room_and_a_gender(keeper_world, field):
+    del keeper_world["characters"]["custode"][field]
+
+    with pytest.raises(ValidationError) as caught:
+        World.model_validate(keeper_world)
+
+    assert error_locations(caught.value) == [f"characters.custode.{field}"]
+
+
+def test_a_topic_needs_a_name_and_a_gender_for_its_article(keeper_world):
+    del keeper_world["characters"]["custode"]["topics"]["cella"]["gender"]
+
+    with pytest.raises(ValidationError) as caught:
+        World.model_validate(keeper_world)
+
+    assert error_locations(caught.value) == ["characters.custode.topics.cella.gender"]
+
+
+def test_a_world_without_characters_is_fine(world_data):
+    assert World.model_validate(world_data).characters == {}
 
 
 # --- Gender and number of items -------------------------------------------------

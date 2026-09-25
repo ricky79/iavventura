@@ -287,6 +287,52 @@ def test_only_a_new_game_has_an_opening(castle):
         Game(engine, state=state).opening()
 
 
+
+# --- The pilgrim in the stable -------------------------------------------------------------------
+
+
+def in_the_stable(castle: World, llm: FakeLLMClient | None = None) -> Game:
+    game = Game(Engine(castle), llm)
+    game.state.current_room = "scuderia"
+    return game
+
+
+def test_the_stable_shows_the_pilgrim(castle):
+    assert "\nQui c'è un pellegrino.\n" in say(in_the_stable(castle), "guarda")
+
+
+def test_talking_to_the_pilgrim_needs_no_llm(castle):
+    llm = FakeLLMClient()
+    game = in_the_stable(castle, llm)
+    pilgrim = castle.characters["pellegrino"]
+
+    assert say(game, "parla con il pellegrino") == pilgrim.greeting
+    assert say(game, "chiedi al vecchio della torre") == pilgrim.topics["torre"].text
+    assert llm.calls == []
+
+
+def test_a_question_in_free_words_goes_through_the_llm(castle):
+    llm = FakeLLMClient(json_replies=[{"verbo": "chiedi", "bersaglio": "pellegrino", "con": "torre"}])
+    game = in_the_stable(castle, llm)
+
+    output = say(game, "pellegrino, come si sale sulla torre?")
+
+    assert "\nPersonaggi: pellegrino (" in llm.calls[0][1]
+    assert "\nArgomenti: " in llm.calls[0][1]
+    assert output == f"(chiedi al pellegrino della torre)\n{castle.characters['pellegrino'].topics['torre'].text}"
+
+
+def test_a_question_about_something_the_pilgrim_does_not_know_is_logged(castle, caplog):
+    llm = FakeLLMClient(json_replies=[{"verbo": "chiedi", "bersaglio": "pellegrino", "con": "nessuno"}])
+    game = in_the_stable(castle, llm)
+
+    [entry] = logged(caplog, game, "gli chiedo se ha fame")
+
+    assert entry["azione"] == "chiedi pellegrino"
+    assert entry["esito"] == "fallita"
+    assert entry["dettaglio"] == castle.characters["pellegrino"].unknown
+
+
 # --- Log of the commands that went wrong ---------------------------------------------------------
 
 

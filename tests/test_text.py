@@ -3,7 +3,7 @@
 import pytest
 
 from app.engine.models import Action, Direction, Item, Outcome, RoomView, World
-from app.engine.text import action_text, confirmation, definite, indefinite, join, render, which_one
+from app.engine.text import action_text, articulated, confirmation, definite, indefinite, join, render, which_one
 
 
 def item(name: str, gender: str = "m", plural: bool = False) -> Item:
@@ -151,3 +151,81 @@ def test_actions_read_as_commands(world, action, expected):
 )
 def test_an_unexpected_action_is_asked_as_a_question(world, action, expected):
     assert confirmation(action, world) == expected
+
+
+# --- Characters ----------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("name", "gender", "plural", "to_the", "of_the"),
+    [
+        ("gancio", "m", False, "al gancio", "del gancio"),
+        ("specchio", "m", False, "allo specchio", "dello specchio"),
+        ("uncino", "m", False, "all'uncino", "dell'uncino"),
+        ("corda", "f", False, "alla corda", "della corda"),
+        ("ascia", "f", False, "all'ascia", "dell'ascia"),
+        ("sassi", "m", True, "ai sassi", "dei sassi"),
+        ("attrezzi", "m", True, "agli attrezzi", "degli attrezzi"),
+        ("chiavi", "f", True, "alle chiavi", "delle chiavi"),
+    ],
+)
+def test_prepositions_join_the_article(name, gender, plural, to_the, of_the):
+    assert articulated("a", item(name, gender, plural)) == to_the
+    assert articulated("di", item(name, gender, plural)) == of_the
+
+
+@pytest.fixture
+def keeper(keeper_world) -> World:
+    keeper_world["characters"]["cuoca"] = {
+        "name": "cuoca",
+        "gender": "f",
+        "description": "Una cuoca.",
+        "location": "cella",
+        "greeting": "«Ciao.»",
+        "unknown": "«Boh.»",
+    }
+    return World.model_validate(keeper_world)
+
+
+def test_room_shows_the_characters_after_the_description(keeper):
+    view = room(items=("moneta",), exits=(Direction.NORTH,)).model_copy(update={"characters": ("custode",)})
+
+    assert render(Outcome(ok=True, room=view), keeper) == (
+        "Atrio\n"
+        "Un atrio spoglio.\n"
+        "Qui c'è un custode.\n"
+        "Qui vedi una moneta.\n"
+        "Uscita: nord."
+    )
+
+
+def test_room_with_two_characters(keeper):
+    view = room().model_copy(update={"characters": ("custode", "cuoca")})
+
+    assert render(Outcome(ok=True, room=view), keeper) == "Atrio\nUn atrio spoglio.\nQui ci sono un custode e una cuoca."
+
+
+@pytest.mark.parametrize(
+    ("action", "expected"),
+    [
+        (Action(verb="parla", target="custode"), "parla con il custode"),
+        (Action(verb="chiedi", target="custode", topic="cella"), "chiedi al custode della cella"),
+        (Action(verb="chiedi", target="custode"), "chiedi al custode"),
+        (Action(verb="esamina", target="custode"), "esamina il custode"),
+        (Action(verb="usa", target="moneta", with_="custode"), "usa la moneta con il custode"),
+    ],
+)
+def test_actions_on_characters_read_as_commands(keeper, action, expected):
+    assert action_text(action, keeper) == expected
+
+
+@pytest.mark.parametrize(
+    ("action", "expected"),
+    [
+        (Action(verb="usa", target="moneta", with_="custode"), "Vuoi usare la moneta con il custode?"),
+        (Action(verb="parla", target="cuoca"), "Vuoi parlare con la cuoca?"),
+        (Action(verb="chiedi", target="custode", topic="leva"), "Vuoi chiedere al custode della leva?"),
+    ],
+)
+def test_actions_on_characters_are_asked_as_questions(keeper, action, expected):
+    assert confirmation(action, keeper) == expected

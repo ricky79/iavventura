@@ -7,15 +7,16 @@ L'esempio completo è la Rocca di Serravento in `data/world/`.
 ## File
 
 - Il mondo sta in `data/world/*.yaml`. Il loader legge tutti i file e ne unisce le sezioni.
-- Sezioni ammesse: `game`, `rooms`, `items`, `rules`. Un file può contenerne quante vuole e
-  una sezione può continuare in più file. La divisione attuale (gioco, stanze, oggetti,
-  regole) è solo una convenzione.
+- Sezioni ammesse: `game`, `rooms`, `items`, `rules`, `characters`. Un file può contenerne quante
+  vuole e una sezione può continuare in più file. La divisione attuale (gioco, stanze, oggetti,
+  regole, personaggi) è solo una convenzione.
 - `game` compare una sola volta. Lo stesso id non può essere definito in due file.
 
 ## Id, chiavi e testi
 
-- Ogni stanza, oggetto e regola è identificato dalla sua **chiave**, cioè l'id: minuscole,
-  cifre e `_`, iniziale una lettera (`chiave_torre`). Non si scrive un campo `id`.
+- Ogni stanza, oggetto, regola e personaggio (e ogni argomento di un personaggio) è identificato
+  dalla sua **chiave**, cioè l'id: minuscole, cifre e `_`, iniziale una lettera (`chiave_torre`).
+  Non si scrive un campo `id`.
 - Chiavi dello schema in inglese (`description`, `exits`…); id, testi e direzioni in italiano.
 - Nessun campo sconosciuto è ammesso: un refuso come `descripton` è un errore.
 - Testi lunghi: meglio lo stile `>` di YAML, che permette anche i due punti nel testo.
@@ -177,9 +178,49 @@ in cantina" → "Vuoi andare a ovest?"). Le azioni scritte con i comandi semplic
 senza domande. Per chi scrive: le azioni che i giocatori tenteranno davvero meritano una
 regola, anche solo un indizio.
 
+## `characters`
+
+```yaml
+characters:
+  pellegrino:
+    name: pellegrino             # nome canonico: unico tra oggetti e personaggi
+    gender: m
+    plural: false                # facoltativo
+    aliases: [viandante, vecchio]
+    description: Testo mostrato quando lo si esamina.
+    variants: []                 # come per le stanze
+    location: scuderia           # una stanza: i personaggi non si spostano
+    greeting: Risposta a "parla con il pellegrino".
+    unknown: Risposta a una domanda su qualcosa che non conosce.
+    topics:
+      torre:
+        name: torre              # unico tra gli argomenti del personaggio
+        gender: f                # serve all'articolo: "chiedi al pellegrino della torre"
+        aliases: [mura]
+        when: {flag: torre_vista}   # facoltativo: finché è falsa, l'argomento è sconosciuto
+        text: Risposta.
+        variants: []             # come per le stanze
+        effects: []              # facoltativo, come per le regole
+```
+
+- **Si parla per argomenti**, come nelle avventure degli anni '80: `parla con X` (anche `saluta X`)
+  risponde con `greeting`, `chiedi a X di Y` (anche `domanda a X di Y`) con il testo
+  dell'argomento. `chiedi della torre` si rivolge all'unico personaggio presente. Le frasi libere
+  ("pellegrino, cosa sai della torre?") passano all'LLM, che sceglie solo il personaggio e uno degli
+  argomenti che conosce: **le risposte sono sempre i testi scritti qui**.
+- La descrizione della stanza elenca i personaggi presenti: "Qui c'è un pellegrino."
+- Un argomento si riconosce dal nome o da un alias. Un alias può ripetere il nome di un oggetto
+  ("chiave di ferro"): se l'LLM sceglie l'oggetto per una domanda, la risposta è quella dell'argomento.
+- Una domanda su un argomento sconosciuto (con `when` falsa, o che non c'è) riceve `unknown` e
+  non cambia lo stato. Finisce in `logs/comandi.jsonl`: mostra cosa chiedono i giocatori.
+- `effects` si applicano ogni volta che si chiede dell'argomento; per un effetto solo la prima
+  volta, basta un `when` su un flag. Un personaggio che dà solo indizi non ne ha.
+- I personaggi si possono esaminare; "prendi" risponde "Non si può prendere.", gli altri verbi non
+  fanno niente. Le regole non possono ancora nominarli ("dai la corda al pellegrino").
+
 ## Condizioni
 
-Usate in `when` di uscite, varianti, regole e finali. Ogni condizione ha **una sola chiave**.
+Usate in `when` di uscite, varianti, regole, argomenti dei personaggi e finali. Ogni condizione ha **una sola chiave**.
 
 | Condizione | Vera quando |
 |---|---|
@@ -217,7 +258,9 @@ Tutti gli errori vengono raccolti e mostrati insieme, ciascuno con il percorso
   condizioni ed effetti devono esistere; `inventory` non può essere l'id di una stanza.
 - Coerenza: flag letti ma mai attivati; oggetti fuori gioco che nessun effetto fa entrare;
   oggetti con `visible_from` che nessun `reveals` mostra; stanze irraggiungibili dall'inizio;
-  nomi canonici duplicati (maiuscole comprese).
+  nomi canonici duplicati (maiuscole comprese) tra oggetti e personaggi, e tra gli argomenti di
+  un personaggio; personaggi con lo stesso id di un oggetto. Condizioni ed effetti degli
+  argomenti si controllano come quelli delle regole.
 
 ## Stato della partita
 

@@ -11,6 +11,7 @@ from app.engine.models import (
     AllOf,
     AnyOf,
     Condition,
+    Effect,
     FlagSet,
     Give,
     Has,
@@ -64,18 +65,24 @@ def find_problems(world: World) -> list[str]:
             check_item(f"rules.{rule.id}.trigger.{index}.target", trigger.target)
             if trigger.with_ is not None:
                 check_item(f"rules.{rule.id}.trigger.{index}.with", trigger.with_)
-        for index, effect in enumerate(rule.effects):
-            path = f"rules.{rule.id}.effects.{index}"
-            match effect:
-                case Give(give=item_id):
-                    check_item(f"{path}.give", item_id)
-                case Remove(remove=item_id):
-                    check_item(f"{path}.remove", item_id)
-                case Place(place=placement):
-                    check_item(f"{path}.place.item", placement.item)
-                    check_room(f"{path}.place.room", placement.room)
 
-    flags_ever_set = {effect.set_flag for effect in _effects(world) if isinstance(effect, SetFlag)}
+    for character in world.characters.values():
+        check_room(f"characters.{character.id}.location", character.location)
+        if character.id in world.items:
+            report(f"characters.{character.id}", f"id '{character.id}' is already used by an item")
+
+    for path, effect in _effects(world):
+        match effect:
+            case Give(give=item_id):
+                check_item(f"{path}.give", item_id)
+            case Remove(remove=item_id):
+                check_item(f"{path}.remove", item_id)
+            case Place(place=placement):
+                check_item(f"{path}.place.item", placement.item)
+                check_room(f"{path}.place.room", placement.room)
+
+    effects = [effect for _, effect in _effects(world)]
+    flags_ever_set = {effect.set_flag for effect in effects if isinstance(effect, SetFlag)}
     for path, condition in _conditions(world):
         for atom in _atoms(condition):
             match atom:
@@ -86,8 +93,8 @@ def find_problems(world: World) -> list[str]:
                 case PlayerIn(player_in=room_id):
                     check_room(path, room_id)
 
-    brought_into_play = {effect.give for effect in _effects(world) if isinstance(effect, Give)} | {
-        effect.place.item for effect in _effects(world) if isinstance(effect, Place)
+    brought_into_play = {effect.give for effect in effects if isinstance(effect, Give)} | {
+        effect.place.item for effect in effects if isinstance(effect, Place)
     }
     for item in world.items.values():
         if item.location is None and item.id not in brought_into_play:
@@ -99,20 +106,40 @@ def find_problems(world: World) -> list[str]:
             if room_id not in reachable:
                 report(f"rooms.{room_id}", f"not reachable from the start room '{world.game.start_room}'")
 
+    # Items and characters are named in the same commands (esamina X), so their names can't repeat.
     owner_of_name: dict[str, str] = {}
-    for item in world.items.values():
-        key = item.name.casefold()
-        if key in owner_of_name:
-            report(f"items.{item.id}.name", f"name '{item.name}' is already used by item '{owner_of_name[key]}'")
-        else:
-            owner_of_name[key] = item.id
+    for section, things in (("items", world.items), ("characters", world.characters)):
+        for thing in things.values():
+            key = thing.name.casefold()
+            if key in owner_of_name:
+                report(f"{section}.{thing.id}.name", f"name '{thing.name}' is already used by {owner_of_name[key]}")
+            else:
+                owner_of_name[key] = f"{section[:-1]} '{thing.id}'"
+
+    for character in world.characters.values():
+        topic_of_name: dict[str, str] = {}
+        for topic in character.topics.values():
+            key = topic.name.casefold()
+            if key in topic_of_name:
+                report(
+                    f"characters.{character.id}.topics.{topic.id}.name",
+                    f"name '{topic.name}' is already used by topic '{topic_of_name[key]}'",
+                )
+            else:
+                topic_of_name[key] = topic.id
 
     return problems
 
 
-def _effects(world: World) -> Iterator:
+def _effects(world: World) -> Iterator[tuple[str, Effect]]:
+    """Every effect with its path: those of rules, and those of the topics characters answer about."""
     for rule in world.rules.values():
-        yield from rule.effects
+        for index, effect in enumerate(rule.effects):
+            yield f"rules.{rule.id}.effects.{index}", effect
+    for character in world.characters.values():
+        for topic in character.topics.values():
+            for index, effect in enumerate(topic.effects):
+                yield f"characters.{character.id}.topics.{topic.id}.effects.{index}", effect
 
 
 def _conditions(world: World) -> Iterator[tuple[str, Condition]]:
@@ -130,6 +157,15 @@ def _conditions(world: World) -> Iterator[tuple[str, Condition]]:
     for rule in world.rules.values():
         if rule.when is not None:
             yield f"rules.{rule.id}.when", rule.when
+    for character in world.characters.values():
+        path = f"characters.{character.id}"
+        for index, variant in enumerate(character.variants):
+            yield f"{path}.variants.{index}.when", variant.when
+        for topic in character.topics.values():
+            if topic.when is not None:
+                yield f"{path}.topics.{topic.id}.when", topic.when
+            for index, variant in enumerate(topic.variants):
+                yield f"{path}.topics.{topic.id}.variants.{index}.when", variant.when
     for index, ending in enumerate(world.game.endings):
         yield f"game.endings.{index}.when", ending.when
 

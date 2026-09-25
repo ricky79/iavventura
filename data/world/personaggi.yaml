@@ -1,0 +1,101 @@
+# Personaggi della rocca. Rispondono solo con i testi scritti qui: l'LLM sceglie
+# al massimo l'argomento. Il pellegrino dà indizi, mai la soluzione, e non cambia
+# lo stato del gioco (nessun effetto): parlargli non apre scorciatoie.
+
+characters:
+  pellegrino:
+    name: pellegrino
+    gender: m
+    aliases: [viandante, vecchio]
+    description: >
+      Un vecchio avvolto in un mantello fradicio, seduto su una balla di fieno
+      con il bastone tra le ginocchia. Anche lui si è riparato qui dalla bufera.
+    location: scuderia
+    greeting: >
+      «Un'altra anima sorpresa dalla bufera», borbotta il pellegrino senza
+      alzarsi. «Mettiti comodo: il portone non si riapre, lo so bene. Se vuoi
+      sapere qualcosa della rocca, chiedi pure.»
+    unknown: >
+      Il pellegrino si gratta la barba: «Di questo non saprei dirti niente.»
+    topics:
+      pellegrino:
+        name: pellegrino
+        gender: m
+        aliases: [viaggio, santuario]
+        text: >
+          «Io? Vado al santuario oltre il passo, come ogni autunno. Il mio nome
+          non conta: stanotte siamo solo due persone al riparo.»
+
+      rocca:
+        name: rocca
+        gender: f
+        aliases: [castello, castellano]
+        text: >
+          «Era dei signori di Serravento. L'ultimo castellano se n'è andato
+          vent'anni fa, e da allora qui dentro entrano solo i corvi e i
+          viandanti sfortunati come noi.»
+
+      bufera:
+        name: bufera
+        gender: f
+        aliases: [tempesta, tempo]
+        text: >
+          «Non smetterà prima di sera. Io aspetto qui: con le mie gambe, la
+          discesa nel fango sarebbe l'ultima.»
+
+      portone:
+        name: portone
+        gender: m
+        aliases: [uscita]
+        text: >
+          «Si richiude da solo, e da questa parte non ha maniglia: l'hanno fatto
+          per tenere fuori i nemici, non per lasciare uscire gli ospiti. L'unica
+          altra strada passa dalla torre.»
+
+      torre:
+        name: torre
+        gender: f
+        aliases: [porta della torre, mura]
+        text: >
+          «Dalla cima della torre si esce sui camminamenti, e dalle mura una
+          scala scende fino al sentiero. Ma la porta è chiusa a chiave, e la
+          chiave non è appesa a un chiodo, puoi starne certo.»
+        variants:
+          - when: {flag: torre_aperta}
+            text: >
+              «Hai aperto la torre? Allora vai, finché c'è luce. Io resto qui ad
+              aspettare che passi la bufera.»
+
+      chiave:
+        name: chiave
+        gender: f
+        aliases: [chiave di ferro, chiave della torre]
+        text: >
+          «Si racconta che il castellano, andandosene, abbia gettato la chiave
+          della torre nel pozzo, perché nessuno salisse più lassù. Storie da
+          osteria, dicono. Io non ci giurerei.»
+        variants:
+          - when: {has: chiave_torre}
+            text: «Allora le storie erano vere! Con quella, la torre è tua.»
+
+      pozzo:
+        name: pozzo
+        gender: m
+        text: >
+          «Asciutto da anni, ma profondo: non ci arrivi nemmeno sdraiandoti sul
+          bordo. Servirebbe qualcosa da calare laggiù, che poi riporti su quello
+          che trova.»
+        variants:
+          - when: {flag: chiave_pescata}
+            text: «Ne hai tirato fuori qualcosa, eh? Ingegnoso.»
+
+      corda:
+        name: corda
+        gender: f
+        aliases: [fune, gancio, rampino]
+        text: >
+          «Una corda da sola non afferra niente: le manca qualcosa che morda, un
+          uncino, un gancio. In cucina, una volta, non ne mancavano.»
+        variants:
+          - when: {has: corda_con_gancio}
+            text: «Questo sì che è un rampino come si deve.»
