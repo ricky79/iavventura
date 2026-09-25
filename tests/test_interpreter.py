@@ -98,3 +98,36 @@ def test_replies_that_make_no_sense_are_not_understood(in_reach, reply):
 
 def test_a_broken_model_means_not_understood(in_reach):
     assert interpret(FakeLLMClient(), "frase", in_reach) is None
+
+
+# --- Log of how the answer was understood ---------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("reply", "logged"),
+    [
+        ({"verbo": "usa", "bersaglio": "corda con gancio", "con": "pozzo"},
+         "=== azione: usa corda_con_gancio con pozzo"),
+        ({"verbo": "spingi", "bersaglio": "portone", "con": "nessuno"}, "=== azione: spingi portone"),
+        ({"verbo": "vai", "bersaglio": "nord", "con": "nessuno"}, "=== azione: vai nord"),
+        ({"verbo": "inventario", "bersaglio": "nessuno", "con": "nessuno"}, "=== azione: inventario"),
+        ({"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"},
+         "=== non capito: la frase non è un'azione di gioco"),
+        ({"verbo": "vola", "bersaglio": "pozzo", "con": "nessuno"}, "=== non capito: verbo sconosciuto 'vola'"),
+        ({"verbo": "vai", "bersaglio": "pozzo", "con": "nessuno"}, "=== non capito: direzione non valida 'pozzo'"),
+        ({"verbo": "prendi", "bersaglio": "nessuno", "con": "nessuno"},
+         "=== non capito: bersaglio non a portata 'nessuno'"),
+    ],
+)  # fmt: skip
+def test_how_the_answer_was_understood_is_logged(in_reach, caplog, reply, logged):
+    with caplog.at_level("INFO", logger="app.llm"):
+        interpret(FakeLLMClient(json_replies=[reply]), "frase", in_reach)
+
+    assert caplog.records[-1].getMessage() == logged
+
+
+def test_a_broken_model_is_logged_as_not_understood(in_reach, caplog):
+    with caplog.at_level("INFO", logger="app.llm"):
+        interpret(FakeLLMClient(), "frase", in_reach)
+
+    assert caplog.records[-1].getMessage() == "=== non capito: il modello non ha dato una risposta valida"
