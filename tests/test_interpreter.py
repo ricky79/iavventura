@@ -68,6 +68,8 @@ def test_no_items_in_reach_and_no_exits(castle):
         ({"verbo": "usa", "bersaglio": "corda con gancio", "con": "pozzo"},
          Action(verb="usa", target="corda_con_gancio", with_="pozzo")),
         ({"verbo": "spingi", "bersaglio": "portone", "con": "nessuno"}, Action(verb="spingi", target="portone")),
+        ({"verbo": "lascia", "bersaglio": "corda con gancio", "con": "nessuno"},
+         Action(verb="lascia", target="corda_con_gancio")),
         ({"verbo": "prendi", "bersaglio": "corda con gancio", "con": "corda con gancio"},
          Action(verb="prendi", target="corda_con_gancio")),
         ({"verbo": "vai", "bersaglio": "nord", "con": "nessuno"}, Action(verb="vai", direction="nord")),
@@ -169,3 +171,16 @@ def test_the_grapple_sentence_becomes_fishing_in_the_well(castle, in_reach):
     assert action == Action(verb="usa", target="pozzo", with_="corda_con_gancio")
     assert fake.calls[0][1].startswith("Oggetti: pozzo; porta della torre (porta, porta di ferro); portone; ")
     assert "; chiave di ferro (chiave)\n" in fake.calls[0][1]
+
+
+# --- Throwing one thing into another (bug found while playing) -------------------------------------
+
+
+def test_dropping_one_thing_into_another_is_using_them_together(in_reach):
+    # "butta il rampino nel pozzo": qwen2.5:3b answers "lascia" with both items, even with "buttare"
+    # moved under "usa" in the glossary. Dropping needs no second item: the two go together.
+    fake = FakeLLMClient(json_replies=[{"verbo": "lascia", "bersaglio": "pozzo", "con": "corda con gancio"}])
+
+    action = interpret(fake, "butta il rampino nel pozzo", in_reach)
+
+    assert action == Action(verb="usa", target="pozzo", with_="corda_con_gancio")

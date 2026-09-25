@@ -151,6 +151,8 @@ rules:
 - **"usa X con Y"** è il verbo generico dei giocatori: se nessuna regola `usa` corrisponde, vale
   la prima regola di qualunque verbo sugli stessi due oggetti. Così "usa la chiave con la porta"
   fa scattare `apri: porta_torre con chiave_torre` senza scrivere una regola doppia;
+- una frase libera come "butta la moneta nella fessura" arriva come "usa": l'interprete
+  trasforma `lascia X con Y` in `usa X con Y`, quindi basta la regola `usa`;
 - una regola **sostituisce** il comportamento predefinito del verbo (vedi sotto): una regola su
   "prendi X" che deve dare l'oggetto al giocatore lo fa con `give: X`.
 

@@ -91,6 +91,9 @@ def _to_action(reply: dict[str, Any], ids_by_name: dict[str, str]) -> Action | N
     if target not in ids_by_name:
         return NotUnderstood(f"bersaglio non a portata {target!r}")
     with_ = ids_by_name.get(tool) if tool != target else None
+    if verb == Verb.DROP and with_ is not None:
+        # "butta il rampino nel pozzo": dropping one thing into another is using them together
+        verb = Verb.USE
     return Action(verb=verb, target=ids_by_name[target], with_=with_)
 
 

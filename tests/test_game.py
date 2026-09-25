@@ -62,6 +62,19 @@ def test_the_llm_can_choose_the_key_in_the_well(castle):
     assert output == f"(prendi la chiave di ferro con la corda con gancio)\n{castle.rules['pesca_chiave'].text}"
 
 
+def test_throwing_the_grapple_into_the_well_fishes_the_key(castle):
+    # Found while playing: the game asked "Vuoi lasciare il pozzo con la corda con gancio?",
+    # and after "sì" answered "Non ce l'hai.".
+    llm = FakeLLMClient(json_replies=[{"verbo": "lascia", "bersaglio": "pozzo", "con": "corda con gancio"}])
+    game = Game(Engine(castle), llm)
+    game.state.item_locations["corda_con_gancio"] = "inventory"
+
+    output = say(game, "butta il rampino nel pozzo")
+
+    assert output == f"(usa il pozzo con la corda con gancio)\n{castle.rules['pesca_chiave'].text}"
+    assert game.state.item_locations["chiave_torre"] == "inventory"
+
+
 def test_opening_shows_intro_and_first_room(castle):
     opening = Game(Engine(castle)).opening()
 
