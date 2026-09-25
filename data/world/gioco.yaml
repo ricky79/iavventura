@@ -1,0 +1,18 @@
+# La Rocca di Serravento — dati generali della partita.
+# Formato: docs/formato-mondo.md
+
+game:
+  title: La Rocca di Serravento
+  intro: >
+    La bufera ti ha sorpreso sul passo e l'unico riparo era la vecchia rocca
+    di Serravento, abbandonata da anni. Appena entri, il portone si richiude
+    alle tue spalle con un tonfo. Da questa parte non si apre.
+    Dovrai trovare un'altra via d'uscita.
+  start_room: cortile
+  endings:
+    - when: {player_in: torre}
+      text: >
+        Sali i gradini consumati della scala a chiocciola fino alla stanza in
+        cima. Dalla finestra, oltre la bufera che si sta placando, vedi le luci
+        del villaggio a valle. Una porticina dà sui camminamenti delle mura, e
+        da lì una scala di pietra scende fino al sentiero. Sei libero.

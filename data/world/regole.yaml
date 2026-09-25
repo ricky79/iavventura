@@ -1,0 +1,60 @@
+# Regole della rocca: cosa succede quando il giocatore compie un'azione
+# precisa su certi oggetti. L'ordine tra target e with è indifferente.
+
+rules:
+  # --- L'enigma: gancio + corda = rampino ---
+  lega_gancio:
+    trigger: {verb: usa, target: gancio, with: corda}
+    effects:
+      - remove: gancio
+      - remove: corda
+      - give: corda_con_gancio
+    text: >
+      Leghi il gancio a un capo della corda con un nodo stretto e tiri per
+      provarlo. Tiene. Ora hai un rampino improvvisato.
+
+  # Indizi per chi prova con un solo pezzo.
+  cala_corda:
+    trigger: {verb: usa, target: pozzo, with: corda}
+    text: >
+      Cali la corda nel pozzo. Arriva fino in fondo, ma non ha niente con cui
+      agganciare la chiave.
+
+  cala_gancio:
+    trigger: {verb: usa, target: pozzo, with: gancio}
+    text: Il gancio da solo non arriva nemmeno a metà del pozzo.
+
+  pesca_chiave:
+    trigger: {verb: usa, target: pozzo, with: corda_con_gancio}
+    when: {not: {flag: chiave_pescata}}
+    otherwise: Nel pozzo non è rimasto niente da ripescare.
+    effects:
+      - give: chiave_torre
+      - set_flag: chiave_pescata
+    text: >
+      Cali il rampino nel pozzo. Al terzo tentativo il gancio si infila
+      nell'anello della chiave, e la tiri su piano piano, trattenendo il
+      respiro. È tua.
+
+  # --- La porta della torre ---
+  apri_torre:
+    trigger: {verb: apri, target: porta_torre, with: chiave_torre}
+    when: {not: {flag: torre_aperta}}
+    otherwise: La porta della torre è già aperta.
+    effects:
+      - set_flag: torre_aperta
+    text: >
+      La chiave gira a fatica nella serratura, poi scatta. La porta di ferro
+      si apre cigolando su una scala a chiocciola.
+
+  apri_torre_senza_chiave:
+    trigger: {verb: apri, target: porta_torre}
+    when: {not: {flag: torre_aperta}}
+    otherwise: La porta della torre è già aperta.
+    text: È chiusa a chiave, e la serratura è grande quanto il tuo pugno.
+
+  apri_portone:
+    trigger: {verb: apri, target: portone}
+    text: >
+      Spingi, tiri, dai una spallata: il portone non si muove di un dito.
+      Dovrai trovare un'altra via d'uscita.

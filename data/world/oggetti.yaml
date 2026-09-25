@@ -1,0 +1,69 @@
+# Oggetti della rocca. location: una stanza, inventory, oppure null
+# (fuori gioco: l'oggetto compare solo grazie a un effetto di una regola).
+
+items:
+  # --- Cortile ---
+  pozzo:
+    name: pozzo
+    description: >
+      Un pozzo asciutto, profondo tre o quattro volte la tua altezza.
+      Sporgendoti vedi luccicare qualcosa sul fondo: una grossa chiave ad
+      anello, posata tra i sassi. Troppo in basso per arrivarci con il braccio.
+    location: cortile
+    scenery: true
+    variants:
+      - when: {flag: chiave_pescata}
+        text: Un pozzo asciutto e profondo. Sul fondo restano solo sassi e foglie secche.
+
+  porta_torre:
+    name: porta della torre
+    aliases: [porta, porta di ferro]
+    description: Una porta di ferro borchiata, con una serratura grande quanto un pugno. È chiusa a chiave.
+    location: cortile
+    scenery: true
+    variants:
+      - when: {flag: torre_aperta}
+        text: La porta di ferro della torre è socchiusa. La serratura ha ceduto.
+
+  portone:
+    name: portone
+    description: >
+      Il portone da cui sei entrato. Si è richiuso da solo alle tue spalle e
+      da questa parte non ha né maniglia né serratura.
+    location: cortile
+    scenery: true
+
+  # --- Cucina ---
+  camino:
+    name: camino
+    description: Un camino spento da anni. Dalle catene non pende più nessun paiolo.
+    location: cucina
+    scenery: true
+
+  gancio:
+    name: gancio da macellaio
+    aliases: [gancio, uncino]
+    description: >
+      Un gancio di ferro a forma di esse, di quelli per appendere la carne.
+      È robusto e ha la punta ancora aguzza.
+    location: cucina
+
+  # --- Scuderia ---
+  corda:
+    name: corda
+    aliases: [fune]
+    description: Una lunga corda di canapa, arrotolata con cura. Sembra ancora robusta.
+    location: scuderia
+
+  # --- Fuori gioco all'inizio ---
+  corda_con_gancio:
+    name: corda con gancio
+    aliases: [corda, gancio, rampino]
+    description: La corda con il gancio da macellaio legato a un capo. Un rampino improvvisato.
+    location: null
+
+  chiave_torre:
+    name: chiave di ferro
+    aliases: [chiave]
+    description: Una grossa chiave di ferro ad anello, fredda e pesante.
+    location: null

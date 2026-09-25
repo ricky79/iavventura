@@ -1,0 +1,52 @@
+# Stanze della rocca. Le descrizioni citano gli arredi (scenery: true),
+# mentre gli oggetti trasportabili li elenca il motore.
+
+rooms:
+  cortile:
+    name: Cortile
+    description: >
+      Un cortile lastricato, invaso dall'edera e dalle foglie portate dal
+      vento. Al centro c'è un vecchio pozzo con la vera di pietra. A nord si
+      alza la torre, chiusa da una porta di ferro borchiata. A ovest una porta
+      bassa dà sulla cucina, a est un arco porta alla scuderia. Alle tue spalle,
+      il portone da cui sei entrato.
+    variants:
+      - when: {flag: torre_aperta}
+        text: >
+          Un cortile lastricato, invaso dall'edera e dalle foglie portate dal
+          vento. Al centro c'è un vecchio pozzo con la vera di pietra. A nord,
+          la porta di ferro della torre è socchiusa. A ovest una porta bassa dà
+          sulla cucina, a est un arco porta alla scuderia. Alle tue spalle, il
+          portone da cui sei entrato.
+    exits:
+      ovest: {to: cucina}
+      est: {to: scuderia}
+      nord:
+        to: torre
+        when: {flag: torre_aperta}
+        otherwise: La porta della torre è chiusa a chiave.
+
+  cucina:
+    name: Cucina
+    description: >
+      Una cucina dal soffitto annerito dal fumo. Nel grande camino spento
+      pendono ancora le catene per i paioli. Su un ceppo di legno, segnato da
+      mille colpi, qualcuno ha lasciato i suoi attrezzi. Il cortile è a est.
+    exits:
+      est: {to: cortile}
+
+  scuderia:
+    name: Scuderia
+    description: >
+      Una scuderia vuota che sa ancora di fieno. Le poste dei cavalli sono
+      deserte e le mangiatoie piene di polvere. Il cortile è a ovest.
+    exits:
+      ovest: {to: cortile}
+
+  torre:
+    name: Torre
+    description: >
+      La base della torre, fredda e buia. Una scala a chiocciola sale verso
+      l'alto. La porta sul cortile è a sud.
+    exits:
+      sud: {to: cortile}
