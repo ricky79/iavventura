@@ -2,8 +2,8 @@
 
 import pytest
 
-from app.engine.models import Direction, Item, Outcome, RoomView, World
-from app.engine.text import definite, indefinite, join, render, which_one
+from app.engine.models import Action, Direction, Item, Outcome, RoomView, World
+from app.engine.text import action_text, definite, indefinite, join, render, which_one
 
 
 def item(name: str, gender: str = "m", plural: bool = False) -> Item:
@@ -117,3 +117,22 @@ def test_text_room_and_ending_are_separate_paragraphs(world):
     outcome = Outcome(ok=True, text="Entri.", room=room(), ending="Hai vinto.")
 
     assert render(outcome, world) == "Entri.\n\nAtrio\nUn atrio spoglio.\n\nHai vinto."
+
+
+# --- How an action reads (shown when the LLM interpreted the sentence) ---------------------------
+
+
+@pytest.mark.parametrize(
+    ("action", "expected"),
+    [
+        (Action(verb="prendi", target="corda"), "prendi la corda"),
+        (Action(verb="usa", target="corda", with_="gancio"), "usa la corda con il gancio"),
+        (Action(verb="vai", direction="nord"), "vai a nord"),
+        (Action(verb="vai", direction="su"), "vai su"),
+        (Action(verb="vai", direction="giù"), "vai giù"),
+        (Action(verb="guarda"), "guarda"),
+        (Action(verb="inventario"), "inventario"),
+    ],
+)
+def test_actions_read_as_commands(world, action, expected):
+    assert action_text(action, world) == expected

@@ -101,7 +101,9 @@ class Engine:
         if rule is None:
             return self._default(state, action.verb, self.world.items[action.target])
         if rule.when is not None and not holds(rule.when, state):
-            return Outcome(ok=False, text=rule.otherwise or NOTHING_HAPPENS)
+            if rule.otherwise is None:
+                return Outcome(ok=False, text=NOTHING_HAPPENS, generic=True)
+            return Outcome(ok=False, text=rule.otherwise)
         for effect in rule.effects:
             _apply(effect, state)
         return Outcome(ok=True, text=rule.text)
@@ -111,20 +113,20 @@ class Engine:
         location = state.item_locations[item.id]
         match verb:
             case Verb.EXAMINE:
-                return Outcome(ok=True, text=_description(item, state))
+                return Outcome(ok=True, text=describe(item, state))
             case Verb.TAKE if item.scenery:
-                return Outcome(ok=False, text=CANT_TAKE)
+                return Outcome(ok=False, text=CANT_TAKE, generic=True)
             case Verb.TAKE if location == INVENTORY:
-                return Outcome(ok=False, text=ALREADY_HAVE)
+                return Outcome(ok=False, text=ALREADY_HAVE, generic=True)
             case Verb.TAKE:
                 state.item_locations[item.id] = INVENTORY
-                return Outcome(ok=True, text=DONE)
+                return Outcome(ok=True, text=DONE, generic=True)
             case Verb.DROP if location != INVENTORY:
-                return Outcome(ok=False, text=DONT_HAVE)
+                return Outcome(ok=False, text=DONT_HAVE, generic=True)
             case Verb.DROP:
                 state.item_locations[item.id] = state.current_room
-                return Outcome(ok=True, text=DONE)
-        return Outcome(ok=False, text=_NOTHING_WITHOUT_A_RULE.get(verb, NOTHING_HAPPENS))
+                return Outcome(ok=True, text=DONE, generic=True)
+        return Outcome(ok=False, text=_NOTHING_WITHOUT_A_RULE.get(verb, NOTHING_HAPPENS), generic=True)
 
     def _find_rule(self, action: Action) -> Rule | None:
         """The first rule for this verb on exactly these items, in either order.
@@ -148,7 +150,7 @@ class Engine:
         return RoomView(
             id=room.id,
             name=room.name,
-            description=_description(room, state),
+            description=describe(room, state),
             items=tuple(item.id for item in self._items_in(state, room.id) if not item.scenery),
             exits=tuple(room.exits),
             first_visit=first_visit,
@@ -190,7 +192,7 @@ def _apply(effect: Effect, state: GameState) -> None:
             state.flags.discard(flag)
 
 
-def _description(thing: Room | Item, state: GameState) -> str:
+def describe(thing: Room | Item, state: GameState) -> str:
     """The first variant whose condition holds, otherwise the plain description."""
     for variant in thing.variants:
         if holds(variant.when, state):
