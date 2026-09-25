@@ -15,13 +15,15 @@ import pytest
 from app.config import Settings, make_client
 from app.engine.engine import Engine
 from app.engine.loader import load_world
-from app.engine.models import Action, GameState
+from app.engine.models import Action, GameState, Item
+from app.game import Game
 from app.llm.interpreter import NotUnderstood, interpret
 
 pytestmark = pytest.mark.skipif(os.environ.get("OLLAMA_TESTS") != "1", reason="needs Ollama: set OLLAMA_TESTS=1")
 
 CASTLE = load_world()
 RULE = {rule_id: rule.text for rule_id, rule in CASTLE.rules.items()}
+FISHED = lambda o, s: o.text == RULE["pesca_chiave"]  # noqa: E731
 
 
 @pytest.fixture(scope="module")
@@ -30,6 +32,11 @@ def llm():
     if client is None or (reason := client.unavailable_reason()):
         pytest.skip(f"LLM not available: {reason if client else 'LLM=off'}")
     return client
+
+
+def near(engine: Engine, state: GameState) -> list[Item]:
+    """What the game passes to the interpreter: items in reach, then those in sight."""
+    return engine.in_reach(state) + engine.visible(state)
 
 
 def game_in(room: str, *carried: str) -> tuple[Engine, GameState]:
@@ -55,6 +62,10 @@ CASES = [
     ("cortile", ("corda",), "cosa ho con me?", lambda o, s: o.inventory == ("corda",)),
     ("cortile", (), "vado in cucina", lambda o, s: s.current_room == "cucina"),
     ("cortile", (), "torno di corsa nella scuderia", lambda o, s: s.current_room == "scuderia"),
+    # The bug found while playing: a sentence with a purpose, with the key in sight at the bottom of the well.
+    ("cortile", ("corda_con_gancio",), "usa il rampino per recuperare la chiave dal pozzo", FISHED),
+    ("cortile", ("corda_con_gancio",), "provo a ripescare la chiave nel pozzo col rampino", FISHED),
+    ("cortile", ("corda_con_gancio",), "recupera la chiave dal pozzo con il rampino", FISHED),
 ]
 
 
@@ -63,16 +74,26 @@ def test_free_sentences_become_the_right_action(llm, room, carried, sentence, ch
     engine, state = game_in(room, *carried)
 
     start = time.perf_counter()
-    action = interpret(llm, sentence, engine.in_reach(state), engine.known_exits(state))
+    action = interpret(llm, sentence, near(engine, state), engine.known_exits(state))
     print(f"\n  {time.perf_counter() - start:4.1f}s  {sentence!r} -> {action}")
 
     assert isinstance(action, Action)
     assert check(engine.execute(state, action), state)
 
 
-@pytest.mark.parametrize("sentence", ["ciao, come stai?", "che tempo farà domani?", "vado nella cantina"])
-def test_small_talk_and_unknown_places_are_not_understood(llm, sentence):
+@pytest.mark.parametrize("sentence", ["ciao, come stai?", "che tempo farà domani?"])
+def test_small_talk_is_not_understood(llm, sentence):
     engine, state = game_in("cortile")
 
-    assert isinstance(interpret(llm, sentence, engine.in_reach(state), engine.known_exits(state)), NotUnderstood)
+    assert isinstance(interpret(llm, sentence, near(engine, state), engine.known_exits(state)), NotUnderstood)
+
+
+def test_an_unknown_place_does_not_move_the_player(llm):
+    engine, state = game_in("cortile")
+    game = Game(engine, llm, state=state)
+
+    answer = game.turn("vado nella cantina")
+    print(f"\n  'vado nella cantina' -> {answer!r}")
+
+    assert state.current_room == "cortile"
 

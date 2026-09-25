@@ -145,6 +145,8 @@ def test_actions_read_as_commands(world, action, expected):
         (Action(verb="spingi", target="gancio"), "Vuoi spingere il gancio?"),
         (Action(verb="leggi", target="corda"), "Vuoi leggere la corda?"),
         (Action(verb="apri", target="gancio", with_="corda"), "Vuoi aprire il gancio con la corda?"),
+        (Action(verb="vai", direction="ovest"), "Vuoi andare a ovest?"),
+        (Action(verb="vai", direction="giù"), "Vuoi andare giù?"),
     ],
 )
 def test_an_unexpected_action_is_asked_as_a_question(world, action, expected):

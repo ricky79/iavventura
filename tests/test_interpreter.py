@@ -6,6 +6,7 @@ from app.engine.loader import load_world
 from app.engine.models import Action, Direction, Item, World
 from app.llm.client import FakeLLMClient
 from app.llm.interpreter import NotUnderstood, interpret, interpreter_schema
+from app.llm.prompts import INTERPRETER_SYSTEM
 
 
 @pytest.fixture(scope="module")
@@ -146,3 +147,25 @@ def test_a_broken_model_is_logged_as_not_understood(in_reach, caplog):
         interpret(FakeLLMClient(), "frase", in_reach)
 
     assert caplog.records[-1].getMessage() == "=== non capito: il modello non ha dato una risposta valida"
+
+
+# --- The sentence with a purpose (bug found while playing) ------------------------------------------
+
+
+def test_the_prompt_shows_a_sentence_with_a_purpose(castle):
+    # Without this example qwen2.5:3b aimed the grapple at the door: "per recuperare la chiave" confused it.
+    assert INTERPRETER_SYSTEM.endswith(
+        "Frase: usa il rampino per recuperare la chiave dal pozzo\n"
+        '{"verbo": "usa", "bersaglio": "pozzo", "con": "corda con gancio"}'
+    )
+
+
+def test_the_grapple_sentence_becomes_fishing_in_the_well(castle, in_reach):
+    near = [*in_reach, castle.items["chiave_torre"]]
+    fake = FakeLLMClient(json_replies=[{"verbo": "usa", "bersaglio": "pozzo", "con": "corda con gancio"}])
+
+    action = interpret(fake, "usa il rampino per recuperare la chiave dal pozzo", near)
+
+    assert action == Action(verb="usa", target="pozzo", with_="corda_con_gancio")
+    assert fake.calls[0][1].startswith("Oggetti: pozzo; porta della torre (porta, porta di ferro); portone; ")
+    assert "; chiave di ferro (chiave)\n" in fake.calls[0][1]

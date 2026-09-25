@@ -215,6 +215,32 @@ def test_going_to_a_named_room_needs_no_llm(castle):
     assert llm.calls == []
 
 
+@pytest.mark.parametrize(
+    ("sentence", "direction"),
+    [("torna verso ovest", "ovest"), ("torno di corsa nella cucina", "ovest"), ("scendo giù per le scale", "giù")],
+)
+def test_an_interpreted_move_that_names_the_way_is_done(castle, sentence, direction):
+    llm = FakeLLMClient(json_replies=[{"verbo": "vai", "bersaglio": direction, "con": "nessuno"}])
+    game = Game(Engine(castle), llm)
+    game.state.visited.add("cucina")
+
+    output = say(game, sentence)
+
+    assert output.startswith(f"(vai {'a ' if direction == 'ovest' else ''}{direction})\n")
+    assert game.pending is None
+
+
+def test_an_interpreted_move_that_names_neither_direction_nor_room_is_asked(castle):
+    llm = FakeLLMClient(json_replies=[{"verbo": "vai", "bersaglio": "ovest", "con": "nessuno"}])
+    game = Game(Engine(castle), llm)
+
+    output = say(game, "vado nella cantina")
+
+    assert output == "Vuoi andare a ovest?"
+    assert game.state.current_room == "cortile"
+    assert game.pending == Action(verb="vai", direction="ovest")
+
+
 def test_the_llm_is_told_where_the_exits_lead(castle):
     llm = FakeLLMClient(json_replies=[{"verbo": "vai", "bersaglio": "est", "con": "nessuno"}])
     game = Game(Engine(castle), llm)

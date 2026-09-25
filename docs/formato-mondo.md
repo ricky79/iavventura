@@ -160,8 +160,10 @@ I messaggi del motore non nominano mai l'oggetto, così non servono articolo e g
 **Azioni non previste.** Se una frase libera, interpretata dall'LLM, diventa un'azione a cui
 nessuna regola reagisce (tranne esamina, prendi e lascia senza strumento, che fanno qualcosa da
 sole), il gioco non la esegue subito ma chiede conferma: "Vuoi usare la corda con gancio con il
-portone?". Il modello potrebbe aver frainteso. Le azioni scritte con i comandi semplici si
-eseguono senza domande. Per chi scrive: le azioni che i giocatori tenteranno davvero meritano una
+portone?". Il modello potrebbe aver frainteso. Lo stesso per uno spostamento interpretato verso
+una direzione che la frase non nomina, né con la direzione né con la stanza in cui porta ("vado
+in cantina" → "Vuoi andare a ovest?"). Le azioni scritte con i comandi semplici si eseguono
+senza domande. Per chi scrive: le azioni che i giocatori tenteranno davvero meritano una
 regola, anche solo un indizio.
 
 ## Condizioni

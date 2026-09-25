@@ -14,8 +14,8 @@ logger "app.commands", which the front ends write to logs/comandi.jsonl (app/con
 import logging
 
 from app.engine.engine import Engine
-from app.engine.models import INVENTORY, Action, GameState, Verb, World
-from app.engine.parser import Ambiguous, parse, words_of
+from app.engine.models import INVENTORY, Action, Direction, GameState, Room, Verb, World
+from app.engine.parser import DIRECTIONS, Ambiguous, parse, significant_words, words_of
 from app.engine.text import action_text, confirmation, render, which_one
 from app.llm.client import LLMClient
 from app.llm.interpreter import NotUnderstood, describe, interpret
@@ -105,13 +105,24 @@ class Game:
                 return NOT_A_GAME_ACTION
             self._log("llm", None, "non capito", interpreted.reason)
             return NOT_UNDERSTOOD
-        if not self.engine.expects(interpreted):
+        if not self._foreseen(interpreted, words, exits):
             self.pending = self._carried_first(interpreted)
             question = confirmation(self.pending, self.world)
             self._log("llm", self.pending, "conferma", question)
             return question
         # Show how the sentence was understood: if the model got it wrong, the player sees why.
         return f"({action_text(interpreted, self.world)})\n" + self._execute(interpreted, "llm")
+
+    def _foreseen(self, action: Action, words: list[str], exits: list[tuple[Direction, Room | None]]) -> bool:
+        """Whether the world foresees an interpreted action (Engine.expects). A move must also name
+        its way, by direction or by the room it leads to: for a place that isn't among the exits
+        ("vado in cantina") the model may pick a door at random."""
+        if not self.engine.expects(action):
+            return False
+        if action.direction is None or any(DIRECTIONS.get(word) == action.direction for word in words):
+            return True
+        room = dict(exits).get(action.direction)
+        return room is not None and set(significant_words(room.name)) <= set(words)
 
     def _execute(self, action: Action, source: str) -> str:
         outcome = self.engine.execute(self.state, action)
