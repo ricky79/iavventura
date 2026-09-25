@@ -1,7 +1,7 @@
 """The game engine: the only code that changes a GameState.
 
-It executes an Action against the world's rules and returns an Outcome for the narrator.
-Every check runs before the state is touched, so a refused action leaves it unchanged.
+It executes an Action against the world's rules and returns an Outcome, which app/engine/text.py
+turns into text. Every check runs before the state is touched, so a refused action leaves it unchanged.
 """
 
 from app.engine.models import (
@@ -101,9 +101,7 @@ class Engine:
         if rule is None:
             return self._default(state, action.verb, self.world.items[action.target])
         if rule.when is not None and not holds(rule.when, state):
-            if rule.otherwise is None:
-                return Outcome(ok=False, text=NOTHING_HAPPENS, generic=True)
-            return Outcome(ok=False, text=rule.otherwise)
+            return Outcome(ok=False, text=rule.otherwise or NOTHING_HAPPENS)
         for effect in rule.effects:
             _apply(effect, state)
         return Outcome(ok=True, text=rule.text)
@@ -113,20 +111,20 @@ class Engine:
         location = state.item_locations[item.id]
         match verb:
             case Verb.EXAMINE:
-                return Outcome(ok=True, text=describe(item, state))
+                return Outcome(ok=True, text=_description(item, state))
             case Verb.TAKE if item.scenery:
-                return Outcome(ok=False, text=CANT_TAKE, generic=True)
+                return Outcome(ok=False, text=CANT_TAKE)
             case Verb.TAKE if location == INVENTORY:
-                return Outcome(ok=False, text=ALREADY_HAVE, generic=True)
+                return Outcome(ok=False, text=ALREADY_HAVE)
             case Verb.TAKE:
                 state.item_locations[item.id] = INVENTORY
-                return Outcome(ok=True, text=DONE, generic=True)
+                return Outcome(ok=True, text=DONE)
             case Verb.DROP if location != INVENTORY:
-                return Outcome(ok=False, text=DONT_HAVE, generic=True)
+                return Outcome(ok=False, text=DONT_HAVE)
             case Verb.DROP:
                 state.item_locations[item.id] = state.current_room
-                return Outcome(ok=True, text=DONE, generic=True)
-        return Outcome(ok=False, text=_NOTHING_WITHOUT_A_RULE.get(verb, NOTHING_HAPPENS), generic=True)
+                return Outcome(ok=True, text=DONE)
+        return Outcome(ok=False, text=_NOTHING_WITHOUT_A_RULE.get(verb, NOTHING_HAPPENS))
 
     def _find_rule(self, action: Action) -> Rule | None:
         """The first rule for this verb on exactly these items, in either order.
@@ -150,7 +148,7 @@ class Engine:
         return RoomView(
             id=room.id,
             name=room.name,
-            description=describe(room, state),
+            description=_description(room, state),
             items=tuple(item.id for item in self._items_in(state, room.id) if not item.scenery),
             exits=tuple(room.exits),
             first_visit=first_visit,
@@ -192,7 +190,7 @@ def _apply(effect: Effect, state: GameState) -> None:
             state.flags.discard(flag)
 
 
-def describe(thing: Room | Item, state: GameState) -> str:
+def _description(thing: Room | Item, state: GameState) -> str:
     """The first variant whose condition holds, otherwise the plain description."""
     for variant in thing.variants:
         if holds(variant.when, state):

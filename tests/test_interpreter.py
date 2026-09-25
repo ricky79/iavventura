@@ -40,7 +40,7 @@ def test_the_model_gets_a_fixed_system_prompt_and_the_items_with_the_sentence(in
     interpret(fake, "cala il rampino nel pozzo", in_reach)
     interpret(fake, "saluta", in_reach[:1])
 
-    (_, first_system, first_user), (_, second_system, second_user) = fake.calls
+    (first_system, first_user), (second_system, second_user) = fake.calls
     assert first_system == second_system  # the fixed part comes first, so Ollama can cache it
     assert first_user == (
         "Oggetti: pozzo; porta della torre (porta, porta di ferro); portone; "
@@ -55,7 +55,7 @@ def test_no_items_in_reach(castle):
 
     interpret(fake, "salta", [])
 
-    assert fake.calls[0][2] == "Oggetti: nessuno\nFrase: salta"
+    assert fake.calls[0][1] == "Oggetti: nessuno\nFrase: salta"
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,6 @@
 """Fixed Italian text for the player: articles, lists and the rendering of an Outcome.
 
-The LLM narrator will retell outcomes more freely; this is the text used without it.
+Every answer the player reads comes from here or from the world's authors: the LLM never writes it.
 """
 
 import unicodedata

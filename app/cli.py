@@ -2,7 +2,7 @@
 
     python -m app.cli
 
-The LLM (Ollama by default, see app/config.py) handles the sentences the classic parser
+The LLM (Ollama by default, see app/config.py) interprets the sentences the classic parser
 doesn't understand; without it the game goes on with simple commands only.
 """
 
@@ -24,29 +24,23 @@ _YES_WORDS = frozenset({"s", "si"})
 
 
 def run(game: Game, read_line: Callable[[], str], write: Callable[[str], None]) -> None:
-    """Plays until the game ends, the player quits, or the input runs out (EOFError).
-
-    `write` receives the text piece by piece, as the narrator streams it: it must not add newlines.
-    """
-    write(game.opening() + "\n")
+    """Plays until the game ends, the player quits, or the input runs out (EOFError)."""
+    write(game.opening())
     try:
         while not game.finished:
             line = read_line()
             words = words_of(line)
             if len(words) == 1 and words[0] in _QUIT_WORDS:
-                write(CONFIRM_QUIT + "\n")
+                write(CONFIRM_QUIT)
                 answer = words_of(read_line())
                 if answer and answer[0] in _YES_WORDS:
-                    write(GOODBYE + "\n")
+                    write(GOODBYE)
                     return
-                write(GO_ON + "\n")
+                write(GO_ON)
                 continue
-            answered = False
-            for piece in game.turn(line):
-                write(piece)
-                answered = True
-            if answered:
-                write("\n")
+            answer = game.turn(line)
+            if answer:
+                write(answer)
     except EOFError:
         return
 
@@ -62,7 +56,7 @@ def main() -> None:
         llm = None
     game = Game(Engine(load_world()), llm)
     try:
-        run(game, lambda: input("\n> "), lambda text: print(text, end="", flush=True))
+        run(game, lambda: input("\n> "), print)
     except KeyboardInterrupt:
         print()
 

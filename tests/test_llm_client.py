@@ -14,10 +14,6 @@ def ollama(handler) -> OllamaClient:
     return OllamaClient("http://ollama.test", "qwen2.5:3b", transport=httpx.MockTransport(handler))
 
 
-def ndjson(*chunks: dict) -> bytes:
-    return "".join(json.dumps(chunk) + "\n" for chunk in chunks).encode()
-
-
 # --- Structured output ---------------------------------------------------------------------
 
 
@@ -70,40 +66,6 @@ def test_unreachable_server_is_an_llm_error():
         ollama(handler).complete_json("s", "u", SCHEMA, max_tokens=60)
 
 
-# --- Streaming ---------------------------------------------------------------------------------
-
-
-def test_stream_text_yields_the_pieces_as_they_arrive():
-    requests = []
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        requests.append(request)
-        body = ndjson(
-            {"message": {"content": "Il pozzo "}, "done": False},
-            {"message": {"content": ""}, "done": False},
-            {"message": {"content": "è di pietra."}, "done": False},
-            {"message": {"content": ""}, "done": True, "eval_count": 5},
-        )
-        return httpx.Response(200, content=body)
-
-    pieces = list(ollama(handler).stream_text("Sei il narratore.", "Esito: ...", max_tokens=100, temperature=0.7))
-
-    assert pieces == ["Il pozzo ", "è di pietra."]
-    payload = json.loads(requests[0].content)
-    assert payload["stream"] is True
-    assert "format" not in payload
-    assert payload["options"] == {"temperature": 0.7, "num_predict": 100, "num_ctx": 2048}
-
-
-def test_an_error_in_the_stream_is_an_llm_error():
-    body = ndjson({"message": {"content": "Il pozzo "}, "done": False}, {"error": "out of memory"})
-    stream = ollama(lambda request: httpx.Response(200, content=body)).stream_text("s", "u", 100, 0.7)
-
-    assert next(stream) == "Il pozzo "
-    with pytest.raises(LLMError):
-        next(stream)
-
-
 # --- Availability --------------------------------------------------------------------------------
 
 
@@ -138,18 +100,14 @@ def test_unavailable_when_ollama_does_not_answer():
 
 
 def test_fake_client_replays_its_answers_and_records_the_calls():
-    fake = FakeLLMClient(json_replies=[{"verbo": "usa"}], text_replies=["Il pozzo è di pietra."])
+    fake = FakeLLMClient(json_replies=[{"verbo": "usa"}, {"verbo": "apri"}])
 
     assert fake.complete_json("sistema", "frase", SCHEMA, max_tokens=60) == {"verbo": "usa"}
-    assert "".join(fake.stream_text("narratore", "fatti", max_tokens=100, temperature=0.7)) == "Il pozzo è di pietra."
-    assert fake.calls == [("json", "sistema", "frase"), ("text", "narratore", "fatti")]
+    assert fake.complete_json("sistema", "altra frase", SCHEMA, max_tokens=60) == {"verbo": "apri"}
+    assert fake.calls == [("sistema", "frase"), ("sistema", "altra frase")]
     assert fake.unavailable_reason() is None
 
 
 def test_fake_client_without_answers_fails_like_a_broken_llm():
-    fake = FakeLLMClient()
-
     with pytest.raises(LLMError):
-        fake.complete_json("s", "u", SCHEMA, max_tokens=60)
-    with pytest.raises(LLMError):
-        list(fake.stream_text("s", "u", max_tokens=100, temperature=0.7))
+        FakeLLMClient().complete_json("s", "u", SCHEMA, max_tokens=60)

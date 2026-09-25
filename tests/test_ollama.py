@@ -17,7 +17,6 @@ from app.engine.engine import Engine
 from app.engine.loader import load_world
 from app.engine.models import GameState
 from app.llm.interpreter import interpret
-from app.llm.narrator import narrate
 
 pytestmark = pytest.mark.skipif(os.environ.get("OLLAMA_TESTS") != "1", reason="needs Ollama: set OLLAMA_TESTS=1")
 
@@ -75,15 +74,3 @@ def test_small_talk_is_not_an_action(llm, sentence):
 
     assert interpret(llm, sentence, engine.in_reach(state)) is None
 
-
-def test_the_narrator_writes_a_short_text(llm):
-    engine, state = game_in("cortile")
-    action = interpret(llm, "prova a sollevare il pozzo", engine.in_reach(state))
-    assert action is not None
-    outcome = engine.execute(state, action)
-
-    start = time.perf_counter()
-    text = "".join(narrate(llm, CASTLE, state, action, outcome))
-    print(f"\n  {time.perf_counter() - start:4.1f}s  {action} -> {text!r}")
-
-    assert 0 < len(text) < 400

@@ -2,38 +2,36 @@
 
 Un'avventura testuale in stile anni '80/'90, ambientata in un castello e giocabile dal browser.
 Si gioca scrivendo in italiano naturale ("prendi la corda", "cala il secchio nel pozzo"):
-un modello linguistico locale interpreta le frasi e racconta cosa succede, mentre un motore
-deterministico tiene le regole del gioco.
+un modello linguistico locale capisce le frasi, mentre un motore deterministico tiene le
+regole del gioco e tutti i testi sono scritti a mano.
 
 Il castello, gli enigmi e i personaggi sono originali.
 
-> **Stato:** in sviluppo. Sono pronte le prime tre fasi: formato del mondo in YAML, motore di
-> gioco, parser dei comandi semplici con testo fisso. Il castello **si gioca già dal
-> terminale** con comandi semplici; l'LLM (per le frasi libere e la narrazione) e
-> l'interfaccia web arriveranno nelle prossime fasi.
+> **Stato:** in sviluppo. Sono pronte le prime quattro fasi: formato del mondo in YAML, motore
+> di gioco, parser dei comandi semplici con testo fisso, LLM che interpreta le frasi libere.
+> Il castello **si gioca già dal terminale**; l'interfaccia web arriverà nella prossima fase.
 
 ## Come funziona
 
 Il **motore di gioco** è deterministico ed è l'unica fonte di verità sullo stato: stanze,
-oggetti, inventario, porte, flag degli enigmi. L'**LLM non modifica mai lo stato**; ha solo due
-ruoli:
-
-1. **Interprete**: trasforma la frase del giocatore in un'azione strutturata (JSON validato).
-2. **Narratore**: racconta l'esito calcolato dal motore, senza inventare oggetti, uscite o eventi.
+oggetti, inventario, porte, flag degli enigmi. L'**LLM non modifica mai lo stato** e ha un solo
+ruolo: **interprete**. Trasforma la frase del giocatore in un'azione strutturata (JSON vincolato
+da uno schema), che il motore poi valida ed esegue. Tutto ciò che il giocatore legge è testo
+fisso, scritto dagli autori del mondo o dal motore: un modello piccolo, come narratore,
+inventava eventi e a volte contraddiceva il gioco.
 
 Un turno funziona così:
 
 ```
 input del giocatore
   → parser classico (comandi semplici: "nord", "prendi X", "inventario")
-  → se non riconosciuto: LLM interprete → azione (JSON)
+  → se non riconosciuto: LLM interprete → azione (JSON), mostrata tra parentesi
   → motore: valida ed esegue → esito
-  → narrazione: testo fisso oppure LLM narratore
-  → streaming al browser (SSE)
+  → testo fisso
 ```
 
 Il modello gira in locale con [Ollama](https://ollama.com), anche solo su CPU: per questo i
-prompt sono brevi e tutto ciò che il parser o i testi fissi sanno gestire non passa dall'LLM.
+prompt sono brevi e tutto ciò che il parser sa gestire non passa dall'LLM.
 
 ## Il mondo di esempio
 
@@ -54,8 +52,9 @@ stesso documento del formato.
 ## Requisiti
 
 - Python 3.12
-- Nelle prossime fasi: [Ollama](https://ollama.com) con un modello piccolo (3-4B, per esempio
-  `qwen2.5:3b`)
+- Per le frasi libere: [Ollama](https://ollama.com) con il modello `qwen2.5:3b`
+  (`ollama pull qwen2.5:3b`, circa 2 GB). Basta la CPU. Senza Ollama il gioco funziona lo
+  stesso, con i soli comandi semplici.
 
 ## Installazione
 
@@ -63,14 +62,14 @@ Su Windows (PowerShell):
 
 ```powershell
 py -3.12 -m venv .venv
-.venv\Scripts\python -m pip install "pydantic>=2.11" "pyyaml>=6" "pytest>=8"
+.venv\Scripts\python -m pip install "pydantic>=2.11" "pyyaml>=6" "httpx>=0.27" "pytest>=8"
 ```
 
 Su Linux o macOS:
 
 ```bash
 python3.12 -m venv .venv
-.venv/bin/python -m pip install "pydantic>=2.11" "pyyaml>=6" "pytest>=8"
+.venv/bin/python -m pip install "pydantic>=2.11" "pyyaml>=6" "httpx>=0.27" "pytest>=8"
 ```
 
 ## Come si gioca
@@ -81,7 +80,7 @@ Dal terminale, nella cartella del progetto:
 .venv\Scripts\python -m app.cli
 ```
 
-Per ora il gioco capisce comandi semplici, con o senza articoli:
+Il gioco capisce subito i comandi semplici, con o senza articoli:
 
 | Per… | Scrivi |
 |---|---|
@@ -92,8 +91,18 @@ Per ora il gioco capisce comandi semplici, con o senza articoli:
 | combinare due oggetti | `usa X con Y`, `apri X con Y` |
 | aiuto / terminare | `aiuto` / `fine` |
 
-Le frasi più libere ("prova a sfondare il portone") per ora ricevono "Non ho capito.": se ne
-occuperà l'LLM nella fase 4.
+Le frasi più libere ("dai un'occhiata al pozzo", "metti giù la corda") passano all'LLM, se
+Ollama è acceso: il gioco mostra tra parentesi come le ha capite, poi risponde. Ogni frase
+libera richiede qualche secondo su CPU (4-7 s nelle nostre prove; la prima, che carica il
+modello, fino a 20 s).
+
+Configurazione, con variabili d'ambiente:
+
+| Variabile | Valore predefinito | Significato |
+|---|---|---|
+| `LLM` | `ollama` | `off` per giocare senza LLM |
+| `OLLAMA_URL` | `http://localhost:11434` | dove risponde Ollama |
+| `LLM_MODEL` | `qwen2.5:3b` | il modello da usare |
 
 ## Sviluppo
 
@@ -101,6 +110,12 @@ Eseguire i test:
 
 ```powershell
 .venv\Scripts\python -m pytest
+```
+
+I test col modello vero (Ollama acceso) sono saltati per default; si lanciano così:
+
+```powershell
+$env:OLLAMA_TESTS=1; .venv\Scripts\python -m pytest tests/test_ollama.py -v -s
 ```
 
 Controllare che il mondo in `data/world/` sia valido:
@@ -122,6 +137,12 @@ app/
     engine.py       # il motore: esegue le azioni e aggiorna lo stato
     parser.py       # comandi semplici in italiano -> azioni
     text.py         # articoli e testo fisso degli esiti
+  llm/
+    client.py       # client per il modello (Ollama) e client finto per i test
+    interpreter.py  # frase libera -> azione
+    prompts.py      # il prompt dell'interprete
+  config.py         # variabili d'ambiente
+  game.py           # un turno: parser, interprete, motore, testo
   cli.py            # la partita nel terminale
 data/world/         # il castello di esempio
 docs/               # documentazione del formato e delle regole
@@ -133,6 +154,6 @@ tests/              # test pytest
 1. ~~Formato del mondo, modelli e castello di esempio~~
 2. ~~Motore di gioco: esecuzione delle azioni, regole e condizioni~~
 3. ~~Parser classico dei comandi semplici, testo fisso e gioco da terminale~~
-4. LLM interprete e narratore (Ollama)
-5. Interfaccia web in stile console retrò, con streaming
+4. ~~LLM interprete delle frasi libere (Ollama)~~
+5. Interfaccia web in stile console retrò
 6. Personaggi e dialoghi

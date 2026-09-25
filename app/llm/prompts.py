@@ -1,6 +1,6 @@
-"""Prompts, in Italian. The fixed part always comes first, so Ollama can reuse it from its cache;
-only the last lines change from turn to turn. Keep them short: on CPU, reading the prompt is the
-slowest part of a call.
+"""The interpreter's prompt, in Italian. The fixed part always comes first, so Ollama can reuse it
+from its cache; only the last lines change from turn to turn. Keep it short: on CPU, reading the
+prompt is the slowest part of a call.
 """
 
 from collections.abc import Sequence
@@ -39,26 +39,3 @@ def interpreter_user(sentence: str, in_reach: Sequence[Item]) -> str:
     """Items in reach with their aliases, then the sentence."""
     items = "; ".join(f"{item.name} ({', '.join(item.aliases)})" if item.aliases else item.name for item in in_reach)
     return f"Oggetti: {items or 'nessuno'}\nFrase: {sentence}"
-
-
-NARRATOR_SYSTEM = """\
-Sei il narratore di un'avventura testuale. Racconta al giocatore l'esito della sua azione \
-in una o due frasi brevi, in seconda persona e al presente, come in un romanzo.
-Attieniti ai fatti che ricevi: non aggiungere oggetti, persone, passaggi o eventi, \
-non cambiare l'esito e non suggerire soluzioni. Non ripetere le parole "Esito" o "Azione".
-
-Esempio
-Luogo: Biblioteca
-Azione: prendi lo scaffale
-scaffale: Uno scaffale di quercia alto fino al soffitto, pieno di libri polverosi.
-Esito: Non si può prendere. L'azione non riesce.
-Racconto: Afferri lo scaffale e tiri con tutte le tue forze, ma la quercia massiccia non si \
-sposta di un millimetro."""
-
-
-def narrator_user(place: str, action: str, items: list[tuple[str, str]], result: str, succeeded: bool) -> str:
-    lines = [f"Luogo: {place}", f"Azione: {action}"]
-    lines += [f"{name}: {description}" for name, description in items]
-    verdict = "L'azione riesce." if succeeded else "L'azione non riesce."
-    lines.append(f"Esito: {result} {verdict}")
-    return "\n".join(lines)

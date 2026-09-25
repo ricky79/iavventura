@@ -355,15 +355,12 @@ class RoomView(_Frozen):
 
 
 class Outcome(_Frozen):
-    """What an action produced, for the narrator: the engine has already applied it to the state."""
+    """What an action produced: the engine has already applied it to the state."""
 
     # False when the engine refused the action or nothing reacted to it; the state is then unchanged.
     ok: bool
     # Rule text, item description or engine message.
     text: Text | None = None
-    # True when `text` is a generic engine reply to an action on items ("Non si può prendere."):
-    # the narrator may retell it. Authored texts and replies about exits or reach are never generic.
-    generic: bool = False
     # Set when the player enters a room, looks around, or starts the game.
     room: RoomView | None = None
     inventory: tuple[Id, ...] | None = None

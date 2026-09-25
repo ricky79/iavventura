@@ -5,11 +5,10 @@ from app.engine.engine import Engine
 from app.engine.loader import load_world
 from app.engine.models import World
 from app.game import HELP, Game
-from app.llm.client import FakeLLMClient
 
 
-def session(*commands: str, world: World | None = None, llm: FakeLLMClient | None = None) -> list[str]:
-    """Runs a whole session (on the sample castle by default) and returns what it wrote, piece by piece."""
+def play(*commands: str, world: World | None = None) -> str:
+    """Runs a whole session (on the sample castle by default) and returns everything it printed."""
     output: list[str] = []
     lines = iter(commands)
 
@@ -19,12 +18,8 @@ def session(*commands: str, world: World | None = None, llm: FakeLLMClient | Non
         except StopIteration:
             raise EOFError from None
 
-    run(Game(Engine(world or load_world()), llm), read_line, output.append)
-    return output
-
-
-def play(*commands: str, world: World | None = None, llm: FakeLLMClient | None = None) -> str:
-    return "".join(session(*commands, world=world, llm=llm)).rstrip("\n")
+    run(Game(Engine(world or load_world())), read_line, output.append)
+    return "\n".join(output)
 
 
 def test_session_opens_with_the_intro_and_the_first_room():
@@ -99,9 +94,3 @@ def test_the_castle_can_be_finished_by_typing_commands():
     assert "Il gancio da solo non arriva nemmeno a metà del pozzo." in output
     assert "Ora hai un rampino improvvisato." in output
     assert output.endswith("da lì una scala di pietra scende fino al sentiero. Sei libero.")
-
-
-def test_the_narration_is_written_piece_by_piece_and_ends_the_line():
-    output = session("prendi il pozzo", llm=FakeLLMClient(text_replies=["Il pozzo è troppo pesante."]))
-
-    assert output[-6:] == ["Il ", "pozzo ", "è ", "troppo ", "pesante.", "\n"]
