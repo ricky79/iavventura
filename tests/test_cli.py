@@ -1,9 +1,10 @@
 """The game in the terminal: typed commands in, fixed text out."""
 
-from app.cli import HELP, run
+from app.cli import run
 from app.engine.engine import Engine
 from app.engine.loader import load_world
 from app.engine.models import World
+from app.game import HELP, Game
 
 
 def play(*commands: str, world: World | None = None) -> str:
@@ -17,7 +18,7 @@ def play(*commands: str, world: World | None = None) -> str:
         except StopIteration:
             raise EOFError from None
 
-    run(Engine(world or load_world()), read_line, output.append)
+    run(Game(Engine(world or load_world())), read_line, output.append)
     return "\n".join(output)
 
 

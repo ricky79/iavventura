@@ -7,25 +7,25 @@ Il castello, gli enigmi e i personaggi sono **originali**: non copiare contenuti
 
 ## Principio architetturale (non negoziabile)
 - Il **motore di gioco è deterministico** ed è l'unica fonte di verità sullo stato (stanze, oggetti, inventario, porte, flag degli enigmi).
-- L'**LLM non modifica mai lo stato**. Ha solo due ruoli:
-  1. **Interprete**: trasforma la frase del giocatore in un'azione strutturata (JSON validato con Pydantic).
-  2. **Narratore**: riceve l'esito calcolato dal motore e lo racconta. Non inventa oggetti, uscite o eventi.
+- L'**LLM non modifica mai lo stato** e ha **un solo ruolo: interprete**. Trasforma la frase
+  del giocatore in un'azione strutturata (JSON vincolato da schema), che il motore valida.
+- **Niente narratore LLM** (decisione del 2026-09-25): tutto ciò che il giocatore legge è testo
+  fisso, scritto dagli autori del mondo o dal motore. Con qwen2.5:3b su CPU il narratore inventava
+  eventi, a volte contraddiceva il motore e impiegava 9-17 s. Il tentativo è nel commit 09f4df0.
 - Nei dialoghi, ogni personaggio ha un profilo con cosa sa e cosa può rivelare. L'LLM non deve mai dare la soluzione degli enigmi.
 
 ## Flusso di un turno
 ```
 input giocatore
   → parser classico (comandi semplici: "nord", "prendi X", "inventario")
-  → se non riconosciuto: LLM interprete → Azione (JSON)
+  → se non riconosciuto: LLM interprete → Azione (JSON), mostrata al giocatore tra parentesi
   → motore: valida ed esegue → Esito
-  → narrazione: testo fisso (stanze già viste, casi semplici) oppure LLM narratore
-  → streaming al client
+  → testo fisso (app/engine/text.py)
 ```
 
 ## Stack
-- Python 3.12, FastAPI, Pydantic v2, uvicorn
+- Python 3.12, FastAPI, Pydantic v2, uvicorn, httpx (client per Ollama)
 - Frontend: un solo HTML con JS/CSS minimale in stile console retrò, senza framework
-- Streaming verso il client con SSE
 - Dati del mondo in YAML (PyYAML), validati con modelli Pydantic al caricamento
 - Test: pytest
 - Persistenza: stato partita serializzato in JSON; SQLite quando serviranno più utenti
@@ -33,32 +33,37 @@ input giocatore
 ## LLM
 - Sviluppo: **Ollama in locale, solo CPU (niente GPU)**. Modello piccolo da 3-4B (es. famiglia Qwen o Llama, versione recente).
 - In futuro, forse: API con piano gratuito o a pagamento. Il cambio deve richiedere solo configurazione.
-- Astrazione `LLMClient` con implementazioni:
-  - `OllamaClient` (usa l'output strutturato con schema JSON per l'interprete)
-  - `OpenAICompatibleClient` (per provider esterni)
+- Astrazione `LLMClient` (`app/llm/client.py`), con un solo metodo per il modello: `complete_json`.
+  - `OllamaClient` (API nativa `/api/chat`, output strutturato con `format`)
   - `FakeLLMClient` (risposte predefinite, per i test)
-- Configurazione via variabili d'ambiente (URL, modello, chiave).
+  - `OpenAICompatibleClient` (per provider esterni): rimandato a quando ne sceglieremo uno.
+- Configurazione via variabili d'ambiente (`app/config.py`): `LLM` (ollama | off), `OLLAMA_URL`,
+  `LLM_MODEL`. Se Ollama non risponde, il gioco avvisa e prosegue con i soli comandi semplici.
 
 ### Vincoli dovuti alla CPU
-- Prompt **corti**: passa solo la stanza corrente, gli oggetti visibili, le uscite e l'inventario, mai il mondo intero.
+- Prompt **corti**: passa solo gli oggetti a portata (con i loro alias), mai il mondo intero.
 - Preferire l'output strutturato con schema JSON al tool calling (più affidabile sui modelli piccoli).
-- Risposte del narratore brevi (2-4 frasi), sempre in streaming.
-- Ridurre le chiamate: tutto ciò che il parser classico o il testo fisso sanno gestire non passa dall'LLM.
+- Ridurre le chiamate: tutto ciò che il parser classico sa gestire non passa dall'LLM.
+- Non cambiare l'inizio del prompt di sistema senza motivo: Ollama lo tiene in cache, e un
+  prefisso nuovo costa ~10 s in più alla prima chiamata.
 
 ## Struttura proposta
 ```
 app/
-  main.py            # FastAPI: endpoint, SSE, file statici
+  main.py            # FastAPI: endpoint, file statici (fase 5)
+  config.py          # variabili d'ambiente
+  game.py            # un turno: parser → interprete LLM → motore → testo fisso
+  cli.py             # la partita nel terminale
   engine/
     models.py        # Pydantic: Mondo, Stanza, Oggetto, Personaggio, Azione, Esito, StatoPartita
     loader.py        # caricamento e validazione YAML
     validation.py    # controlli incrociati sul mondo (riferimenti, flag, raggiungibilità)
     engine.py        # esecuzione azioni, regole, condizioni
     parser.py        # parser classico dei comandi semplici
+    text.py          # articoli e testo fisso degli esiti
   llm/
     client.py        # interfaccia LLMClient + implementazioni
     interpreter.py   # frase → Azione
-    narrator.py      # Esito → testo
     prompts.py
   storage/
     saves.py
@@ -103,32 +108,51 @@ tests/
     intero (non si ricorda l'azione a metà: da riprendere con l'interfaccia web).
   - `app/cli.py`: partita nel terminale. `fine` ed `esci` chiedono conferma, perché "esci" può
     anche voler dire "esci dalla stanza".
+- **LLM interprete** (fase 4, 2026-09-25):
+  - `app/game.py`: `Game.turn(riga) → testo`, usato dal terminale e poi dal web. L'LLM entra solo
+    se il parser non capisce; l'azione interpretata compare tra parentesi, "(usa la corda con il
+    pozzo)", così il giocatore vede subito se il modello ha frainteso.
+  - Se il modello non risponde o risponde qualcosa senza senso: "Non ho capito."
+  - Test col modello vero in `tests/test_ollama.py`, saltati per default (`OLLAMA_TESTS=1`).
 
 ## Decisioni ancora aperte
+- Dialoghi con i personaggi: senza narratore LLM, le risposte saranno testi d'autore (l'LLM
+  potrebbe solo scegliere l'argomento), oppure servirà un modello più capace.
+- Interfaccia web: lo streaming SSE serviva al narratore; senza, basta una richiesta per turno.
 - Hosting pubblico (es. PC di casa + Cloudflare Tunnel) — non prioritario.
 
 ## Comandi utili
 ```
 # ambiente: Python 3.12 installato per l'utente (launcher `py`), ambiente virtuale in .venv
 py -3.12 -m venv .venv
-.venv\Scripts\python -m pip install "pydantic>=2.11" "pyyaml>=6" "pytest>=8"
+.venv\Scripts\python -m pip install "pydantic>=2.11" "pyyaml>=6" "httpx>=0.27" "pytest>=8"
 .venv\Scripts\python -m pytest
 
-.venv\Scripts\python -m app.cli      # giocare nel terminale
+.venv\Scripts\python -m app.cli      # giocare nel terminale (con Ollama acceso, anche frasi libere)
+$env:LLM="off"                       # giocare senza LLM
 
-ollama pull <modello>
+$env:OLLAMA_TESTS=1; .venv\Scripts\python -m pytest tests/test_ollama.py -v -s   # test col modello vero
+
+ollama pull qwen2.5:3b
 uvicorn app.main:app --reload
 ```
 
 
 ### Risultati dei test (qwen2.5:3b su CPU, Windows)
 - Ambiente di sviluppo: Windows, PowerShell.
-- Velocità misurate: generazione ~7 token/s, lettura prompt ~30 token/s.
+- Velocità misurate: generazione ~6-7 token/s, lettura prompt ~30 token/s.
   La lettura del prompt è il collo di bottiglia: prompt minimi, parte fissa in testa (cache).
-- Interprete: output strutturato con `format` (schema JSON), `temperature: 0`, `num_predict: 60`.
-  - Campi: `verbo`, `bersaglio` (su cosa si agisce), `con` (cosa si usa; "nessuno" se assente).
-  - `verbo` vincolato con enum ai verbi supportati.
-  - `bersaglio` e `con` vincolati con enum agli oggetti visibili + inventario, generati dal motore a ogni turno.
-  - Due esempi few-shot nel prompt di sistema: senza, il modello scambiava bersaglio e strumento.
-- Narratore: `num_predict` ~150, temperatura più alta, sempre in streaming.
-- Il motore valida ogni azione; se non ha senso prova a invertire bersaglio/con o chiede chiarimenti.
+- Interprete (fase 4): 4-7 s per frase; la prima chiamata 15-20 s (caricamento del modello,
+  poi tenuto in memoria con `keep_alive: 30m`). `tests/test_ollama.py`: 10 su 10.
+  - Output strutturato con `format` (schema JSON), `temperature: 0`, `num_predict: 60`, `num_ctx: 2048`.
+  - Campi: `verbo`, `bersaglio` (su cosa si agisce; per "vai" la direzione), `con` (cosa si usa;
+    "nessuno" se assente). Enum generati a ogni turno: verbi del motore + `altro` (non è
+    un'azione); nomi degli oggetti a portata + direzioni + `nessuno`.
+  - Nel prompt: glossario dei verbi (senza, il modello usava "usa" per quasi tutto), oggetti con
+    gli alias tra parentesi (senza, confondeva "porta" con "portone"), quattro esempi.
+  - Scambiare bersaglio e strumento non è un problema: le regole accettano i due oggetti in
+    qualunque ordine.
+  - Limite noto: una frase con lo scopo ("cala il rampino nel pozzo per ripescare la chiave") può
+    confondere il modello; la stessa frase senza lo scopo funziona. Aggiungere istruzioni al
+    prompt non ha aiutato.
+- Narratore: provato e scartato (vedi sopra), anche con temperatura 0.2 e senza descrizioni.

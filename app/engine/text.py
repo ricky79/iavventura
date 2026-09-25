@@ -1,12 +1,12 @@
 """Fixed Italian text for the player: articles, lists and the rendering of an Outcome.
 
-The LLM narrator will retell outcomes more freely; this is the text used without it.
+Every answer the player reads comes from here or from the world's authors: the LLM never writes it.
 """
 
 import unicodedata
 from collections.abc import Iterable
 
-from app.engine.models import Direction, Gender, Item, Outcome, RoomView, World
+from app.engine.models import Action, Direction, Gender, Item, Outcome, RoomView, World
 
 _VOWELS = frozenset("aeiou")
 
@@ -50,6 +50,19 @@ def join(words: Iterable[str], conjunction: str = "e") -> str:
 
 def which_one(candidates: Iterable[Item]) -> str:
     return f"Quale intendi: {join((definite(item) for item in candidates), 'o')}?"
+
+
+def action_text(action: Action, world: World) -> str:
+    """The action as a command: "usa la corda con il gancio", "vai a nord"."""
+    if action.direction is not None:
+        vertical = action.direction in (Direction.UP, Direction.DOWN)
+        return f"vai {action.direction}" if vertical else f"vai a {action.direction}"
+    words = [action.verb]
+    if action.target is not None:
+        words.append(definite(world.items[action.target]))
+    if action.with_ is not None:
+        words += ["con", definite(world.items[action.with_])]
+    return " ".join(words)
 
 
 def render(outcome: Outcome, world: World) -> str:

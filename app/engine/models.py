@@ -355,7 +355,7 @@ class RoomView(_Frozen):
 
 
 class Outcome(_Frozen):
-    """What an action produced, for the narrator: the engine has already applied it to the state."""
+    """What an action produced: the engine has already applied it to the state."""
 
     # False when the engine refused the action or nothing reacted to it; the state is then unchanged.
     ok: bool

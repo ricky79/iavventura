@@ -1,7 +1,7 @@
 """The game engine: the only code that changes a GameState.
 
-It executes an Action against the world's rules and returns an Outcome for the narrator.
-Every check runs before the state is touched, so a refused action leaves it unchanged.
+It executes an Action against the world's rules and returns an Outcome, which app/engine/text.py
+turns into text. Every check runs before the state is touched, so a refused action leaves it unchanged.
 """
 
 from app.engine.models import (
