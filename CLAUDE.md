@@ -92,9 +92,19 @@ tests/
   - I messaggi del motore non nominano l'oggetto ("Fatto.", "Non si può prendere."): articoli e
     genere si decidono nella fase 3, insieme al testo di stanze e inventario.
   - Regole e comportamento predefinito dei verbi: in `docs/formato-mondo.md`.
+- **Parser, testo fisso e terminale** (fase 3, 2026-09-25):
+  - `app/engine/parser.py`: comandi semplici → `Action`, `Ambiguous` o `None`. È severo: una
+    parola sconosciuta rende la frase non capita, e le frasi libere andranno all'LLM (fase 4).
+    Riconoscimento degli oggetti descritto in `docs/formato-mondo.md`.
+  - Oggetti con `gender` (m/f, obbligatorio) e `plural` (facoltativo): gli articoli si calcolano
+    in `app/engine/text.py`, che trasforma anche l'esito in testo fisso (stanza con "Qui vedi…"
+    e "Uscite: …", inventario, finale).
+  - Se il nome è ambiguo il gioco chiede "Quale intendi: …?" e il giocatore riscrive il comando
+    intero (non si ricorda l'azione a metà: da riprendere con l'interfaccia web).
+  - `app/cli.py`: partita nel terminale. `fine` ed `esci` chiedono conferma, perché "esci" può
+    anche voler dire "esci dalla stanza".
 
 ## Decisioni ancora aperte
-- Articoli e genere degli oggetti, per scrivere "Qui vedi una corda" (fase 3).
 - Hosting pubblico (es. PC di casa + Cloudflare Tunnel) — non prioritario.
 
 ## Comandi utili
@@ -103,6 +113,8 @@ tests/
 py -3.12 -m venv .venv
 .venv\Scripts\python -m pip install "pydantic>=2.11" "pyyaml>=6" "pytest>=8"
 .venv\Scripts\python -m pytest
+
+.venv\Scripts\python -m app.cli      # giocare nel terminale
 
 ollama pull <modello>
 uvicorn app.main:app --reload

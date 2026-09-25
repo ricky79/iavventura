@@ -37,6 +37,7 @@ def test_same_section_may_continue_in_another_file(world_dir):
         items:
           sasso:
             name: sasso
+            gender: m
             description: Un sasso.
             location: cella
     """)
@@ -156,6 +157,7 @@ def test_misspelled_section_is_rejected(world_dir):
         itmes:
           sasso:
             name: sasso
+            gender: m
     """)
 
     with pytest.raises(WorldError) as exc:
@@ -169,6 +171,7 @@ def test_structural_errors_are_reported_with_their_path(world_dir):
         items:
           sasso:
             name: sasso
+            gender: m
             descripton: Un sasso.
             location: cella
     """)
@@ -184,6 +187,7 @@ def test_cross_reference_problems_are_reported(world_dir):
         items:
           sasso:
             name: sasso
+            gender: m
             description: Un sasso.
             location: cantina
     """)

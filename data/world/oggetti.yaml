@@ -5,6 +5,7 @@ items:
   # --- Cortile ---
   pozzo:
     name: pozzo
+    gender: m
     description: >
       Un pozzo asciutto, profondo tre o quattro volte la tua altezza.
       Sporgendoti vedi luccicare qualcosa sul fondo: una grossa chiave ad
@@ -17,6 +18,7 @@ items:
 
   porta_torre:
     name: porta della torre
+    gender: f
     aliases: [porta, porta di ferro]
     description: Una porta di ferro borchiata, con una serratura grande quanto un pugno. È chiusa a chiave.
     location: cortile
@@ -27,6 +29,7 @@ items:
 
   portone:
     name: portone
+    gender: m
     description: >
       Il portone da cui sei entrato. Si è richiuso da solo alle tue spalle e
       da questa parte non ha né maniglia né serratura.
@@ -36,12 +39,14 @@ items:
   # --- Cucina ---
   camino:
     name: camino
+    gender: m
     description: Un camino spento da anni. Dalle catene non pende più nessun paiolo.
     location: cucina
     scenery: true
 
   gancio:
     name: gancio da macellaio
+    gender: m
     aliases: [gancio, uncino]
     description: >
       Un gancio di ferro a forma di esse, di quelli per appendere la carne.
@@ -51,6 +56,7 @@ items:
   # --- Scuderia ---
   corda:
     name: corda
+    gender: f
     aliases: [fune]
     description: Una lunga corda di canapa, arrotolata con cura. Sembra ancora robusta.
     location: scuderia
@@ -58,12 +64,14 @@ items:
   # --- Fuori gioco all'inizio ---
   corda_con_gancio:
     name: corda con gancio
+    gender: f
     aliases: [corda, gancio, rampino]
     description: La corda con il gancio da macellaio legato a un capo. Un rampino improvvisato.
     location: null
 
   chiave_torre:
     name: chiave di ferro
+    gender: f
     aliases: [chiave]
     description: Una grossa chiave di ferro ad anello, fredda e pesante.
     location: null

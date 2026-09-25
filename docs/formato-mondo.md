@@ -60,6 +60,8 @@ Le uscite sono a senso unico: per tornare indietro serve l'uscita opposta nell'a
 items:
   gancio:
     name: gancio da macellaio    # nome canonico: unico in tutto il mondo
+    gender: m                    # genere del nome: m oppure f
+    plural: false                # facoltativo: true per nomi plurali (attrezzi, chiavi)
     aliases: [gancio, uncino]    # altri nomi; possono coincidere con quelli di altri oggetti
     description: Testo mostrato quando lo si esamina.
     location: cucina             # una stanza, inventory, oppure null
@@ -70,8 +72,20 @@ items:
 - `location: inventory`: l'oggetto parte nelle mani del giocatore.
 - `location: null`: l'oggetto parte **fuori gioco** ed entra solo tramite un effetto `give` o
   `place` (per esempio il risultato di una combinazione).
+- `gender` e `plural` servono agli articoli, che il gioco calcola da solo con le regole
+  dell'italiano: il gancio / un gancio, lo specchio / uno specchio, l'ascia / un'ascia,
+  la corda / una corda, gli attrezzi / degli attrezzi.
+- Il nome e gli alias si scrivono senza articolo: "gancio da macellaio", non "il gancio".
 - Gli alias possono ripetersi: dopo la combinazione, "corda" deve indicare la corda con gancio.
-  Il motore sceglierà in base a ciò che il giocatore ha a portata.
+
+**Come il parser riconosce gli oggetti.** Nel comando del giocatore articoli e preposizioni
+(il, la, con, sul, nella…) vengono ignorati, e così anche nei nomi: "usa la corda con gancio
+nel pozzo" confronta le parole "corda gancio pozzo". Il parser sceglie:
+- prima gli oggetti **a portata**, e fra questi il nome o alias più lungo: se la corda con
+  gancio è fuori gioco, "usa la corda con il gancio" indica la corda e il gancio separati;
+- se due oggetti a portata rispondono alle stesse parole, chiede "Quale intendi: …?";
+- un oggetto non a portata arriva al motore, che risponde "Non vedi niente del genere qui."
+  (senza chiedere quale, per non svelare oggetti che il giocatore non ha ancora visto).
 
 ## `rules`
 
