@@ -6,9 +6,20 @@ Every answer the player reads comes from here or from the world's authors: the L
 import unicodedata
 from collections.abc import Iterable
 
-from app.engine.models import Action, Direction, Gender, Item, Outcome, RoomView, World
+from app.engine.models import Action, Direction, Gender, Item, Outcome, RoomView, Verb, World
 
 _VOWELS = frozenset("aeiou")
+_INFINITIVES = {
+    Verb.EXAMINE: "esaminare",
+    Verb.TAKE: "prendere",
+    Verb.DROP: "lasciare",
+    Verb.USE: "usare",
+    Verb.OPEN: "aprire",
+    Verb.CLOSE: "chiudere",
+    Verb.PUSH: "spingere",
+    Verb.PULL: "tirare",
+    Verb.READ: "leggere",
+}
 
 
 def definite(item: Item) -> str:
@@ -63,6 +74,15 @@ def action_text(action: Action, world: World) -> str:
     if action.with_ is not None:
         words += ["con", definite(world.items[action.with_])]
     return " ".join(words)
+
+
+def confirmation(action: Action, world: World) -> str:
+    """The question before an interpreted action on items that nothing reacts to:
+    "Vuoi usare la corda con il gancio?"."""
+    words = ["Vuoi", _INFINITIVES[action.verb], definite(world.items[action.target])]
+    if action.with_ is not None:
+        words += ["con", definite(world.items[action.with_])]
+    return " ".join(words) + "?"
 
 
 def render(outcome: Outcome, world: World) -> str:

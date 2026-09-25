@@ -673,3 +673,43 @@ def test_exits_come_in_compass_order(data):
 
     assert [direction for direction, _ in engine.known_exits(state)] == [Direction.NORTH, Direction.WEST, Direction.UP]
     assert engine.known_exits(state)[0] == (Direction.NORTH, engine.world.rooms["atrio"])
+
+
+# --- Actions the world foresees ------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        Action(verb="vai", direction="nord"),
+        Action(verb="guarda"),
+        Action(verb="inventario"),
+        Action(verb="tira", target="leva"),
+        Action(verb="usa", target="moneta", with_="leva"),
+        Action(verb="esamina", target="leva"),
+        Action(verb="prendi", target="candela"),
+        Action(verb="lascia", target="moneta"),
+    ],
+    ids=["go", "look", "inventory", "rule", "rule in the other order", "examine", "take", "drop"],
+)
+def test_commands_rules_and_verbs_that_work_alone_are_expected(data, action):
+    engine, state = start(data)
+
+    assert engine.expects(action)
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        Action(verb="usa", target="candela"),
+        Action(verb="spingi", target="leva"),
+        Action(verb="apri", target="candela"),
+        Action(verb="usa", target="candela", with_="moneta"),
+        Action(verb="prendi", target="candela", with_="moneta"),
+    ],
+    ids=["use", "push", "open", "use with", "take with a tool"],
+)
+def test_actions_no_rule_reacts_to_are_not_expected(data, action):
+    engine, _ = start(data)
+
+    assert not engine.expects(action)

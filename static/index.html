@@ -235,8 +235,9 @@
   const screen = $("screen"), transcript = $("transcript"), waiting = $("waiting");
   const prompt = $("prompt"), input = $("line"), confirmBar = $("confirm");
 
-  // Everything the page needs to pick the game up again: the engine's state and what is on screen.
-  let save = { state: null, room: "", finished: false, lines: [] };
+  // Everything the page needs to pick the game up again: the engine's state, what is on screen
+  // and the action the game is asking about ("Vuoi…?"), which goes back with the next line.
+  let save = { state: null, room: "", finished: false, lines: [], pending: null };
 
   function load() {
     try {
@@ -302,7 +303,7 @@
 
   async function newGame() {
     transcript.replaceChildren();
-    save = { state: null, room: "", finished: false, lines: [] };
+    save = { state: null, room: "", finished: false, lines: [], pending: null };
     status();
     try {
       const reply = await withWaiting(() => post("/api/new"));
@@ -324,7 +325,7 @@
     scrollToEnd();
     let reply = null;
     try {
-      reply = await withWaiting(() => post("/api/turn", { line, state: save.state }));
+      reply = await withWaiting(() => post("/api/turn", { line, state: save.state, pending: save.pending ?? null }));
       if (reply.restarted) {
         transcript.replaceChildren();
         save.lines = [];
@@ -332,6 +333,7 @@
       save.state = reply.state;
       save.room = reply.room;
       save.finished = reply.finished;
+      save.pending = reply.pending ?? null;
       say("story", reply.text);
       if (reply.finished) say("notice", "[Fine. Per giocare ancora scegli «Nuova partita».]");
       store();

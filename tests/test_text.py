@@ -3,7 +3,7 @@
 import pytest
 
 from app.engine.models import Action, Direction, Item, Outcome, RoomView, World
-from app.engine.text import action_text, definite, indefinite, join, render, which_one
+from app.engine.text import action_text, confirmation, definite, indefinite, join, render, which_one
 
 
 def item(name: str, gender: str = "m", plural: bool = False) -> Item:
@@ -136,3 +136,16 @@ def test_text_room_and_ending_are_separate_paragraphs(world):
 )
 def test_actions_read_as_commands(world, action, expected):
     assert action_text(action, world) == expected
+
+
+@pytest.mark.parametrize(
+    ("action", "expected"),
+    [
+        (Action(verb="usa", target="corda", with_="gancio"), "Vuoi usare la corda con il gancio?"),
+        (Action(verb="spingi", target="gancio"), "Vuoi spingere il gancio?"),
+        (Action(verb="leggi", target="corda"), "Vuoi leggere la corda?"),
+        (Action(verb="apri", target="gancio", with_="corda"), "Vuoi aprire il gancio con la corda?"),
+    ],
+)
+def test_an_unexpected_action_is_asked_as_a_question(world, action, expected):
+    assert confirmation(action, world) == expected

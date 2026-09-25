@@ -13,12 +13,12 @@ from typing import Any
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from app.config import LOGS_DIR, Settings, make_client, start_llm_log
 from app.engine.engine import Engine, StateError
 from app.engine.loader import load_world
-from app.engine.models import GameState
+from app.engine.models import Action, GameState
 from app.game import Game
 from app.llm.client import LLMClient
 
@@ -41,6 +41,8 @@ class TurnRequest(BaseModel):
     line: str = Field(max_length=MAX_LINE)
     # Checked by the engine, not here: a state that doesn't fit restarts the game instead of an error.
     state: Any = None
+    # The action asked about in the last reply ("Vuoi…?"), sent back as it came; a broken one is ignored.
+    pending: Any = None
 
 
 class TurnReply(BaseModel):
@@ -50,6 +52,8 @@ class TurnReply(BaseModel):
     finished: bool
     # True when the saved state didn't fit the world and a new game started.
     restarted: bool = False
+    # The action the game is asking about: the browser sends it back with the next line.
+    pending: Action | None = None
 
 
 def create_app(engine: Engine, llm: LLMClient | None) -> FastAPI:
@@ -76,12 +80,20 @@ def create_app(engine: Engine, llm: LLMClient | None) -> FastAPI:
             game = Game(engine, llm)
             text = f"{WORLD_CHANGED}\n\n{game.opening()}"
             return TurnReply(text=text, state=game.state, room=room_of(game), finished=False, restarted=True)
-        game = Game(engine, llm, state=state)
+        game = Game(engine, llm, state=state, pending=pending_action(request.pending))
         text = game.turn(request.line)
-        return TurnReply(text=text, state=game.state, room=room_of(game), finished=game.finished)
+        return TurnReply(
+            text=text, state=game.state, room=room_of(game), finished=game.finished, pending=game.pending
+        )
 
     def room_of(game: Game) -> str:
         return engine.world.rooms[game.state.current_room].name
+
+    def pending_action(data: Any) -> Action | None:
+        try:
+            return None if data is None else Action.model_validate(data)
+        except ValidationError:
+            return None
 
     return app
 

@@ -5,7 +5,8 @@ import pytest
 from app.engine.engine import Engine
 from app.engine.loader import load_world
 from app.engine.models import World
-from app.game import HELP, NOT_UNDERSTOOD, Game
+from app.engine.models import Action
+from app.game import ALL_RIGHT, HELP, NOT_UNDERSTOOD, Game
 from app.llm.client import FakeLLMClient
 
 
@@ -101,11 +102,95 @@ def test_ambiguous_names_get_a_question_without_asking_the_llm(world_data):
 
 
 def test_an_interpreted_sentence_is_shown_before_the_answer(castle):
-    llm = FakeLLMClient(json_replies=[{"verbo": "spingi", "bersaglio": "portone", "con": "nessuno"}])
+    llm = FakeLLMClient(json_replies=[{"verbo": "esamina", "bersaglio": "portone", "con": "nessuno"}])
 
-    output = say(Game(Engine(castle), llm), "dai una spinta al portone")
+    output = say(Game(Engine(castle), llm), "dai un'occhiata al portone")
 
-    assert output == "(spingi il portone)\nNon succede niente."
+    assert output == f"(esamina il portone)\n{castle.items['portone'].description}"
+
+
+# --- An interpreted action nothing in the world foresees: ask first --------------------------------
+
+
+def misunderstood_grapple(castle: World) -> Game:
+    """The bug found while playing: the model aims the grapple at the door instead of the well."""
+    llm = FakeLLMClient(json_replies=[{"verbo": "usa", "bersaglio": "portone", "con": "corda con gancio"}])
+    game = Game(Engine(castle), llm)
+    game.state.item_locations["corda_con_gancio"] = "inventory"
+    return game
+
+
+def test_an_unexpected_interpreted_action_is_asked_before_doing_it(castle):
+    game = misunderstood_grapple(castle)
+    before = game.state.model_copy(deep=True)
+
+    output = say(game, "usa il rampino per recuperare la chiave dal pozzo")
+
+    # The carried item comes first: "usare la corda con gancio con il portone".
+    assert output == "Vuoi usare la corda con gancio con il portone?"
+    assert game.pending == Action(verb="usa", target="corda_con_gancio", with_="portone")
+    assert game.state == before
+
+
+@pytest.mark.parametrize("answer", ["sì", "si", "Sì, certo", "ok"])
+def test_yes_does_the_action_asked_about(castle, answer):
+    game = misunderstood_grapple(castle)
+    say(game, "usa il rampino per recuperare la chiave dal pozzo")
+
+    output = say(game, answer)
+
+    assert output == "Non succede niente."
+    assert game.state.turns == 1
+    assert game.pending is None
+
+
+@pytest.mark.parametrize("answer", ["no", "No, grazie"])
+def test_no_drops_the_action_asked_about(castle, answer):
+    game = misunderstood_grapple(castle)
+    say(game, "usa il rampino per recuperare la chiave dal pozzo")
+
+    output = say(game, answer)
+
+    assert output == ALL_RIGHT
+    assert game.state.turns == 0
+    assert game.pending is None
+
+
+def test_any_other_line_after_the_question_is_a_new_command(castle):
+    game = misunderstood_grapple(castle)
+    say(game, "usa il rampino per recuperare la chiave dal pozzo")
+
+    output = say(game, "usa il rampino con il pozzo")
+
+    assert output == castle.rules["pesca_chiave"].text
+    assert game.pending is None
+
+
+def test_s_and_n_after_the_question_are_still_directions(castle):
+    game = misunderstood_grapple(castle)
+    say(game, "usa il rampino per recuperare la chiave dal pozzo")
+
+    assert say(game, "n") == "La porta della torre è chiusa a chiave."
+    assert game.pending is None
+
+
+def test_what_the_player_typed_is_done_without_asking(castle):
+    game = Game(Engine(castle), FakeLLMClient())
+    game.state.item_locations["corda_con_gancio"] = "inventory"
+
+    assert say(game, "usa il rampino con il portone") == "Non succede niente."
+    assert game.pending is None
+
+
+def test_a_game_can_go_on_with_the_question_still_open(castle):
+    engine = Engine(castle)
+    state, _ = engine.new_game()
+    state.item_locations["corda_con_gancio"] = "inventory"
+    pending = Action(verb="usa", target="corda_con_gancio", with_="pozzo")
+
+    output = say(Game(engine, state=state, pending=pending), "sì")
+
+    assert output == castle.rules["pesca_chiave"].text
 
 
 def test_going_to_a_named_room_needs_no_llm(castle):

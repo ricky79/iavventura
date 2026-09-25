@@ -120,6 +120,13 @@ class Engine:
             exits.append((direction, destination if destination.id in state.visited or named else None))
         return exits
 
+    def expects(self, action: Action) -> bool:
+        """Whether the world foresees the action: a command, a rule that reacts to it, or a verb that
+        does something by itself (esamina, prendi, lascia) with no tool it would ignore."""
+        if isinstance(action.verb, Command) or self._find_rule(action) is not None:
+            return True
+        return action.with_ is None and action.verb in (Verb.EXAMINE, Verb.TAKE, Verb.DROP)
+
     def execute(self, state: GameState, action: Action) -> Outcome:
         """Applies the action to `state` and tells what happened; the first ending that holds closes the game."""
         if state.finished:

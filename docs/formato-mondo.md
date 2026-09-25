@@ -157,6 +157,13 @@ rules:
 
 I messaggi del motore non nominano mai l'oggetto, così non servono articolo e genere.
 
+**Azioni non previste.** Se una frase libera, interpretata dall'LLM, diventa un'azione a cui
+nessuna regola reagisce (tranne esamina, prendi e lascia senza strumento, che fanno qualcosa da
+sole), il gioco non la esegue subito ma chiede conferma: "Vuoi usare la corda con gancio con il
+portone?". Il modello potrebbe aver frainteso. Le azioni scritte con i comandi semplici si
+eseguono senza domande. Per chi scrive: le azioni che i giocatori tenteranno davvero meritano una
+regola, anche solo un indizio.
+
 ## Condizioni
 
 Usate in `when` di uscite, varianti, regole e finali. Ogni condizione ha **una sola chiave**.
