@@ -39,6 +39,14 @@ def test_the_key_in_the_well_can_be_named_without_the_llm(castle):
     assert say(game, "prendi la chiave con il rampino") == castle.rules["pesca_chiave"].text
 
 
+@pytest.mark.parametrize("name", ["corda", "fune", "gancio", "uncino", "rampino", "corda con gancio"])
+def test_the_grapple_answers_to_the_names_of_its_parts(castle, name):
+    game = Game(Engine(castle))
+    game.state.item_locations["corda_con_gancio"] = "inventory"
+
+    assert say(game, f"usa {name} con il pozzo") == castle.rules["pesca_chiave"].text
+
+
 def test_the_llm_can_choose_the_key_in_the_well(castle):
     llm = FakeLLMClient(json_replies=[{"verbo": "prendi", "bersaglio": "chiave di ferro", "con": "corda con gancio"}])
     game = Game(Engine(castle), llm)

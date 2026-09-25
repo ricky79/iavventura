@@ -65,7 +65,7 @@ items:
   corda_con_gancio:
     name: corda con gancio
     gender: f
-    aliases: [corda, gancio, rampino]
+    aliases: [corda, fune, gancio, uncino, rampino]
     description: La corda con il gancio da macellaio legato a un capo. Un rampino improvvisato.
     location: null
 

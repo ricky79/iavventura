@@ -46,7 +46,7 @@ def test_the_model_gets_a_fixed_system_prompt_then_items_exits_and_sentence(cast
     assert first_system == second_system  # the fixed part comes first, so Ollama can cache it
     assert first_user == (
         "Oggetti: pozzo; porta della torre (porta, porta di ferro); portone; "
-        "corda con gancio (corda, gancio, rampino)\n"
+        "corda con gancio (corda, fune, gancio, uncino, rampino)\n"
         "Uscite: nord (Torre), est (Scuderia), ovest (Cucina)\n"
         "Frase: cala il rampino nel pozzo"
     )
