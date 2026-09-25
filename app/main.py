@@ -15,7 +15,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, ValidationError
 
-from app.config import LOGS_DIR, Settings, make_client, start_llm_log
+from app.config import LOGS_DIR, Settings, make_client, start_command_log, start_llm_log
 from app.engine.engine import Engine, StateError
 from app.engine.loader import load_world
 from app.engine.models import Action, GameState
@@ -102,6 +102,7 @@ def create_app_from_env() -> FastAPI:
     """The real app: settings from the environment, LLM log in logs/llm-web.log."""
     settings = Settings.from_env(default_llm_log=LOGS_DIR / "llm-web.log")
     start_llm_log(settings.llm_log)
+    start_command_log(settings.command_log, origin="web")
     return create_app(Engine(load_world()), make_client(settings))
 
 

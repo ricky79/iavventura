@@ -8,7 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from app.config import Settings, make_client, start_llm_log
+import json
+
+from app.config import Settings, make_client, start_command_log, start_llm_log
 from app.llm.client import OllamaClient
 
 
@@ -111,3 +113,48 @@ def test_without_a_log_file_llm_warnings_stay_out_of_the_terminal():
     result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
 
     assert result.stderr == ""
+
+
+# --- Log of the commands that went wrong (JSON lines) ----------------------------------------------
+
+
+def test_the_command_log_goes_to_the_logs_folder_by_default():
+    assert Path(Settings.from_env({}).command_log) == Path(__file__).resolve().parents[1] / "logs" / "comandi.jsonl"
+
+
+@pytest.mark.parametrize(("value", "expected"), [("off", "off"), ("C:/temp/comandi.jsonl", "C:/temp/comandi.jsonl")])
+def test_the_command_log_can_be_moved_or_switched_off(value, expected):
+    assert Settings.from_env({"COMMAND_LOG": value}).command_log == expected
+
+
+@pytest.fixture
+def commands_logger():
+    logger = logging.getLogger("app.commands")
+    handlers, level = list(logger.handlers), logger.level
+    yield logger
+    for handler in logger.handlers:
+        if handler not in handlers:
+            handler.close()
+            logger.removeHandler(handler)
+    logger.setLevel(level)
+
+
+def test_each_command_is_one_json_line_with_time_and_front_end(tmp_path, commands_logger):
+    log_file = tmp_path / "logs" / "comandi.jsonl"
+    entry = {"stanza": "cortile", "frase": "nord", "da": "parser", "azione": "vai nord", "esito": "fallita",
+             "dettaglio": "La porta della torre è chiusa a chiave."}  # fmt: skip
+
+    start_command_log(str(log_file), origin="web")
+    commands_logger.info("fallita: nord", extra={"command": entry})
+    commands_logger.info("fallita: nord", extra={"command": entry})
+
+    lines = [json.loads(line) for line in log_file.read_text(encoding="utf-8").splitlines()]
+    assert len(lines) == 2
+    assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d", lines[0].pop("ora"))
+    assert lines[0] == {"origine": "web", **entry}
+
+
+def test_no_command_log_when_switched_off(commands_logger):
+    start_command_log("off", origin="terminale")
+
+    assert all(isinstance(handler, logging.NullHandler) for handler in commands_logger.handlers)

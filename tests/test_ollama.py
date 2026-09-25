@@ -15,8 +15,8 @@ import pytest
 from app.config import Settings, make_client
 from app.engine.engine import Engine
 from app.engine.loader import load_world
-from app.engine.models import GameState
-from app.llm.interpreter import interpret
+from app.engine.models import Action, GameState
+from app.llm.interpreter import NotUnderstood, interpret
 
 pytestmark = pytest.mark.skipif(os.environ.get("OLLAMA_TESTS") != "1", reason="needs Ollama: set OLLAMA_TESTS=1")
 
@@ -66,7 +66,7 @@ def test_free_sentences_become_the_right_action(llm, room, carried, sentence, ch
     action = interpret(llm, sentence, engine.in_reach(state), engine.known_exits(state))
     print(f"\n  {time.perf_counter() - start:4.1f}s  {sentence!r} -> {action}")
 
-    assert action is not None
+    assert isinstance(action, Action)
     assert check(engine.execute(state, action), state)
 
 
@@ -74,5 +74,5 @@ def test_free_sentences_become_the_right_action(llm, room, carried, sentence, ch
 def test_small_talk_and_unknown_places_are_not_understood(llm, sentence):
     engine, state = game_in("cortile")
 
-    assert interpret(llm, sentence, engine.in_reach(state), engine.known_exits(state)) is None
+    assert isinstance(interpret(llm, sentence, engine.in_reach(state), engine.known_exits(state)), NotUnderstood)
 

@@ -5,7 +5,7 @@ import pytest
 from app.engine.loader import load_world
 from app.engine.models import Action, Direction, Item, World
 from app.llm.client import FakeLLMClient
-from app.llm.interpreter import interpret, interpreter_schema
+from app.llm.interpreter import NotUnderstood, interpret, interpreter_schema
 
 
 @pytest.fixture(scope="module")
@@ -80,10 +80,17 @@ def test_replies_become_actions_on_item_ids(in_reach, reply, expected):
     assert interpret(FakeLLMClient(json_replies=[reply]), "frase", in_reach) == expected
 
 
+def test_the_model_may_say_the_sentence_is_not_a_game_action(in_reach):
+    reply = {"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}
+
+    result = interpret(FakeLLMClient(json_replies=[reply]), "che ore sono?", in_reach)
+
+    assert result == NotUnderstood("la frase non è un'azione di gioco", not_an_action=True)
+
+
 @pytest.mark.parametrize(
     "reply",
     [
-        {"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"},
         {"verbo": "prendi", "bersaglio": "nessuno", "con": "nessuno"},
         {"verbo": "prendi", "bersaglio": "nord", "con": "nessuno"},
         {"verbo": "prendi", "bersaglio": "chiave di ferro", "con": "nessuno"},
@@ -92,15 +99,20 @@ def test_replies_become_actions_on_item_ids(in_reach, reply, expected):
         {"verbo": ["usa"], "bersaglio": {"x": 1}, "con": None},
         {},
     ],
-    ids=["not an action", "no target", "direction as target", "item out of reach", "go to an item",
+    ids=["no target", "direction as target", "item out of reach", "go to an item",
          "unknown verb", "wrong types", "empty"],
 )  # fmt: skip
 def test_replies_that_make_no_sense_are_not_understood(in_reach, reply):
-    assert interpret(FakeLLMClient(json_replies=[reply]), "frase", in_reach) is None
+    result = interpret(FakeLLMClient(json_replies=[reply]), "frase", in_reach)
+
+    assert isinstance(result, NotUnderstood)
+    assert not result.not_an_action
 
 
 def test_a_broken_model_means_not_understood(in_reach):
-    assert interpret(FakeLLMClient(), "frase", in_reach) is None
+    result = interpret(FakeLLMClient(), "frase", in_reach)
+
+    assert result == NotUnderstood("il modello non ha dato una risposta valida")
 
 
 # --- Log of how the answer was understood ---------------------------------------------------------

@@ -6,7 +6,7 @@ from app.engine.engine import Engine
 from app.engine.loader import load_world
 from app.engine.models import World
 from app.engine.models import Action
-from app.game import ALL_RIGHT, HELP, NOT_UNDERSTOOD, Game
+from app.game import ALL_RIGHT, HELP, NOT_A_GAME_ACTION, NOT_UNDERSTOOD, Game
 from app.llm.client import FakeLLMClient
 
 
@@ -73,13 +73,16 @@ def test_without_llm_a_free_sentence_is_not_understood(castle):
     assert say(Game(Engine(castle)), "cala il rampino giù nel pozzo") == NOT_UNDERSTOOD
 
 
-@pytest.mark.parametrize(
-    "llm",
-    [FakeLLMClient(json_replies=[{"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}]), FakeLLMClient()],
-    ids=["not an action", "broken model"],
-)
-def test_when_the_llm_cannot_interpret_the_sentence_is_not_understood(castle, llm):
-    game = Game(Engine(castle), llm)
+def test_a_sentence_that_is_no_game_action_gets_a_fixed_answer(castle):
+    game = Game(Engine(castle), FakeLLMClient(json_replies=[{"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}]))
+    before = game.state.model_copy(deep=True)
+
+    assert say(game, "che bella giornata") == NOT_A_GAME_ACTION
+    assert game.state == before
+
+
+def test_when_the_llm_cannot_interpret_the_sentence_is_not_understood(castle):
+    game = Game(Engine(castle), FakeLLMClient())
 
     assert say(game, "che bella giornata") == NOT_UNDERSTOOD
     assert game.state.turns == 0
@@ -232,3 +235,64 @@ def test_only_a_new_game_has_an_opening(castle):
 
     with pytest.raises(ValueError):
         Game(engine, state=state).opening()
+
+
+# --- Log of the commands that went wrong ---------------------------------------------------------
+
+
+def logged(caplog, game: Game, *lines: str) -> list[dict]:
+    with caplog.at_level("INFO", logger="app.commands"):
+        for line in lines:
+            say(game, line)
+    return [record.command for record in caplog.records if record.name == "app.commands"]
+
+
+def test_a_sentence_that_is_no_game_action_is_logged(castle, caplog):
+    game = Game(Engine(castle), FakeLLMClient(json_replies=[{"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}]))
+
+    assert logged(caplog, game, "che bella giornata") == [
+        {
+            "stanza": "cortile",
+            "frase": "che bella giornata",
+            "da": "llm",
+            "azione": None,
+            "esito": "altro",
+            "dettaglio": "la frase non è un'azione di gioco",
+        }
+    ]
+
+
+def test_a_sentence_not_understood_is_logged_with_the_reason(castle, caplog):
+    [with_llm] = logged(caplog, Game(Engine(castle), FakeLLMClient()), "che bella giornata")
+    caplog.clear()
+    [without_llm] = logged(caplog, Game(Engine(castle)), "che bella giornata")
+
+    assert (with_llm["esito"], with_llm["dettaglio"]) == ("non capito", "il modello non ha dato una risposta valida")
+    assert (without_llm["da"], without_llm["esito"]) == ("parser", "non capito")
+    assert without_llm["dettaglio"] == "il parser non la capisce e l'LLM è spento"
+
+
+def test_a_failed_action_is_logged_with_the_answer(castle, caplog):
+    assert logged(caplog, Game(Engine(castle)), "nord") == [
+        {
+            "stanza": "cortile",
+            "frase": "nord",
+            "da": "parser",
+            "azione": "vai nord",
+            "esito": "fallita",
+            "dettaglio": "La porta della torre è chiusa a chiave.",
+        }
+    ]
+
+
+def test_a_question_before_an_unexpected_action_is_logged(castle, caplog):
+    [entry] = logged(caplog, misunderstood_grapple(castle), "usa il rampino per recuperare la chiave dal pozzo")
+
+    assert entry["da"] == "llm"
+    assert entry["azione"] == "usa corda_con_gancio con portone"
+    assert entry["esito"] == "conferma"
+    assert entry["dettaglio"] == "Vuoi usare la corda con gancio con il portone?"
+
+
+def test_what_works_is_not_logged(castle, caplog):
+    assert logged(caplog, Game(Engine(castle)), "ovest", "prendi il gancio", "guarda") == []
