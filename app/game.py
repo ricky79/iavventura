@@ -1,4 +1,4 @@
-"""A game session, one turn at a time: what the terminal uses now and the web will use later.
+"""A game session, one turn at a time: what both the terminal and the web use.
 
 A turn: classic parser -> (if not understood) LLM interpreter -> engine -> fixed text.
 The LLM only interprets the player's sentence: every answer is fixed text written by the
@@ -6,7 +6,7 @@ world's author or by the engine. Without an LLM the game works with simple comma
 """
 
 from app.engine.engine import Engine
-from app.engine.models import World
+from app.engine.models import GameState, World
 from app.engine.parser import Ambiguous, parse, words_of
 from app.engine.text import action_text, render, which_one
 from app.llm.client import LLMClient
@@ -24,10 +24,14 @@ _HELP_WORDS = frozenset({"aiuto", "help"})
 
 
 class Game:
-    def __init__(self, engine: Engine, llm: LLMClient | None = None) -> None:
+    def __init__(self, engine: Engine, llm: LLMClient | None = None, state: GameState | None = None) -> None:
+        """A new game, or one that goes on from `state` (the web keeps it in the browser)."""
         self.engine = engine
         self.llm = llm
-        self.state, self._opening = engine.new_game()
+        if state is None:
+            self.state, self._opening = engine.new_game()
+        else:
+            self.state, self._opening = state, None
 
     @property
     def world(self) -> World:
@@ -38,6 +42,9 @@ class Game:
         return self.state.finished
 
     def opening(self) -> str:
+        """Intro and first room; only a new game has one."""
+        if self._opening is None:
+            raise ValueError("a game going on from a saved state has no opening")
         return render(self._opening, self.world)
 
     def turn(self, line: str) -> str:

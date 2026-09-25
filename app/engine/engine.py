@@ -4,6 +4,10 @@ It executes an Action against the world's rules and returns an Outcome, which ap
 turns into text. Every check runs before the state is touched, so a refused action leaves it unchanged.
 """
 
+from typing import Any
+
+from pydantic import ValidationError
+
 from app.engine.models import (
     INVENTORY,
     Action,
@@ -49,6 +53,10 @@ NOTHING_TO_READ = "Non c'è niente da leggere."
 _NOTHING_WITHOUT_A_RULE = {Verb.OPEN: CANT_OPEN, Verb.CLOSE: CANT_CLOSE, Verb.READ: NOTHING_TO_READ}
 
 
+class StateError(Exception):
+    """A saved state doesn't fit this world: the world changed, or the state was edited by hand."""
+
+
 class Engine:
     def __init__(self, world: World) -> None:
         self.world = world
@@ -56,6 +64,30 @@ class Engine:
     def new_game(self) -> tuple[GameState, Outcome]:
         state = GameState.new(self.world)
         return state, Outcome(ok=True, text=self.world.game.intro, room=self._room_view(state, first_visit=True))
+
+    def restore(self, data: Any) -> GameState:
+        """A state saved elsewhere (the browser keeps it), checked against this world.
+
+        Texts may have changed since it was saved; rooms and items must still be the same.
+        """
+        try:
+            state = GameState.model_validate(data)
+        except ValidationError as exc:
+            raise StateError(f"not a game state: {exc}") from None
+        rooms, items = self.world.rooms, self.world.items
+        problems = []
+        if state.current_room not in rooms:
+            problems.append(f"unknown room '{state.current_room}'")
+        problems += [f"item '{item_id}' is missing" for item_id in items if item_id not in state.item_locations]
+        for item_id, location in state.item_locations.items():
+            if item_id not in items:
+                problems.append(f"unknown item '{item_id}'")
+            elif location not in (None, INVENTORY) and location not in rooms:
+                problems.append(f"item '{item_id}' in unknown room '{location}'")
+        problems += [f"unknown visited room '{room_id}'" for room_id in sorted(state.visited) if room_id not in rooms]
+        if problems:
+            raise StateError("; ".join(problems))
+        return state
 
     def in_reach(self, state: GameState) -> list[Item]:
         """Items the player can act on: those in the current room (scenery included) and those carried."""
