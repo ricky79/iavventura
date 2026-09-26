@@ -1,0 +1,85 @@
+# Stanze del Bosco Fatato. La radura è al centro: il draghetto sta lì e ci si torna spesso.
+# Le descrizioni citano gli arredi (scenery: true); gli oggetti trasportabili li elenca il motore.
+
+rooms:
+  radura:
+    name: Radura
+    description: >
+      Una radura piena di sole, in mezzo al Bosco Fatato. Al centro c'è un
+      grosso sasso coperto di muschio. A nord si vede una vecchia quercia, a
+      est un roveto, a ovest si sente scorrere un ruscello. A sud c'è il
+      sentiero che porta a casa tua.
+    exits:
+      nord: {to: quercia}
+      est: {to: roveto}
+      ovest: {to: ruscello}
+      # Si apre solo con il finale, quando la partita è già finita.
+      sud:
+        to: sentiero
+        when: {flag: fuoco_tornato}
+        otherwise: >
+          Non puoi lasciare il draghetto da solo proprio adesso: ha bisogno del
+          tuo aiuto!
+
+  roveto:
+    name: Roveto
+    description: >
+      Cespugli di rovi alti fino alla tua testa, pieni di spine. Gli uccelli
+      hanno già mangiato quasi tutte le more. La radura è a ovest.
+    exits:
+      ovest: {to: radura}
+
+  ruscello:
+    name: Ruscello
+    description: >
+      Un ruscello di acqua limpida chiacchiera tra i sassi. Un ponticello di
+      legno lo attraversa verso ovest, dove c'è la tana di un orso. La radura è
+      a est.
+    exits:
+      est: {to: radura}
+      ovest: {to: tana}
+
+  tana:
+    name: Tana
+    description: >
+      Davanti a una grotta tra le rocce l'erba è tutta schiacciata, e c'è un
+      profumo di miele. Il ponticello sul ruscello è a est.
+    exits:
+      est: {to: ruscello}
+
+  quercia:
+    name: Quercia
+    description: >
+      Una quercia enorme, l'albero più vecchio di tutto il bosco. I rami più
+      bassi sono troppo in alto per arrampicarsi. Lassù, tra le foglie, c'è un nido:
+      chissà cosa c'è dentro. La radura è a sud.
+    variants:
+      - when: {flag: piuma_presa}
+        text: >
+          Una quercia enorme, l'albero più vecchio di tutto il bosco. I rami più
+          bassi sono troppo in alto per arrampicarsi. Lassù, tra le foglie, c'è un
+          nido vuoto. La radura è a sud.
+    exits:
+      sud: {to: radura}
+      # Condizione sempre falsa dalla quercia: in cima non si sale, ma si riceve un indizio.
+      su:
+        to: chioma
+        when: {player_in: chioma}
+        otherwise: >
+          Provi ad arrampicarti, ma i rami più bassi sono troppo in alto. Ti
+          servirebbe qualcosa di lungo per arrivare al nido.
+
+  # --- Stanze in cui non si entra mai: servono alle due uscite chiuse qui sopra. I nomi sono
+  # quelli che un bambino scrive («vai a casa», «vai sull'albero»), e le descrizioni della radura
+  # e della quercia li nominano, così anche l'interprete sa dove portano. ---
+  sentiero:
+    name: Casa
+    description: Il sentiero che porta a casa.
+    exits:
+      nord: {to: radura}
+
+  chioma:
+    name: Albero
+    description: In cima alla quercia.
+    exits:
+      giù: {to: quercia}

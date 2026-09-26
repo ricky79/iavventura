@@ -1,0 +1,81 @@
+# Regole del Bosco Fatato. Tre enigmi, ognuno con più soluzioni, e qualche indizio per i
+# tentativi sbagliati più probabili. Niente si perde per sbaglio: non ci sono vicoli ciechi.
+
+rules:
+  # --- Lo scambio con l'orso ---
+  scambia_more:
+    trigger: {verb: dai, target: more, with: orso}
+    effects:
+      - remove: more
+      - give: vasetto_miele
+      - set_flag: miele_dato
+    text: >
+      L'orso Tobia annusa le more, se ne infila in bocca una manciata e fa un
+      gran sorriso con il muso tutto viola. «Squisite! Un regalo così merita un
+      regalo.» Entra nella tana e torna con un vasetto di miele, che ti mette in
+      mano.
+
+  # --- La piuma nel nido ---
+  stacca_piuma:
+    trigger:
+      - {verb: usa, target: ramo, with: nido}
+      - {verb: usa, target: ramo, with: quercia}
+      - {verb: usa, target: ramo, with: piuma}
+      - {verb: prendi, target: piuma, with: ramo}
+      - {verb: tira, target: nido, with: ramo}
+      - {verb: spingi, target: nido, with: ramo}
+      - {verb: tira, target: piuma, with: ramo}
+      - {verb: spingi, target: piuma, with: ramo}
+    when: {not: {flag: piuma_presa}}
+    otherwise: Nel nido non c'è più niente.
+    effects:
+      - give: piuma
+      - set_flag: piuma_presa
+    text: >
+      Alzi il ramo più in alto che puoi e dai un colpetto al nido. La piuma si
+      stacca, scende volteggiando piano piano… e la prendi al volo!
+
+  # --- La cura del draghetto: prima il miele, poi il solletico ---
+  miele_al_drago:
+    trigger: {verb: dai, target: vasetto_miele, with: draghetto}
+    effects:
+      - remove: vasetto_miele
+      - set_flag: gola_guarita
+    text: >
+      Il draghetto infila il muso nel vasetto e lecca il miele fino all'ultima
+      goccia. «Mmm, che buono! La gola non mi brucia più.» Poi arriccia il naso:
+      «Adesso mi servirebbe solo uno starnuto bello forte…»
+
+  solletico:
+    trigger: {verb: dai, target: piuma, with: draghetto}
+    when: {flag: gola_guarita}
+    otherwise: >
+      Passi la piuma sotto il naso del draghetto. «Etci…» Dal naso esce solo
+      un filo di fumo grigio. «Ahi, la gola mi brucia ancora troppo», dice con
+      un colpo di tosse. «Prima mi servirebbe qualcosa di dolce.»
+    effects:
+      - set_flag: fuoco_tornato
+    text: >
+      Passi la piuma sotto il naso del draghetto. Lui strizza gli occhi, apre
+      la bocca… «Ah… ah… ETCIÙÙÙ!» Una fiammata arancione illumina tutta la
+      radura e fa tremare le foglie. Il draghetto ride e sbuffa scintille: il
+      suo fuoco è tornato!
+
+  # --- Indizi per i regali sbagliati ---
+  more_al_drago:
+    trigger: {verb: dai, target: more, with: draghetto}
+    text: >
+      Il draghetto annusa le more e sorride: «Grazie, ma con il raffreddore non
+      ho fame. Sai chi va matto per le more? L'orso Tobia!»
+
+  miele_all_orso:
+    trigger: {verb: dai, target: vasetto_miele, with: orso}
+    text: >
+      L'orso ti guarda stupito: «Il miele ce l'ho già! Portalo a chi ha mal di
+      gola.»
+
+  apri_vasetto:
+    trigger: {verb: apri, target: vasetto_miele}
+    text: >
+      Il vasetto è già aperto e profuma di fiori. Ma non è per te: nel bosco
+      c'è qualcuno con un gran mal di gola…

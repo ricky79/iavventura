@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.engine.engine import Engine
-from app.engine.loader import WORLDS_DIR, load_world
+from app.engine.loader import WORLDS_DIR, load_adventures, load_world
 from app.engine.models import World
 from app.llm.client import FakeLLMClient
 from app.main import UNKNOWN_ADVENTURE, WORLD_CHANGED, create_app
@@ -242,3 +242,21 @@ def test_the_adventure_is_required(two, url):
 def test_the_browser_checks_the_page_with_the_server_every_time(client):
     # Without it the browser kept the old page after an update, and the old page no longer fits the API.
     assert client.get("/").headers["cache-control"] == "no-cache"
+
+
+def test_the_dragon_adventure_can_be_finished_through_http():
+    worlds = load_adventures()
+    client = TestClient(create_app({adventure_id: Engine(world) for adventure_id, world in worlds.items()}, llm=None))
+    reply = new_game(client, "draghetto")
+    commands = [
+        "est", "prendi le more", "ovest", "ovest", "prendi il ramo", "ovest", "dai le more all'orso",
+        "est", "est", "nord", "usa il ramo con il nido", "sud", "dai il miele al draghetto",
+        "dai la piuma al draghetto",
+    ]  # fmt: skip
+
+    for line in commands:
+        reply = turn(client, line, reply["state"], "draghetto")
+
+    assert reply["finished"] is True
+    assert reply["text"].endswith("Che avventura!")
+    assert [a["id"] for a in client.get("/api/adventures").json()] == ["rocca", "draghetto"]

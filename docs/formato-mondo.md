@@ -2,7 +2,8 @@
 
 Guida per chi scrive stanze, oggetti ed enigmi. I modelli che la applicano sono in
 `app/engine/models.py`; i controlli tra le varie parti sono in `app/engine/validation.py`.
-L'esempio completo è la Rocca di Serravento in `data/worlds/rocca/`.
+Gli esempi completi sono la Rocca di Serravento (`data/worlds/rocca/`) e il draghetto raffreddato
+(`data/worlds/draghetto/`), che usa anche `dai` e le uscite chiuse con un indizio.
 
 ## File
 

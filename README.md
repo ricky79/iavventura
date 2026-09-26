@@ -1,6 +1,6 @@
 # I.A.vventura nel Castello
 
-Un'avventura testuale in stile anni '80/'90, ambientata in un castello e giocabile dal browser.
+Avventure testuali in stile anni '80/'90, giocabili dal browser: un castello per i grandi e un bosco fatato per i bambini.
 Si gioca scrivendo in italiano naturale ("prendi la corda", "cala il secchio nel pozzo"):
 un modello linguistico locale capisce le frasi, mentre un motore deterministico tiene le
 regole del gioco e tutti i testi sono scritti a mano.
@@ -10,7 +10,7 @@ Liberamente ispirata ad «Avventura nel castello», l'avventura testuale di Enri
 
 > **Stato:** in sviluppo. Sono pronte le prime cinque fasi: formato del mondo in YAML, motore
 > di gioco, parser dei comandi semplici con testo fisso, LLM che interpreta le frasi libere,
-> interfaccia web. Il castello **si gioca dal browser o dal terminale**.
+> interfaccia web. Le avventure **si giocano dal browser o dal terminale**.
 
 ## Come funziona
 
@@ -34,14 +34,19 @@ input del giocatore
 Il modello gira in locale con [Ollama](https://ollama.com), anche solo su CPU: per questo i
 prompt sono brevi e tutto ciò che il parser sa gestire non passa dall'LLM.
 
-## Il mondo di esempio
+## Le avventure
 
 **La Rocca di Serravento**: sorpreso dalla bufera, il giocatore si rifugia in una rocca
 abbandonata e il portone gli si richiude alle spalle. Deve trovare un'altra via d'uscita.
 
-Il mondo è descritto in file YAML in `data/worlds/rocca/` (stanze, oggetti, regole degli enigmi,
-finali). Il formato è documentato in [`docs/formato-mondo.md`](docs/formato-mondo.md): basta
-quello per scrivere un nuovo castello senza toccare il codice. Al caricamento il mondo viene
+**Il draghetto raffreddato**, per bambini dagli 8 anni: nel Bosco Fatato un draghetto ha perso
+il fuoco per colpa di un raffreddore e non riesce più a volare fino a casa. Bisogna aiutarlo, con
+l'orso Tobia, un nido in cima a una quercia e gli indizi del draghetto stesso.
+
+Ogni avventura è descritta in file YAML in una cartella di `data/worlds/` (stanze, oggetti,
+regole degli enigmi, personaggi, finali), e `data/worlds/avventure.yaml` dà l'ordine del menu.
+Il formato è documentato in [`docs/formato-mondo.md`](docs/formato-mondo.md): basta
+quello per scrivere una nuova avventura senza toccare il codice. Al caricamento il mondo viene
 controllato a fondo (riferimenti, flag mai attivati, stanze irraggiungibili…) e tutti gli errori
 vengono mostrati insieme, con il punto esatto in cui correggerli.
 
@@ -81,18 +86,22 @@ python3.12 -m venv .venv
 .venv\Scripts\python -m app.main
 ```
 
-La partita si salva da sola nel browser (`localStorage`): ricaricando la pagina riprendi da dove
-eri. Il server non tiene nessuna partita, quindi riavviarlo non perde niente; ogni browser ha la
-sua. «Nuova partita», nella riga in alto, ricomincia da capo dopo una conferma. Se nel frattempo
-il mondo è cambiato (stanze o oggetti diversi nei file YAML), la partita salvata ricomincia.
-Sempre nella riga in alto scegli il colore dello schermo, fosfori verdi o ambra, come i monitor
-dell'epoca; la scelta resta anche per le partite successive.
+All'inizio scegli l'avventura dal menu: toccandola, oppure scrivendo il numero o il nome.
+Ogni avventura si salva da sola nel browser (`localStorage`): ricaricando la pagina riprendi da
+dove eri. Il server non tiene nessuna partita, quindi riavviarlo non perde niente; ogni browser ha
+le sue. Nella riga di stato in basso, «Avventure» torna al menu senza perdere niente e «Nuova
+partita» ricomincia da capo l'avventura in corso, dopo una conferma. Se nel frattempo il mondo è
+cambiato (stanze o oggetti diversi nei file YAML), la partita salvata ricomincia. Sempre nella riga
+in basso scegli il colore dello schermo, fosfori verdi o ambra, come i monitor dell'epoca; la
+scelta resta anche per le partite successive.
 
 **Nel terminale**:
 
 ```powershell
 .venv\Scripts\python -m app.cli
 ```
+
+Anche nel terminale si comincia scegliendo l'avventura.
 
 I due modi usano lo stesso motore e possono essere usati insieme, ognuno con la sua partita.
 

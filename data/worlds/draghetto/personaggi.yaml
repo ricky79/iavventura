@@ -1,0 +1,157 @@
+# Personaggi del Bosco Fatato. Rispondono solo con i testi scritti qui. Il draghetto dà gli
+# indizi, sempre più precisi man mano che si va avanti; l'orso serve allo scambio. Nessuno dei
+# due ha effetti: parlare non apre scorciatoie.
+
+characters:
+  draghetto:
+    name: draghetto
+    gender: m
+    aliases: [drago, draghino]
+    description: >
+      Un draghetto verde, grande più o meno come un cane, con le ali piccole e
+      ripiegate. Ha il naso tutto rosso, gli occhi lucidi, e ogni tanto
+      starnutisce un filo di fumo grigio.
+    variants:
+      - when: {flag: gola_guarita}
+        text: >
+          Un draghetto verde, grande più o meno come un cane. Il naso è ancora
+          rosso, ma gli occhi sono allegri: sembra aspettare solo uno starnuto.
+    location: radura
+    greeting: >
+      «Etciù!» Il draghetto tira su col naso e ti guarda con gli occhi lucidi.
+      «Ciao… scusa, ho un raffreddore tremendo. Mi si è spento il fuoco e non
+      riesco più a volare fino a casa. Mi aiuti? Chiedimi del mio raffreddore e
+      ti spiego cosa mi serve.»
+    unknown: >
+      Il draghetto piega la testa di lato: «Questo non lo so. Però so tante cose
+      sul bosco, sul miele e sul mio raffreddore!»
+    refuses: >
+      Il draghetto annusa e scuote la testa: «Grazie, ma non è questo che mi
+      serve.»
+    topics:
+      raffreddore:
+        name: raffreddore
+        gender: m
+        aliases: [fuoco, fiamma, gola, febbre]
+        text: >
+          «Ieri ho fatto il bagno nel ruscello gelato, e stamattina… etciù! Il
+          raffreddore mi ha spento il fuoco. La nonna diceva che per la gola ci
+          vuole qualcosa di dolce, e poi uno starnuto bello forte per far
+          ripartire la fiamma.»
+        variants:
+          - when: {flag: gola_guarita}
+            text: >
+              «La gola va molto meglio, grazie al miele! Ora mi manca solo uno
+              starnuto. Qualcosa che mi faccia il solletico al naso…»
+
+      miele:
+        name: miele
+        gender: m
+        aliases: [vasetto, dolce]
+        text: >
+          «L'orso Tobia ha sempre un vasetto di miele nella sua tana, di là dal
+          ruscello. Ma è goloso: di sicuro vorrà qualcosa in cambio.»
+        variants:
+          - when: {flag: gola_guarita}
+            text: «Era buonissimo. Grazie, grazie!»
+          - when: {has: vasetto_miele}
+            text: >
+              «È miele quello che hai? Profuma di fiori! Dammelo, ti prego: la
+              gola mi brucia tanto.»
+
+      orso:
+        name: orso
+        gender: m
+        aliases: [tobia, tana]
+        text: >
+          «Tobia è un orso buono, anche se brontola sempre. Va matto per le more:
+          ne mangerebbe un cesto intero.»
+
+      more:
+        name: more
+        gender: f
+        plural: true
+        aliases: [mora, roveto]
+        text: «Le more crescono nel roveto, a est di qui. Attenzione alle spine!»
+
+      solletico:
+        name: solletico
+        gender: m
+        aliases: [piuma, starnuto, naso]
+        text: >
+          «Per starnutire forte mi servirebbe qualcosa che mi faccia il solletico
+          al naso. Qualcosa di morbido e leggero… Gli uccelli ne perdono sempre
+          qualcuna.»
+        variants:
+          - when: {all: [{has: piuma}, {flag: gola_guarita}]}
+            text: «Una piuma! Presto, fammi il solletico!»
+          - when: {has: piuma}
+            text: >
+              «Una piuma! È proprio quello che ci vuole. Ma prima la gola deve
+              guarire, se no lo starnuto non viene.»
+
+      quercia:
+        name: quercia
+        gender: f
+        aliases: [nido, albero]
+        text: >
+          «La vecchia quercia è a nord della radura. Lassù c'è un nido, troppo
+          alto per te… ma con qualcosa di lungo forse ci arrivi. Il ruscello
+          porta sempre rami di tutte le misure.»
+
+      casa:
+        name: casa
+        gender: f
+        aliases: [montagna, montagna rossa, ali, volare]
+        text: >
+          «Abito sulla Montagna Rossa, oltre il bosco. Ma senza fuoco nella
+          pancia ho le ali fredde, e con le ali fredde non si vola.»
+
+      bosco:
+        name: bosco
+        gender: m
+        aliases: [bosco fatato]
+        text: >
+          «È il Bosco Fatato: gli alberi sono vecchi e gentili, e nessuno fa del
+          male a nessuno. Puoi girarlo senza paura.»
+
+  orso:
+    name: orso
+    gender: m
+    aliases: [tobia, orso tobia]
+    description: >
+      Un orso bruno e grosso, con la pancia rotonda e il muso sporco di
+      briciole. Sta seduto davanti alla sua tana e brontola tra sé.
+    location: tana
+    greeting: >
+      «Grrr… chi va là?» L'orso Tobia ti annusa da lontano, poi si siede per
+      terra con un tonfo. «Ah, niente paura. Se hai qualcosa di buono da
+      mangiare, siamo amici.»
+    unknown: "L'orso si gratta la pancia: «Mah. Io penso solo a mangiare.»"
+    refuses: "L'orso annusa e sbuffa: «Non è una cosa da mangiare.»"
+    topics:
+      miele:
+        name: miele
+        gender: m
+        aliases: [vasetto]
+        text: >
+          «Il mio miele? È il più buono del bosco. Non lo regalo a nessuno… a
+          meno che non mi porti qualcosa di altrettanto buono.»
+        variants:
+          - when: {flag: miele_dato}
+            text: «Il miele te l'ho già dato. Le more erano squisite!»
+
+      more:
+        name: more
+        gender: f
+        plural: true
+        aliases: [mora]
+        text: >
+          «More! Ah, le more… Crescono nel roveto, ma io con queste zampe mi
+          pungo sempre.»
+
+      draghetto:
+        name: draghetto
+        gender: m
+        aliases: [drago]
+        text: «Il draghetto starnutisce da stamattina, si sente fin qui. Poverino.»
