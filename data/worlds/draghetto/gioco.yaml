@@ -5,6 +5,17 @@
 game:
   title: Il draghetto raffreddato
   summary: "Per bambini dagli 8 anni: aiuta un draghetto a ritrovare il suo fuoco."
+  # Esempi per l'interprete, nel formato del prompt (app/llm/prompts.py). Senza, «salgo
+  # sull'albero» andava a sud: il modello confondeva «su» con «sud». Con la sola frase della scala,
+  # «stacco la piuma col bastone» perdeva lo strumento: serve anche quella della mela. Ogni modifica
+  # va verificata su tutti i casi del draghetto in tests/test_ollama.py.
+  examples: |-
+    Oggetti: scala di legno (scala); mela; bastone
+    Uscite: ovest (Cantina), su
+    Frase: salgo in cima alla scala
+    {"verbo": "vai", "bersaglio": "su", "con": "nessuno"}
+    Frase: faccio cadere la mela dall'albero col bastone
+    {"verbo": "prendi", "bersaglio": "mela", "con": "bastone"}
   intro: >
     Stai raccogliendo funghi ai margini del Bosco Fatato quando senti uno
     starnuto enorme, così forte che le foglie tremano. Segui il rumore fino a

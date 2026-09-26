@@ -44,7 +44,7 @@ def understood(llm, engine: Engine, state: GameState, sentence: str) -> Action |
     """The sentence interpreted as the game does it, with the time the call took."""
     start = time.perf_counter()
     action = interpret(
-        llm, sentence, near(engine, state), engine.known_exits(state), engine.characters_here(state), CASTLE.game.examples
+        llm, sentence, near(engine, state), engine.known_exits(state), engine.characters_here(state), engine.world.game.examples
     )
     print(f"\n  {time.perf_counter() - start:4.1f}s  {sentence!r} -> {action}")
     return action
@@ -173,3 +173,57 @@ def test_the_pilgrim_refuses_what_he_is_given(llm, sentence):
     assert engine.execute(state, action).text == PILGRIM.refuses
     assert state.item_locations["corda"] == "inventory"
 
+
+# --- Il draghetto raffreddato: frasi da bambino --------------------------------------------------
+
+DRAGON = load_world(WORLDS_DIR / "draghetto")
+DRAGON_RULE = {rule_id: rule.text for rule_id, rule in DRAGON.rules.items()}
+DRAGONET = DRAGON.characters["draghetto"]
+# Everything the dragon may answer: a question the model maps to any topic is fine.
+DRAGON_SAYS = {
+    DRAGONET.greeting,
+    DRAGONET.unknown,
+    *(topic.text for topic in DRAGONET.topics.values()),
+    *(variant.text for topic in DRAGONET.topics.values() for variant in topic.variants),
+}
+CLIMB = DRAGON.rooms["quercia"].exits["su"].otherwise
+
+
+def dragon_in(room: str, *carried: str, flags: tuple[str, ...] = (), seen: tuple[str, ...] = ()):
+    engine = Engine(DRAGON)
+    state, _ = engine.new_game()
+    state.current_room = room
+    for item_id in carried:
+        state.item_locations[item_id] = "inventory"
+    state.flags.update(flags)
+    state.seen.update(seen)
+    return engine, state
+
+
+DRAGON_CASES = [
+    # (room, carried items, flags, items seen, sentence, check on (outcome, state))
+    ("radura", (), (), (), "ciao draghetto", lambda o, s: o.text == DRAGONET.greeting),
+    ("radura", (), (), (), "come posso aiutarti?", lambda o, s: o.text in DRAGON_SAYS),
+    # The saying must stay a look, with the dragon right there (found by the review of piece 2).
+    ("radura", (), (), (), "dai un'occhiata al draghetto", lambda o, s: o.text == DRAGONET.description),
+    ("roveto", (), (), (), "raccolgo le more", lambda o, s: s.item_locations["more"] == "inventory"),
+    ("tana", ("more",), (), (), "do le more all'orso", lambda o, s: o.text == DRAGON_RULE["scambia_more"]),
+    ("quercia", ("ramo",), (), (), "salgo sull'albero", lambda o, s: o.text == CLIMB),
+    ("quercia", ("ramo",), (), ("piuma",), "stacco la piuma col bastone",
+     lambda o, s: o.text == DRAGON_RULE["stacca_piuma"]),
+    ("radura", ("vasetto_miele",), (), (), "gli do il miele", lambda o, s: o.text == DRAGON_RULE["miele_al_drago"]),
+    ("radura", ("piuma",), ("gola_guarita",), (), "faccio il solletico al drago con la piuma",
+     lambda o, s: o.text == DRAGON_RULE["solletico"]),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(
+    ("room", "carried", "flags", "seen", "sentence", "check"), DRAGON_CASES, ids=[case[4] for case in DRAGON_CASES]
+)
+def test_kids_sentences_in_the_dragon_adventure(llm, room, carried, flags, seen, sentence, check):
+    engine, state = dragon_in(room, *carried, flags=flags, seen=seen)
+
+    action = understood(llm, engine, state, sentence)
+
+    assert isinstance(action, Action)
+    assert check(engine.execute(state, action), state)
