@@ -213,6 +213,13 @@ tests/
   «Non sa che farsene.») e lo stato non cambia; un `dai` interpretato non chiede conferma.
   Nella Rocca nessuna regola `dai`: il pellegrino rifiuta.
 
+- **Il draghetto raffreddato** (fase 7, pezzo 3, 2026-09-26): avventura per bambini dagli 8 anni in
+  `data/worlds/draghetto/`, solo dati. Cinque luoghi intorno alla radura, tre enigmi (le more
+  all'orso per il miele, il ramo per la piuma nel nido, prima il miele e poi la piuma al drago),
+  il draghetto che dà indizi sempre più precisi, qualche regola-indizio per i regali sbagliati.
+  Le uscite chiuse con un indizio portano a stanze in cui non si entra mai (`sentiero`, `chioma`).
+  Testi senza aggettivi che diano un genere al giocatore.
+
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.
 - Hosting pubblico (es. PC di casa + Cloudflare Tunnel) — non prioritario.
@@ -264,7 +271,7 @@ ollama pull qwen2.5:3b
     (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
     sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
     invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
-    `tests/test_ollama.py` (oggi 28 su 28, ~190 s).
+    `tests/test_ollama.py` (oggi 37 su 37, ~260 s: 28 della Rocca e 9 del draghetto).
   - Dialoghi (fase 6): senza l'esempio del dialogo, "chi era il castellano?" diventava "altro";
     con l'esempio prima di quello del rampino, "getta il rampino nel pozzo" andava al portone.
     In fondo funziona tutto. Con il dialogo nel prompt, "vai in cucina" dalla scuderia risponde
@@ -275,4 +282,9 @@ ollama pull qwen2.5:3b
     dopo `chiedi` nel glossario, senza esempi: 28 su 28 al primo giro, e «dai un'occhiata al
     pozzo» resta un esame. Spesso il modello mette il personaggio in `bersaglio` e l'oggetto in
     `con` («offri la corda al vecchio»): nessun problema, il motore riconosce chi è il personaggio.
+  - Draghetto (fase 7): senza esempi 8 frasi su 9; «salgo sull'albero» andava a sud (il modello
+    confondeva «su» con «sud»). Con un esempio della scala («salgo in cima alla scala» → su)
+    «stacco la piuma col bastone» perdeva lo strumento; aggiungendo quello della mela fatta cadere
+    col bastone, 9 su 9. Gli esempi stanno in `game.examples` del draghetto, quindi il prompt della
+    Rocca non cambia. «dai un'occhiata al draghetto» resta un esame, anche col draghetto presente.
 - Narratore: provato e scartato (vedi sopra), anche con temperatura 0.2 e senza descrizioni.
