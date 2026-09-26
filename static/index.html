@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>I.A.vventura nel Castello</title>
+<title>I.A.vventura</title>
 <script>
   // The chosen phosphor, set before the page is drawn so it never flashes green first.
   try {
@@ -164,11 +164,22 @@
   button:hover, button:focus-visible { background: var(--bright); color: var(--glass); text-shadow: none; }
   .status button { color: var(--glass); text-decoration: underline; text-underline-offset: 0.2em; }
   .status button:hover, .status button:focus-visible { background: var(--glass); color: var(--bright); }
+  /* Waiting for an answer: the controls fade and don't react. */
+  .status button:disabled, .status button:disabled:hover { background: transparent; color: var(--glass); opacity: 0.5; cursor: default; }
   /* The phosphor in use is shown in reverse video; the other one is only underlined on hover. */
   .status .colors button { text-decoration: none; }
   .status .colors button[aria-pressed="true"] { background: var(--glass); color: var(--bright); }
   .status .colors button[aria-pressed="false"]:hover { background: transparent; color: var(--glass); text-decoration: underline; }
   :focus-visible { outline: 1px dashed var(--bright); outline-offset: 2px; }
+
+  /* The menu: each adventure is one button as wide as the column, its number and title on the first
+     line, the summary indented below, as the terminal prints it. */
+  .menu ol { list-style: none; margin: 0; padding: 0; }
+  .menu li { margin: 0 0 calc(var(--line) * 1em); }
+  .menu button { display: block; width: 100%; padding: 0 1ch; text-align: left; }
+  .menu .summary, .menu .saved { display: block; padding-left: 4ch; color: var(--dim); }
+  .menu button:hover span, .menu button:focus-visible span { color: inherit; }
+  .menu[hidden], .intro[hidden], .status button[hidden] { display: none; }
 
   @media (max-width: 40rem) {
     :root { --size: 1rem; }
@@ -176,7 +187,8 @@
     .screen { padding-top: 1rem; }
     /* Two status lines on a phone: where you are above, the controls below. */
     .status { flex-wrap: wrap; row-gap: 0.25rem; }
-    .status .controls { flex-basis: 100%; justify-content: space-between; }
+    /* On the narrowest phones the controls go on as many lines as they need. */
+    .status .controls { flex-basis: 100%; flex-wrap: wrap; row-gap: 0.25rem; justify-content: space-between; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -187,14 +199,19 @@
 </head>
 <body>
   <header class="title">
-    <h1>I.A.vventura nel Castello</h1>
-    <p aria-hidden="true">=========================</p>
+    <h1 id="title">I.A.vventura</h1>
+    <p id="title-rule" aria-hidden="true">============</p>
   </header>
 
   <main class="screen" id="screen">
-    <section class="transcript intro">
-      <p>Liberamente ispirata ad «Avventura nel castello», l'avventura testuale di Enrico Colombini del 1982. Il castello, gli enigmi e i testi sono nuovi, e le tue frasi le capisce anche un'intelligenza artificiale.</p>
+    <section class="transcript intro" id="intro" hidden>
+      <p>Avventure testuali come quelle degli anni '80, in cui le tue frasi le capisce anche un'intelligenza artificiale. La Rocca di Serravento è liberamente ispirata ad «Avventura nel castello», l'avventura testuale di Enrico Colombini del 1982: il castello, gli enigmi e i testi sono nuovi.</p>
     </section>
+    <nav class="transcript menu" id="menu" aria-label="Avventure" hidden>
+      <p>Scegli la tua avventura:</p>
+      <ol id="adventures"></ol>
+      <p class="notice" id="menu-notice" hidden></p>
+    </nav>
     <div class="transcript" id="transcript" role="log" aria-live="polite"></div>
     <p class="transcript waiting" id="waiting" hidden aria-label="Attendi"><span>.</span><span>.</span><span>.</span></p>
   </main>
@@ -221,35 +238,77 @@
         <button type="button" data-color-choice="green" aria-pressed="true">Verde</button>
         <button type="button" data-color-choice="amber" aria-pressed="false">Ambra</button>
       </span>
-      <button type="button" id="new-game">Nuova partita</button>
+      <button type="button" id="to-menu" hidden>Avventure</button>
+      <button type="button" id="new-game" hidden>Nuova partita</button>
     </span>
   </footer>
 
 <script>
 (() => {
-  const SAVE_KEY = "castle-adventure.save";
+  const SAVE_PREFIX = "castle-adventure.save.";   // + the id: one game per adventure
+  const OLD_SAVE_KEY = "castle-adventure.save";   // the only game, before there were several adventures
+  const LAST_KEY = "castle-adventure.adventure";  // the adventure played last
+  const HOME = "I.A.vventura";
   const MAX_LINES = 200;         // what the page keeps of the transcript
   const WAIT_DELAY_MS = 300;     // simple commands answer at once: show the dots only for the LLM
 
   const $ = (id) => document.getElementById(id);
   const screen = $("screen"), transcript = $("transcript"), waiting = $("waiting");
   const prompt = $("prompt"), input = $("line"), confirmBar = $("confirm");
+  const intro = $("intro"), menu = $("menu"), menuNotice = $("menu-notice");
 
-  // Everything the page needs to pick the game up again: the engine's state, what is on screen
+  // The adventures the server offers ({id, title, summary}), in the order of the menu.
+  let adventures = [];
+  // The adventure being played ({id, title, summary}); null while the menu is on screen.
+  let current = null;
+  // Everything the page needs to pick a game up again: the engine's state, what is on screen
   // and the action the game is asking about ("Vuoi…?"), which goes back with the next line.
-  let save = { state: null, room: "", finished: false, lines: [], pending: null };
+  let save = blank();
 
-  function load() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(SAVE_KEY));
-      if (saved && saved.state && Array.isArray(saved.lines)) return saved;
-    } catch { /* private browsing or a broken save: start over */ }
-    return null;
+  function blank() {
+    return { state: null, room: "", finished: false, lines: [], pending: null };
+  }
+
+  // localStorage may throw (private browsing, storage disabled or full): the game goes on without it.
+  function stored(use) {
+    try { return use(); } catch { return null; }
+  }
+
+  function load(id) {
+    const saved = stored(() => JSON.parse(localStorage.getItem(SAVE_PREFIX + id)));
+    return saved && saved.state && Array.isArray(saved.lines) ? saved : null;
+  }
+
+  function inProgress(id) {
+    const saved = load(id);
+    return saved !== null && !saved.finished;
   }
 
   function store() {
     save.lines = save.lines.slice(-MAX_LINES);
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch { /* storage full or disabled */ }
+    stored(() => {
+      localStorage.setItem(SAVE_PREFIX + current.id, JSON.stringify(save));
+      localStorage.setItem(LAST_KEY, current.id);
+    });
+  }
+
+  // The game saved before there were several adventures was a game in the Rocca.
+  function migrate() {
+    stored(() => {
+      const old = localStorage.getItem(OLD_SAVE_KEY);
+      if (old === null) return;
+      if (localStorage.getItem(SAVE_PREFIX + "rocca") === null) {
+        localStorage.setItem(SAVE_PREFIX + "rocca", old);
+        localStorage.setItem(LAST_KEY, "rocca");
+      }
+      localStorage.removeItem(OLD_SAVE_KEY);
+    });
+  }
+
+  function setTitle(text) {
+    $("title").textContent = text;
+    $("title-rule").textContent = "=".repeat(text.length);
+    document.title = text;
   }
 
   function show(kind, text, fresh = true) {
@@ -270,22 +329,27 @@
   }
 
   function status() {
-    $("room").textContent = save.room;
-    $("moves").textContent = save.state ? `Mosse: ${save.state.turns}` : "";
+    $("room").textContent = current ? save.room : "Scegli un'avventura";
+    $("moves").textContent = current && save.state ? `Mosse: ${save.state.turns}` : "";
+    $("to-menu").hidden = $("new-game").hidden = !current;
   }
 
+  // While a request is on its way nothing else starts: its answer belongs to the game on screen,
+  // so «Avventure» and «Nuova partita» wait for it (a turn with the LLM takes seconds).
   function setBusy(busy) {
+    $("to-menu").disabled = $("new-game").disabled = busy;
     input.disabled = busy || save.finished;
     input.placeholder = save.finished ? "La partita è finita." : "";
   }
 
-  async function post(url, body) {
-    const response = await fetch(url, {
+  // GET without a body, POST with one; a failed answer throws an error with its HTTP status.
+  async function call(url, body) {
+    const response = await fetch(url, body === undefined ? undefined : {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: JSON.stringify(body),
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status });
     return response.json();
   }
 
@@ -301,31 +365,127 @@
     }
   }
 
+  // --- The menu ---
+
+  function openMenu(notice = "") {
+    current = null;
+    save = blank();
+    transcript.replaceChildren();
+    confirmBar.hidden = true;
+    prompt.hidden = false;
+    setTitle(HOME);
+    $("adventures").replaceChildren(...adventures.map(entry));
+    menuNotice.textContent = notice;
+    menuNotice.hidden = !notice;
+    intro.hidden = menu.hidden = false;
+    status();
+    setBusy(false);
+    screen.scrollTop = 0;
+    // A number or a name can be typed at once. Not on a touch screen: the keyboard would cover the
+    // menu, and a touch on an adventure is the easy way there.
+    if (!matchMedia("(pointer: coarse)").matches) input.focus();
+  }
+
+  function entry(adventure, index) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.append(span("name", `${index + 1}. ${adventure.title}`), span("summary", adventure.summary));
+    if (inProgress(adventure.id)) button.append(span("saved", "(partita in corso)"));
+    button.addEventListener("click", () => choose(adventure));
+    const item = document.createElement("li");
+    item.append(button);
+    return item;
+  }
+
+  function span(kind, text) {
+    const element = document.createElement("span");
+    element.className = kind;
+    element.textContent = text;
+    return element;
+  }
+
+  // "2", or a word of the title of at least three letters ("draghetto"): the same rule as the
+  // terminal (pick in app/cli.py). null when the answer fits no adventure, or more than one.
+  function pick(line) {
+    const words = wordsOf(line);
+    if (words.length === 1 && /^\d+$/.test(words[0])) return adventures[Number(words[0]) - 1] ?? null;
+    const matching = adventures.filter((adventure) => {
+      const title = wordsOf(adventure.title);
+      return words.some((word) => word.length >= 3 && title.includes(word));
+    });
+    return matching.length === 1 ? matching[0] : null;
+  }
+
+  function wordsOf(text) {
+    return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().match(/[a-z0-9]+/g) ?? [];
+  }
+
+  // A game in progress goes on; a finished one, or none, starts anew.
+  function choose(adventure) {
+    current = adventure;
+    intro.hidden = menu.hidden = true;
+    setTitle(adventure.title);
+    const saved = load(adventure.id);
+    if (saved && !saved.finished) resume(saved);
+    else newGame();
+  }
+
+  function resume(saved) {
+    save = saved;
+    transcript.replaceChildren();
+    for (const { kind, text } of save.lines) show(kind, text, false);
+    store(); // it is now the adventure played last
+    status();
+    setBusy(false);
+    scrollToEnd();
+    input.focus();
+  }
+
+  // The server doesn't have the adventure any more (taken out of the index): its game can't go on.
+  function lost() {
+    stored(() => localStorage.removeItem(SAVE_PREFIX + current.id));
+    adventures = adventures.filter((adventure) => adventure.id !== current.id);
+    openMenu("[Questa avventura non c'è più: scegline un'altra.]");
+  }
+
+  // --- The game ---
+
   async function newGame() {
     transcript.replaceChildren();
-    save = { state: null, room: "", finished: false, lines: [], pending: null };
+    save = blank();
     status();
     try {
-      const reply = await withWaiting(() => post("/api/new"));
+      const reply = await withWaiting(() => call("/api/new", { adventure: current.id }));
+      setTitle(reply.title);
       save.state = reply.state;
       save.room = reply.room;
       if (reply.notice) say("notice", `[${reply.notice}]`);
       say("story", reply.text);
       store();
-    } catch {
+    } catch (error) {
+      if (error.status === 404) return lost();
       say("notice", "[Il server non risponde. Ricarica la pagina tra poco.]");
     }
     status();
-    screen.scrollTop = 0; // a new game opens on the presentation and the intro
+    screen.scrollTop = 0; // a new game opens on the intro
     input.focus();
   }
 
   async function play(line) {
+    if (current === null) {
+      const adventure = pick(line);
+      if (adventure) return choose(adventure);
+      menuNotice.textContent = "Scrivi il numero dell'avventura.";
+      menuNotice.hidden = false;
+      return;
+    }
     say("typed", line);
     scrollToEnd();
     let reply = null;
     try {
-      reply = await withWaiting(() => post("/api/turn", { line, state: save.state, pending: save.pending ?? null }));
+      reply = await withWaiting(() => call("/api/turn", {
+        adventure: current.id, line, state: save.state, pending: save.pending ?? null,
+      }));
       if (reply.restarted) {
         transcript.replaceChildren();
         save.lines = [];
@@ -335,10 +495,11 @@
       save.finished = reply.finished;
       save.pending = reply.pending ?? null;
       say("story", reply.text);
-      if (reply.finished) say("notice", "[Fine. Per giocare ancora scegli «Nuova partita».]");
+      if (reply.finished) say("notice", "[Fine. Per giocare ancora scegli «Nuova partita» o «Avventure».]");
       store();
       setBusy(false);
-    } catch {
+    } catch (error) {
+      if (error.status === 404) return lost();
       say("notice", "[Il server non risponde: il comando non è stato eseguito. Riprova.]");
       input.value = line;
     }
@@ -367,8 +528,10 @@
   $("keep").addEventListener("click", () => askRestart(false));
   $("restart").addEventListener("click", () => { askRestart(false); newGame(); });
   confirmBar.addEventListener("keydown", (event) => { if (event.key === "Escape") askRestart(false); });
+  // Back to the menu at once: nothing is lost, the game stays saved. Not while an answer is coming.
+  $("to-menu").addEventListener("click", () => openMenu());
 
-  // Green or amber: kept apart from the game, so a new game doesn't change it.
+  // Green or amber: kept apart from the games, so a new game doesn't change it.
   const COLOR_KEY = "castle-adventure.color";
   const colorButtons = document.querySelectorAll("[data-color-choice]");
   function showColor(color) {
@@ -383,17 +546,21 @@
   for (const button of colorButtons) button.addEventListener("click", () => setColor(button.dataset.colorChoice));
   showColor(document.documentElement.dataset.color === "amber" ? "amber" : "green");
 
-  const saved = load();
-  if (saved) {
-    save = saved;
-    for (const { kind, text } of save.lines) show(kind, text, false);
-    status();
-    setBusy(false);
-    scrollToEnd();
-    input.focus();
-  } else {
-    newGame();
+  // The adventure played last goes on if its game is in progress; otherwise the menu.
+  async function start() {
+    migrate();
+    try {
+      adventures = await call("/api/adventures");
+    } catch {
+      openMenu("[Il server non risponde. Ricarica la pagina tra poco.]");
+      return;
+    }
+    const lastId = stored(() => localStorage.getItem(LAST_KEY));
+    const last = adventures.find((adventure) => adventure.id === lastId);
+    if (last && inProgress(last.id)) choose(last);
+    else openMenu();
   }
+  start();
 })();
 </script>
 </body>

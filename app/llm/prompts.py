@@ -1,5 +1,6 @@
 """The interpreter's prompt, in Italian. The fixed part always comes first, so Ollama can reuse it
-from its cache; only the last lines change from turn to turn. Keep it short: on CPU, reading the
+from its cache; only the last lines change from turn to turn. The examples of a world come from its
+YAML (`game.examples`): the Rocca's is the grapple. Keep it short: on CPU, reading the
 prompt is the slowest part of a call.
 """
 
@@ -7,7 +8,7 @@ from collections.abc import Iterable, Sequence
 
 from app.engine.models import Character, Direction, Item, Room, Topic
 
-INTERPRETER_SYSTEM = """\
+_HEAD = """\
 Sei l'interprete di un'avventura testuale. Traduci la frase del giocatore in un'azione.
 Verbi:
 - esamina: guardare, osservare o controllare un oggetto
@@ -43,11 +44,11 @@ Frase: torno in biblioteca
 Frase: vado in cantina
 {"verbo": "vai", "bersaglio": "nessuno", "con": "nessuno"}
 Frase: buongiorno, che ore sono?
-{"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}
-Oggetti: pozzo; portone; corda con gancio (corda, gancio, rampino); chiave di ferro (chiave)
-Uscite: est (Scuderia)
-Frase: usa il rampino per recuperare la chiave dal pozzo
-{"verbo": "usa", "bersaglio": "pozzo", "con": "corda con gancio"}
+{"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}"""
+
+# Last, after the world's examples: anywhere before the grapple, "getta il rampino nel pozzo" went
+# to the door (qwen2.5:3b).
+_DIALOGUE = """\
 Oggetti: mestolo
 Personaggi: cuoca (donna)
 Argomenti: cantina (scantinato); cena
@@ -58,6 +59,13 @@ Frase: cosa sai dello scantinato?
 {"verbo": "chiedi", "bersaglio": "cuoca", "con": "cantina"}
 Frase: le chiedo se ha visto il re
 {"verbo": "chiedi", "bersaglio": "cuoca", "con": "nessuno"}"""
+
+
+def interpreter_system(examples: str | None = None) -> str:
+    """The fixed part of the prompt: instructions and generic examples, then the world's own examples
+    (`game.examples`, in the same format), then the dialogue. It doesn't change from turn to turn,
+    so Ollama keeps it in its cache."""
+    return "\n".join(part for part in (_HEAD, examples, _DIALOGUE) if part)
 
 
 def interpreter_user(

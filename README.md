@@ -39,7 +39,7 @@ prompt sono brevi e tutto ciò che il parser sa gestire non passa dall'LLM.
 **La Rocca di Serravento**: sorpreso dalla bufera, il giocatore si rifugia in una rocca
 abbandonata e il portone gli si richiude alle spalle. Deve trovare un'altra via d'uscita.
 
-Il mondo è descritto in file YAML in `data/world/` (stanze, oggetti, regole degli enigmi,
+Il mondo è descritto in file YAML in `data/worlds/rocca/` (stanze, oggetti, regole degli enigmi,
 finali). Il formato è documentato in [`docs/formato-mondo.md`](docs/formato-mondo.md): basta
 quello per scrivere un nuovo castello senza toccare il codice. Al caricamento il mondo viene
 controllato a fondo (riferimenti, flag mai attivati, stanze irraggiungibili…) e tutti gli errori
@@ -144,10 +144,10 @@ I test col modello vero (Ollama acceso) sono saltati per default; si lanciano co
 $env:OLLAMA_TESTS=1; .venv\Scripts\python -m pytest tests/test_ollama.py -v -s
 ```
 
-Controllare che il mondo in `data/world/` sia valido:
+Controllare che le avventure in `data/worlds/` siano valide:
 
 ```powershell
-.venv\Scripts\python -c "from app.engine.loader import load_world; print(load_world().game.title)"
+.venv\Scripts\python -c "from app.engine.loader import load_adventures; print([w.game.title for w in load_adventures().values()])"
 ```
 
 Se il mondo contiene errori, il comando li elenca tutti.
@@ -172,7 +172,7 @@ app/
   cli.py            # la partita nel terminale
   main.py           # la partita nel browser: server FastAPI
 static/index.html   # la pagina del gioco
-data/world/         # il castello di esempio
+data/worlds/        # le avventure: una cartella ciascuna, e l'indice del menu
 docs/               # documentazione del formato e delle regole
 tests/              # test pytest
 ```

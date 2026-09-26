@@ -1,17 +1,19 @@
 """The LLM interpreter: player's sentence -> Action, with the model replaced by canned answers."""
 
+from pathlib import Path
+
 import pytest
 
-from app.engine.loader import load_world
+from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import Action, Direction, Item, World
 from app.llm.client import FakeLLMClient
 from app.llm.interpreter import NotUnderstood, interpret, interpreter_schema
-from app.llm.prompts import INTERPRETER_SYSTEM
+from app.llm.prompts import interpreter_system
 
 
 @pytest.fixture(scope="module")
 def castle() -> World:
-    return load_world()
+    return load_world(WORLDS_DIR / "rocca")
 
 
 @pytest.fixture
@@ -159,7 +161,7 @@ def test_the_prompt_shows_a_sentence_with_a_purpose(castle):
     assert (
         "Frase: usa il rampino per recuperare la chiave dal pozzo\n"
         '{"verbo": "usa", "bersaglio": "pozzo", "con": "corda con gancio"}\n'
-    ) in INTERPRETER_SYSTEM
+    ) in interpreter_system(castle.game.examples)
 
 
 def test_the_grapple_sentence_becomes_fishing_in_the_well(castle, in_reach):
@@ -290,8 +292,44 @@ def test_a_question_is_logged_with_its_topic(keeper, caplog):
     assert caplog.records[-1].getMessage() == "=== azione: chiedi custode di cella"
 
 
-def test_the_prompt_shows_how_to_talk_to_a_character():
-    assert "- parla: " in INTERPRETER_SYSTEM
-    assert "- chiedi: " in INTERPRETER_SYSTEM
-    # Last, after the grapple: anywhere before it, "getta il rampino nel pozzo" went to the door.
-    assert INTERPRETER_SYSTEM.endswith('{"verbo": "chiedi", "bersaglio": "cuoca", "con": "nessuno"}')
+def test_the_prompt_shows_how_to_talk_to_a_character(castle):
+    for system in (interpreter_system(), interpreter_system(castle.game.examples)):
+        assert "- parla: " in system
+        assert "- chiedi: " in system
+        # Last, after the grapple: anywhere before it, "getta il rampino nel pozzo" went to the door.
+        assert system.endswith('{"verbo": "chiedi", "bersaglio": "cuoca", "con": "nessuno"}')
+
+
+# --- The examples of each world ---------------------------------------------------------------------
+
+ROCCA_PROMPT = Path(__file__).parent / "prompt_rocca.txt"
+TRUNK = 'Oggetti: baule\nUscite: nessuna\nFrase: apri il baule\n{"verbo": "apri", "bersaglio": "baule", "con": "nessuno"}'
+
+
+def test_the_castle_prompt_is_the_one_checked_on_the_real_model(castle):
+    # Any change to the prompt has to pass the whole tests/test_ollama.py first; then update the file.
+    assert interpreter_system(castle.game.examples) == ROCCA_PROMPT.read_text(encoding="utf-8")
+
+
+def test_the_examples_of_a_world_come_after_the_generic_ones_and_before_the_dialogue():
+    system = interpreter_system(TRUNK)
+
+    generic = system.index("Frase: buongiorno, che ore sono?")
+    own = system.index("Frase: apri il baule")
+    dialogue = system.index("Oggetti: mestolo")
+    assert generic < own < dialogue
+
+
+def test_a_world_without_examples_gets_the_generic_ones_and_the_dialogue():
+    system = interpreter_system()
+
+    assert "rampino" not in system
+    assert '{"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}\nOggetti: mestolo\n' in system
+
+
+def test_the_system_prompt_carries_the_examples_it_is_given(in_reach):
+    fake = FakeLLMClient(json_replies=[{"verbo": "altro"}])
+
+    interpret(fake, "apri il baule", in_reach, examples=TRUNK)
+
+    assert fake.calls[0][0] == interpreter_system(TRUNK)

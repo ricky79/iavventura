@@ -3,16 +3,17 @@
 import pytest
 
 from app.engine.engine import Engine
-from app.engine.loader import load_world
+from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import World
 from app.engine.models import Action
 from app.game import ALL_RIGHT, HELP, NOT_A_GAME_ACTION, NOT_UNDERSTOOD, Game
 from app.llm.client import FakeLLMClient
+from app.llm.prompts import interpreter_system
 
 
 @pytest.fixture(scope="module")
 def castle() -> World:
-    return load_world()
+    return load_world(WORLDS_DIR / "rocca")
 
 
 def say(game: Game, line: str) -> str:
@@ -401,3 +402,19 @@ def test_the_llm_is_not_told_about_the_key_before_the_well_is_examined(castle):
     say(game, "recupera la chiave dal pozzo")
 
     assert "chiave" not in llm.calls[0][1].split("\n")[0]
+
+
+def test_the_llm_gets_the_examples_of_the_world(castle):
+    llm = FakeLLMClient(json_replies=[{"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}])
+
+    Game(Engine(castle), llm).turn("che bella giornata")
+
+    assert llm.calls[0][0] == interpreter_system(castle.game.examples)
+    assert "usa il rampino per recuperare la chiave dal pozzo" in llm.calls[0][0]
+
+
+def test_the_log_names_the_adventure_when_the_game_knows_it(castle, caplog):
+    [entry] = logged(caplog, Game(Engine(castle), adventure="rocca"), "nord")
+
+    assert list(entry)[:2] == ["avventura", "stanza"]
+    assert entry["avventura"] == "rocca"

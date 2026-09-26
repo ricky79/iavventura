@@ -47,12 +47,15 @@ class Game:
         llm: LLMClient | None = None,
         state: GameState | None = None,
         pending: Action | None = None,
+        adventure: str | None = None,
     ) -> None:
         """A new game, or one that goes on from `state` (the web keeps it in the browser), with the
-        action asked about in the last turn, if any, still waiting for an answer."""
+        action asked about in the last turn, if any, still waiting for an answer.
+        `adventure` is the id of the world, for the log."""
         self.engine = engine
         self.llm = llm
         self.pending = pending
+        self.adventure = adventure
         if state is None:
             self.state, self._opening = engine.new_game()
         else:
@@ -101,7 +104,7 @@ class Game:
         if self.llm is None:
             self._log("parser", None, "non capito", "il parser non la capisce e l'LLM è spento")
             return NOT_UNDERSTOOD
-        interpreted = interpret(self.llm, line, near, exits, characters)
+        interpreted = interpret(self.llm, line, near, exits, characters, self.world.game.examples)
         if isinstance(interpreted, NotUnderstood):
             if interpreted.not_an_action:
                 self._log("llm", None, "altro", interpreted.reason)
@@ -143,6 +146,8 @@ class Game:
             "esito": result,
             "dettaglio": detail,
         }
+        if self.adventure is not None:
+            entry = {"avventura": self.adventure, **entry}
         _commands.info("%s: %s", result, self._line, extra={"command": entry})
 
     def _carried_first(self, action: Action) -> Action:

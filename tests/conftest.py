@@ -7,6 +7,7 @@ def world_data() -> dict:
     return {
         "game": {
             "title": "Prova",
+            "summary": "Un mondo di prova.",
             "intro": "Inizio.",
             "start_room": "atrio",
             "endings": [{"when": {"player_in": "cella"}, "text": "Fine."}],

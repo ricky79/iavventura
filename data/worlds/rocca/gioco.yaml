@@ -3,6 +3,15 @@
 
 game:
   title: La Rocca di Serravento
+  summary: Un castello abbandonato, una bufera, un portone che non si riapre.
+  # Esempi per l'interprete, nel formato del prompt (app/llm/prompts.py): vanno tra quelli
+  # generici e il dialogo. Senza, «usa il rampino per recuperare la chiave dal pozzo» finiva sul
+  # portone. Ogni modifica va verificata su tutto tests/test_ollama.py.
+  examples: |-
+    Oggetti: pozzo; portone; corda con gancio (corda, gancio, rampino); chiave di ferro (chiave)
+    Uscite: est (Scuderia)
+    Frase: usa il rampino per recuperare la chiave dal pozzo
+    {"verbo": "usa", "bersaglio": "pozzo", "con": "corda con gancio"}
   intro: >
     La bufera ti ha sorpreso sul passo e l'unico riparo era la vecchia rocca
     di Serravento, abbandonata da anni. Appena entri, il portone si richiude

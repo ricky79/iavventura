@@ -1,8 +1,10 @@
-"""The game in the terminal: typed commands in, fixed text out."""
+"""The game in the terminal: the menu of the adventures, then typed commands in, fixed text out."""
 
-from app.cli import run
+import pytest
+
+from app.cli import WHICH_ADVENTURE, choose, menu, pick, run
 from app.engine.engine import Engine
-from app.engine.loader import load_world
+from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import World
 from app.game import HELP, Game
 
@@ -18,7 +20,7 @@ def play(*commands: str, world: World | None = None) -> str:
         except StopIteration:
             raise EOFError from None
 
-    run(Game(Engine(world or load_world())), read_line, output.append)
+    run(Game(Engine(world or load_world(WORLDS_DIR / "rocca"))), read_line, output.append)
     return "\n".join(output)
 
 
@@ -94,3 +96,48 @@ def test_the_castle_can_be_finished_by_typing_commands():
     assert "Il gancio da solo non arriva nemmeno a metà del pozzo." in output
     assert "Ora hai un rampino improvvisato." in output
     assert output.endswith("da lì una scala di pietra scende fino al sentiero. Sei libero.")
+
+
+# --- The menu of the adventures ----------------------------------------------------------------------
+
+
+@pytest.fixture
+def worlds(world_data) -> dict[str, World]:
+    return {"rocca": load_world(WORLDS_DIR / "rocca"), "prova": World.model_validate(world_data)}
+
+
+def test_the_menu_numbers_the_adventures_with_their_summaries(worlds):
+    assert menu(worlds) == (
+        "Scegli la tua avventura:\n\n"
+        " 1. La Rocca di Serravento\n"
+        "    Un castello abbandonato, una bufera, un portone che non si riapre.\n\n"
+        " 2. Prova\n"
+        "    Un mondo di prova."
+    )
+
+
+@pytest.mark.parametrize(
+    "line, expected",
+    [
+        ("1", "rocca"),
+        (" 2. ", "prova"),
+        ("rocca", "rocca"),
+        ("la Rocca di Serravento", "rocca"),
+        ("PROVA", "prova"),
+        ("3", None),
+        ("0", None),
+        ("", None),
+        ("castello", None),
+        ("rocca o prova", None),
+    ],
+)
+def test_an_adventure_is_picked_by_its_number_or_by_a_word_of_its_title(worlds, line, expected):
+    assert pick(worlds, line) == expected
+
+
+def test_an_answer_that_fits_no_adventure_is_asked_again(worlds):
+    output: list[str] = []
+    answers = iter(["7", "prova"])
+
+    assert choose(worlds, lambda: next(answers), output.append) == "prova"
+    assert output == [menu(worlds), WHICH_ADVENTURE]
