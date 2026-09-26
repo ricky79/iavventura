@@ -27,7 +27,7 @@ def test_schema_limits_the_answer_to_known_verbs_items_in_reach_and_directions(i
 
     assert schema["required"] == ["verbo", "bersaglio", "con"]
     assert properties["verbo"]["enum"] == [
-        "esamina", "prendi", "lascia", "usa", "apri", "chiudi", "spingi", "tira", "leggi",
+        "esamina", "prendi", "lascia", "usa", "apri", "chiudi", "spingi", "tira", "leggi", "dai",
         "parla", "chiedi", "vai", "guarda", "inventario", "altro",
     ]  # fmt: skip
     assert properties["bersaglio"]["enum"] == [

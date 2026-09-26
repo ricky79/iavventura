@@ -140,8 +140,10 @@ rules:
     text: Testo dell'esito.
 ```
 
-- `verb`: uno fra esamina, prendi, lascia, usa, apri, chiudi, spingi, tira, leggi.
-- `target` e `with` sono id di oggetti; `with` è facoltativo.
+- `verb`: uno fra esamina, prendi, lascia, usa, apri, chiudi, spingi, tira, leggi, dai.
+- `target` e `with` sono id di oggetti; `with` è facoltativo. Con `dai`, invece, `target` è
+  l'oggetto e `with` il personaggio che lo riceve, obbligatorio:
+  `trigger: {verb: dai, target: miele, with: draghetto}`.
 - `trigger` può essere anche una **lista** di azioni equivalenti, quando lo stesso enigma si
   risolve in più modi. Ciascuna fa scattare la regola:
   ```yaml
@@ -204,6 +206,7 @@ characters:
     location: scuderia           # una stanza: i personaggi non si spostano
     greeting: Risposta a "parla con il pellegrino".
     unknown: Risposta a una domanda su qualcosa che non conosce.
+    refuses: Risposta a "dai X al pellegrino" se nessuna regola lo prevede (facoltativo).
     topics:
       torre:
         name: torre              # unico tra gli argomenti del personaggio

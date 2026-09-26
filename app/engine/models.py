@@ -47,6 +47,7 @@ class Verb(StrEnum):
     PUSH = "spingi"
     PULL = "tira"
     READ = "leggi"
+    GIVE = "dai"  # to a character: in a rule, `with` is the character who receives the item
 
 
 class Command(StrEnum):
@@ -296,6 +297,7 @@ class Character(_Frozen):
     location: Id  # a room: characters don't move
     greeting: Text  # "parla con X"
     unknown: Text  # the answer about anything else
+    refuses: Text | None = None  # "dai X" that no rule wants; without it, the engine's own answer
     topics: dict[Id, Topic] = {}
 
     @model_validator(mode="before")
