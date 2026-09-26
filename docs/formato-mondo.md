@@ -180,6 +180,7 @@ rules:
 | lascia | posa l'oggetto nella stanza; rifiuta gli oggetti che non hai |
 | apri, chiudi, leggi | "Non si può aprire." / "Non si può chiudere." / "Non c'è niente da leggere." |
 | usa, spingi, tira | "Non succede niente." |
+| dai | il personaggio risponde `refuses`, o "Non sa che farsene."; l'oggetto resta al giocatore |
 
 I messaggi del motore non nominano mai l'oggetto, così non servono articolo e genere.
 
@@ -231,7 +232,11 @@ characters:
 - `effects` si applicano ogni volta che si chiede dell'argomento; per un effetto solo la prima
   volta, basta un `when` su un flag. Un personaggio che dà solo indizi non ne ha.
 - I personaggi si possono esaminare; "prendi" risponde "Non si può prendere.", gli altri verbi non
-  fanno niente. Le regole non possono ancora nominarli ("dai la corda al pellegrino").
+  fanno niente.
+- **Dare**: `dai X a Y` (anche porgi, offri, regala, consegna). Si dà solo ciò che si porta con sé,
+  a un personaggio presente; "dai X" senza nome va all'unico personaggio presente ("A chi?" se sono
+  di più). Una regola `verb: dai` decide cosa succede; senza regola il personaggio risponde
+  `refuses` e lo stato non cambia. "usa X con il personaggio" ricade sulla stessa regola.
 
 ## Condizioni
 

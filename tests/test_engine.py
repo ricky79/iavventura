@@ -739,9 +739,10 @@ def test_exits_come_in_compass_order(data):
         Action(verb="parla", target="custode"),
         Action(verb="chiedi", target="custode", topic="cella"),
         Action(verb="chiedi", target="custode"),
+        Action(verb="dai", target="candela"),
     ],
     ids=["go", "look", "inventory", "rule", "rule in the other order", "examine", "take", "drop",
-         "talk", "ask", "ask about something unknown"],
+         "talk", "ask", "ask about something unknown", "give"],
 )  # fmt: skip
 def test_commands_rules_and_verbs_that_work_alone_are_expected(data, action):
     engine, state = start(data)
@@ -917,3 +918,124 @@ def test_a_character_in_another_room_is_not_here(keeper):
     outcome = engine.execute(state, Action(verb="esamina", target="custode"))
 
     assert outcome.text == messages.NOT_HERE
+
+
+# --- Giving ---------------------------------------------------------------------------------------
+
+
+@pytest.fixture
+def giving(keeper_world) -> tuple[Engine, GameState]:
+    """The custode takes the coin the player starts with, until the door is open, and refuses the rest."""
+    keeper_world["rules"]["paga_custode"] = {
+        "trigger": {"verb": "dai", "target": "moneta", "with": "custode"},
+        "when": {"not": {"flag": "porta_aperta"}},
+        "otherwise": "«Ormai non serve», dice il custode.",
+        "effects": [{"remove": "moneta"}, {"set_flag": "pagato"}],
+        "text": "«Grazie», dice il custode, e intasca la moneta.",
+    }
+    keeper_world["characters"]["custode"]["refuses"] = "Il custode scuote la testa: «Non mi serve.»"
+    keeper_world["items"]["sasso"] = {"name": "sasso", "gender": "m", "description": "Un sasso.", "location": "inventory"}
+    # A room away from the custode that isn't the cell, where the game would end.
+    keeper_world["rooms"]["corridoio"] = {"name": "Corridoio", "description": "Un corridoio.", "exits": {}}
+    return start(keeper_world)
+
+
+PAID = "«Grazie», dice il custode, e intasca la moneta."
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        Action(verb="dai", target="moneta", with_="custode"),
+        Action(verb="dai", target="custode", with_="moneta"),
+        Action(verb="dai", target="moneta"),
+        Action(verb="usa", target="moneta", with_="custode"),
+    ],
+    ids=["item then character", "character then item", "to the only one here", "use falls back on the give rule"],
+)
+def test_giving_what_a_rule_wants_applies_the_rule(giving, action):
+    engine, state = giving
+
+    outcome = engine.execute(state, action)
+
+    assert outcome.ok
+    assert outcome.text == PAID
+    assert state.item_locations["moneta"] is None
+    assert "pagato" in state.flags
+
+
+def test_the_condition_of_the_rule_holds_for_giving_too(giving):
+    engine, state = giving
+    state.flags.add("porta_aperta")
+    before = snapshot(state)
+
+    outcome = engine.execute(state, Action(verb="dai", target="moneta", with_="custode"))
+
+    assert not outcome.ok
+    assert outcome.text == "«Ormai non serve», dice il custode."
+    assert snapshot(state) == before
+
+
+def test_what_no_rule_wants_is_refused_by_the_character(giving):
+    engine, state = giving
+    before = snapshot(state)
+
+    outcome = engine.execute(state, Action(verb="dai", target="sasso", with_="custode"))
+
+    assert not outcome.ok
+    assert outcome.text == "Il custode scuote la testa: «Non mi serve.»"
+    assert snapshot(state) == before
+
+
+def test_a_character_without_refuses_gets_the_engine_answer(keeper):
+    engine, state = keeper
+
+    outcome = engine.execute(state, Action(verb="dai", target="moneta", with_="custode"))
+
+    assert not outcome.ok
+    assert outcome.text == messages.NOT_WANTED
+    assert state.item_locations["moneta"] == "inventory"
+
+
+@pytest.mark.parametrize(
+    ("setup", "action", "expected"),
+    [
+        (lambda s: None, Action(verb="dai", target="leva", with_="custode"), messages.DONT_HAVE),
+        (lambda s: s.item_locations.update(moneta="atrio"), Action(verb="dai", target="moneta", with_="custode"),
+         messages.DONT_HAVE),
+        (lambda s: setattr(s, "current_room", "corridoio"), Action(verb="dai", target="moneta", with_="custode"),
+         messages.NOBODY_HERE),
+        (lambda s: setattr(s, "current_room", "corridoio"), Action(verb="dai", target="moneta"),
+         messages.NOBODY_TO_GIVE_TO),
+        (lambda s: None, Action(verb="dai", target="custode"), messages.CANT_GIVE),
+        (lambda s: None, Action(verb="dai", target="moneta", with_="sasso"), messages.CANT_GIVE),
+    ],
+    ids=["scenery", "an item on the floor", "the character is elsewhere", "nobody here", "no item", "two items"],
+)  # fmt: skip
+def test_giving_is_refused_and_changes_nothing(giving, setup, action, expected):
+    engine, state = giving
+    setup(state)
+    before = snapshot(state)
+
+    outcome = engine.execute(state, action)
+
+    assert not outcome.ok
+    assert outcome.text == expected
+    assert snapshot(state) == before
+
+
+def test_with_two_characters_here_the_game_asks_to_whom(keeper_world):
+    keeper_world["characters"]["cuoca"] = {
+        "name": "cuoca",
+        "gender": "f",
+        "description": "Una cuoca.",
+        "location": "atrio",
+        "greeting": "«Ciao.»",
+        "unknown": "«Boh.»",
+    }
+    engine, state = start(keeper_world)
+
+    outcome = engine.execute(state, Action(verb="dai", target="moneta"))
+
+    assert not outcome.ok
+    assert outcome.text == messages.GIVE_TO_WHOM
