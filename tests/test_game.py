@@ -418,3 +418,15 @@ def test_the_log_names_the_adventure_when_the_game_knows_it(castle, caplog):
 
     assert list(entry)[:2] == ["avventura", "stanza"]
     assert entry["avventura"] == "rocca"
+
+
+def test_giving_is_never_asked_about(castle):
+    llm = FakeLLMClient(json_replies=[{"verbo": "dai", "bersaglio": "corda", "con": "pellegrino"}])
+    game = Game(Engine(castle), llm)
+    game.state.current_room = "scuderia"
+    game.state.item_locations["corda"] = "inventory"
+
+    output = game.turn("offro la corda al vecchio")
+
+    assert output == f"(dai la corda al pellegrino)\n{castle.characters['pellegrino'].refuses}"
+    assert game.pending is None

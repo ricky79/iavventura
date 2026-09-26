@@ -93,6 +93,21 @@ def test_the_pilgrim_waits_in_the_stable_and_only_gives_hints(castle):
     assert pilgrim.location == "scuderia"
     # No topic changes the game: talking can't open a shortcut through the puzzle.
     assert all(topic.effects == () for topic in pilgrim.topics.values())
+    # Nor does giving him things: no rule reacts to it.
+    assert not any(trigger.verb == "dai" for rule in castle.rules.values() for trigger in rule.triggers)
+
+
+def test_the_pilgrim_refuses_what_he_is_given(castle):
+    engine = Engine(castle)
+    state, _ = engine.new_game()
+    state.current_room = "scuderia"
+    state.item_locations["corda"] = "inventory"
+    before = state.model_dump(exclude={"turns"})
+
+    outcome = engine.execute(state, Action(verb="dai", target="corda", with_="pellegrino"))
+
+    assert outcome.text == "Il pellegrino scuote la testa: «Tienilo tu, figliolo: a me basta il bastone.»"
+    assert state.model_dump(exclude={"turns"}) == before
 
 
 # --- Playing through the engine -------------------------------------------------
