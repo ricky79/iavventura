@@ -20,6 +20,7 @@ from app.engine.models import (
     PlayerIn,
     Remove,
     SetFlag,
+    Verb,
     World,
 )
 
@@ -62,9 +63,16 @@ def find_problems(world: World) -> list[str]:
 
     for rule in world.rules.values():
         for index, trigger in enumerate(rule.triggers):
-            check_item(f"rules.{rule.id}.trigger.{index}.target", trigger.target)
-            if trigger.with_ is not None:
-                check_item(f"rules.{rule.id}.trigger.{index}.with", trigger.with_)
+            path = f"rules.{rule.id}.trigger.{index}"
+            check_item(f"{path}.target", trigger.target)
+            if trigger.verb is Verb.GIVE:
+                # "dai X a Y": the item, then the character who receives it
+                if trigger.with_ is None:
+                    report(f"{path}.with", "'dai' needs the character who receives the item")
+                elif trigger.with_ not in world.characters:
+                    report(f"{path}.with", f"unknown character '{trigger.with_}'")
+            elif trigger.with_ is not None:
+                check_item(f"{path}.with", trigger.with_)
 
     for character in world.characters.values():
         check_room(f"characters.{character.id}.location", character.location)

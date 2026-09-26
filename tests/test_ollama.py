@@ -159,3 +159,17 @@ def test_the_pilgrim_answers_free_questions(llm, sentence, answer):
     assert isinstance(action, Action)
     assert engine.execute(state, action).text == answer
 
+
+GIFTS = ["offri la corda al vecchio", "do la corda al pellegrino", "regalo la corda al viandante"]
+
+
+@pytest.mark.parametrize("sentence", GIFTS)
+def test_the_pilgrim_refuses_what_he_is_given(llm, sentence):
+    engine, state = game_in("scuderia", "corda")
+
+    action = understood(llm, engine, state, sentence)
+
+    assert isinstance(action, Action)
+    assert engine.execute(state, action).text == PILGRIM.refuses
+    assert state.item_locations["corda"] == "inventory"
+

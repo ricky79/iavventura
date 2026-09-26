@@ -28,7 +28,7 @@ HELP = """Scrivi comandi semplici, per esempio:
   guarda, inventario (oppure i)
   esamina X, prendi X, lascia X, apri X, chiudi X, leggi X, spingi X, tira X
   usa X con Y
-  parla con X, chiedi a X di Y
+  parla con X, chiedi a X di Y, dai X a Y
 Per terminare la partita: fine."""
 
 _HELP_WORDS = frozenset({"aiuto", "help"})

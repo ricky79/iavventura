@@ -279,3 +279,39 @@ def test_two_characters_with_the_same_name_are_ambiguous(keeper_world):
     parsed = parse("parla con il vecchio", world, [], (), here)
 
     assert parsed == Ambiguous((world.characters["custode"], world.characters["eremita"]))
+
+
+# --- Giving ----------------------------------------------------------------------------------------
+
+
+def parse_giving(world: World, text: str):
+    """The custode is here and the player carries the coin."""
+    return parse(text, world, [world.items["moneta"]], (), [(world.characters["custode"], [])])
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "dai la moneta al custode",
+        "dà la moneta al guardiano",
+        "porgi la moneta al vecchio",
+        "offri il soldo al custode",
+        "regala la moneta al custode",
+        "consegna la moneta al custode",
+    ],
+)
+def test_giving_an_item_to_a_character(keeper, text):
+    assert parse_giving(keeper, text) == Action(verb="dai", target="moneta", with_="custode")
+
+
+def test_the_character_may_come_first(keeper):
+    assert parse_giving(keeper, "dai al custode la moneta") == Action(verb="dai", target="custode", with_="moneta")
+
+
+def test_giving_without_naming_the_character_reaches_the_engine(keeper):
+    assert parse_giving(keeper, "dai la moneta") == Action(verb="dai", target="moneta")
+
+
+@pytest.mark.parametrize("text", ["dai un'occhiata alla leva", "dai una spinta alla moneta"])
+def test_sayings_with_dai_are_left_to_the_llm(keeper, text):
+    assert parse_giving(keeper, text) is None

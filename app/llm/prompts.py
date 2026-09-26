@@ -18,6 +18,7 @@ Verbi:
 - apri, chiudi, spingi, tira, leggi
 - parla: salutare un personaggio, rivolgergli la parola
 - chiedi: fare una domanda a un personaggio
+- dai: dare, porgere, offrire un oggetto a un personaggio
 - vai: spostarsi in una direzione o verso una delle uscite elencate
 - guarda: guardarsi intorno
 - inventario: controllare cosa si ha con sé

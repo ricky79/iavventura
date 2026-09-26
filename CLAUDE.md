@@ -207,8 +207,14 @@ tests/
   - Terminale: lo stesso menu prima della partita.
   - Prossimi pezzi: «dai X a qualcuno» (2), poi il draghetto raffreddato per bambini (3).
 
+- **«dai X a qualcuno»** (fase 7, pezzo 2, 2026-09-26): verbo `dai` sugli oggetti; nella regola
+  `target` è l'oggetto e `with` il personaggio. Si dà solo ciò che si porta, a un personaggio
+  presente; «dai X» va all'unico presente. Senza regola risponde `refuses` del personaggio (o
+  «Non sa che farsene.») e lo stato non cambia; un `dai` interpretato non chiede conferma.
+  Nella Rocca nessuna regola `dai`: il pellegrino rifiuta.
+
 ## Decisioni ancora aperte
-- Dare e mostrare oggetti ai personaggi, con regole che li nominano: servirà per un enigma.
+- Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.
 - Hosting pubblico (es. PC di casa + Cloudflare Tunnel) — non prioritario.
 
 ## Comandi utili
@@ -258,11 +264,15 @@ ollama pull qwen2.5:3b
     (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
     sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
     invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
-    `tests/test_ollama.py` (oggi 25 su 25, ~150 s).
+    `tests/test_ollama.py` (oggi 28 su 28, ~190 s).
   - Dialoghi (fase 6): senza l'esempio del dialogo, "chi era il castellano?" diventava "altro";
     con l'esempio prima di quello del rampino, "getta il rampino nel pozzo" andava al portone.
     In fondo funziona tutto. Con il dialogo nel prompt, "vai in cucina" dalla scuderia risponde
     "nessuno" (quindi "Non ho capito.") invece di "ovest". Per provare varianti del prompt senza
     toccare il codice basta sostituire in uno script `interpreter.interpreter_system`, oppure le
     costanti `_HEAD` e `_DIALOGUE` di `app/llm/prompts.py`.
+  - «dai» (fase 7): è bastata la riga `- dai: dare, porgere, offrire un oggetto a un personaggio`
+    dopo `chiedi` nel glossario, senza esempi: 28 su 28 al primo giro, e «dai un'occhiata al
+    pozzo» resta un esame. Spesso il modello mette il personaggio in `bersaglio` e l'oggetto in
+    `con` («offri la corda al vecchio»): nessun problema, il motore riconosce chi è il personaggio.
 - Narratore: provato e scartato (vedi sopra), anche con temperatura 0.2 e senza descrizioni.

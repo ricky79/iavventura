@@ -27,7 +27,7 @@ def test_schema_limits_the_answer_to_known_verbs_items_in_reach_and_directions(i
 
     assert schema["required"] == ["verbo", "bersaglio", "con"]
     assert properties["verbo"]["enum"] == [
-        "esamina", "prendi", "lascia", "usa", "apri", "chiudi", "spingi", "tira", "leggi",
+        "esamina", "prendi", "lascia", "usa", "apri", "chiudi", "spingi", "tira", "leggi", "dai",
         "parla", "chiedi", "vai", "guarda", "inventario", "altro",
     ]  # fmt: skip
     assert properties["bersaglio"]["enum"] == [
@@ -333,3 +333,26 @@ def test_the_system_prompt_carries_the_examples_it_is_given(in_reach):
     interpret(fake, "apri il baule", in_reach, examples=TRUNK)
 
     assert fake.calls[0][0] == interpreter_system(TRUNK)
+
+
+# --- Giving ------------------------------------------------------------------------------------------
+
+
+def test_the_prompt_explains_giving():
+    assert "- dai: dare, porgere, offrire un oggetto a un personaggio\n" in interpreter_system()
+
+
+@pytest.mark.parametrize(
+    ("reply", "expected"),
+    [
+        ({"verbo": "dai", "bersaglio": "corda con gancio", "con": "pellegrino"},
+         Action(verb="dai", target="corda_con_gancio", with_="pellegrino")),
+        ({"verbo": "dai", "bersaglio": "pellegrino", "con": "corda con gancio"},
+         Action(verb="dai", target="pellegrino", with_="corda_con_gancio")),
+    ],
+    ids=["item then character", "character then item"],
+)  # fmt: skip
+def test_giving_comes_back_with_both_names(castle, in_reach, reply, expected):
+    characters = [(castle.characters["pellegrino"], [])]
+
+    assert interpret(FakeLLMClient(json_replies=[reply]), "frase", in_reach, (), characters) == expected

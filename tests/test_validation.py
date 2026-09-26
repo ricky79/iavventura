@@ -202,10 +202,42 @@ BROKEN_KEEPERS = {
         lambda d: keeper(d)["variants"][0].update(when={"flag": "allarme"}),
         ["characters.custode.variants.0.when", "allarme"],
     ),
+    "giving without the character who receives": (
+        lambda d: d["rules"].update(dai_moneta={"trigger": {"verb": "dai", "target": "moneta"}, "text": "Grazie."}),
+        ["rules.dai_moneta.trigger.0.with", "dai"],
+    ),
+    "giving to an item": (
+        lambda d: d["rules"].update(
+            dai_moneta={"trigger": {"verb": "dai", "target": "moneta", "with": "leva"}, "text": "Grazie."}
+        ),
+        ["rules.dai_moneta.trigger.0.with", "leva"],
+    ),
+    "giving a character": (
+        lambda d: d["rules"].update(
+            dai_custode={"trigger": {"verb": "dai", "target": "custode", "with": "custode"}, "text": "Grazie."}
+        ),
+        ["rules.dai_custode.trigger.0.target", "custode"],
+    ),
+    "another verb naming a character": (
+        lambda d: d["rules"].update(
+            usa_custode={"trigger": {"verb": "usa", "target": "moneta", "with": "custode"}, "text": "No."}
+        ),
+        ["rules.usa_custode.trigger.0.with", "custode"],
+    ),
 }
 
 
 def test_a_world_with_a_character_has_no_problems(keeper_world):
+    assert problems_for(keeper_world) == []
+
+
+def test_a_rule_may_react_to_giving_an_item_to_a_character(keeper_world):
+    keeper_world["rules"]["paga_custode"] = {
+        "trigger": {"verb": "dai", "target": "moneta", "with": "custode"},
+        "text": "«Grazie», dice il custode.",
+    }
+    keeper_world["characters"]["custode"]["refuses"] = "Il custode scuote la testa."
+
     assert problems_for(keeper_world) == []
 
 

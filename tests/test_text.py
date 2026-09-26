@@ -213,6 +213,9 @@ def test_room_with_two_characters(keeper):
         (Action(verb="chiedi", target="custode"), "chiedi al custode"),
         (Action(verb="esamina", target="custode"), "esamina il custode"),
         (Action(verb="usa", target="moneta", with_="custode"), "usa la moneta con il custode"),
+        (Action(verb="dai", target="moneta", with_="custode"), "dai la moneta al custode"),
+        (Action(verb="dai", target="custode", with_="moneta"), "dai la moneta al custode"),
+        (Action(verb="dai", target="moneta"), "dai la moneta"),
     ],
 )
 def test_actions_on_characters_read_as_commands(keeper, action, expected):
@@ -225,6 +228,7 @@ def test_actions_on_characters_read_as_commands(keeper, action, expected):
         (Action(verb="usa", target="moneta", with_="custode"), "Vuoi usare la moneta con il custode?"),
         (Action(verb="parla", target="cuoca"), "Vuoi parlare con la cuoca?"),
         (Action(verb="chiedi", target="custode", topic="leva"), "Vuoi chiedere al custode della leva?"),
+        (Action(verb="dai", target="moneta", with_="custode"), "Vuoi dare la moneta al custode?"),
     ],
 )
 def test_actions_on_characters_are_asked_as_questions(keeper, action, expected):

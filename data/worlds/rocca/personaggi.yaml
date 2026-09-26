@@ -17,6 +17,8 @@ characters:
       sapere qualcosa della rocca, chiedi pure.»
     unknown: >
       Il pellegrino si gratta la barba: «Di questo non saprei dirti niente.»
+    refuses: >
+      Il pellegrino scuote la testa: «Tienilo tu, figliolo: a me basta il bastone.»
     topics:
       pellegrino:
         name: pellegrino

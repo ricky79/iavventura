@@ -34,6 +34,7 @@ _INFINITIVES = {
     Verb.PUSH: "spingere",
     Verb.PULL: "tirare",
     Verb.READ: "leggere",
+    Verb.GIVE: "dare",
     Conversation.TALK: "parlare",
     Conversation.ASK: "chiedere",
 }
@@ -117,7 +118,8 @@ def plain(text: str) -> str:
 
 
 def _complements(action: Action, world: World) -> list[str]:
-    """What follows the verb: "la corda con il gancio", "con il pellegrino", "al pellegrino della torre"."""
+    """What follows the verb: "la corda con il gancio", "con il pellegrino", "al pellegrino della torre",
+    "la moneta al custode"."""
     if action.verb is Conversation.TALK:
         return ["con", definite(world.thing(action.target))]
     if action.verb is Conversation.ASK:
@@ -126,6 +128,13 @@ def _complements(action: Action, world: World) -> list[str]:
         if action.topic is not None:
             words.append(articulated("di", character.topics[action.topic]))
         return words
+    if action.verb is Verb.GIVE:
+        # "la moneta al custode", in whatever order the action has them
+        things = [world.thing(thing_id) for thing_id in (action.target, action.with_) if thing_id is not None]
+        people = [thing for thing in things if isinstance(thing, Character)]
+        return [definite(thing) for thing in things if thing not in people] + [
+            articulated("a", person) for person in people
+        ]
     words = []
     if action.target is not None:
         words.append(definite(world.thing(action.target)))

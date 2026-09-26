@@ -55,6 +55,10 @@ DONT_HAVE = "Non ce l'hai."
 CANT_OPEN = "Non si può aprire."
 CANT_CLOSE = "Non si può chiudere."
 NOTHING_TO_READ = "Non c'è niente da leggere."
+NOT_WANTED = "Non sa che farsene."
+GIVE_TO_WHOM = "A chi?"
+NOBODY_TO_GIVE_TO = "Qui non c'è nessuno."
+CANT_GIVE = "Non si può dare."
 
 _NOTHING_WITHOUT_A_RULE = {Verb.OPEN: CANT_OPEN, Verb.CLOSE: CANT_CLOSE, Verb.READ: NOTHING_TO_READ}
 
@@ -136,9 +140,12 @@ class Engine:
         ]
 
     def expects(self, action: Action) -> bool:
-        """Whether the world foresees the action: a command, talking, a rule that reacts to it, or a verb
-        that does something by itself (esamina, prendi, lascia) with no tool it would ignore."""
-        if isinstance(action.verb, Command | Conversation) or self._find_rule(action) is not None:
+        """Whether the world foresees the action: a command, talking, a rule that reacts to it, a verb
+        that does something by itself (esamina, prendi, lascia) with no tool it would ignore, or giving,
+        which at worst is refused."""
+        if isinstance(action.verb, Command | Conversation) or action.verb is Verb.GIVE:
+            return True
+        if self._find_rule(action) is not None:
             return True
         return action.with_ is None and action.verb in (Verb.EXAMINE, Verb.TAKE, Verb.DROP)
 
@@ -164,6 +171,8 @@ class Engine:
                 return Outcome(ok=True, inventory=tuple(item.id for item in self._items_in(state, INVENTORY)))
             case Conversation.TALK | Conversation.ASK:
                 return self._talk(state, action)
+            case Verb.GIVE:
+                return self._give(state, action)
         return self._act_on_items(state, action)
 
     def _go(self, state: GameState, direction: Direction) -> Outcome:
@@ -205,6 +214,36 @@ class Engine:
             if action.target in self.world.characters:
                 return self._default_on_character(state, action.verb, self.world.characters[action.target])
             return self._default(state, action.verb, self.world.items[action.target])
+        if items & self.world.characters.keys():
+            # Only "dai" rules name characters: "usa X con il personaggio" gives, with the same checks.
+            return self._give(state, action)
+        return self._apply_rule(state, rule)
+
+    def _give(self, state: GameState, action: Action) -> Outcome:
+        """"dai X a Y": a character here receives an item the player carries. The two may come in
+        either order ("dai al pellegrino la corda"); without a character, the only one here takes it.
+        With no rule for it the character refuses (`refuses`), and nothing changes."""
+        named = [thing_id for thing_id in (action.target, action.with_) if thing_id is not None]
+        people = [thing_id for thing_id in named if thing_id in self.world.characters]
+        items = [thing_id for thing_id in named if thing_id in self.world.items]
+        if len(items) != 1 or len(people) > 1:
+            return Outcome(ok=False, text=CANT_GIVE)
+        here = [character.id for character, _ in self.characters_here(state)]
+        if not people:
+            if len(here) != 1:
+                return Outcome(ok=False, text=GIVE_TO_WHOM if here else NOBODY_TO_GIVE_TO)
+            people = here
+        if people[0] not in here:
+            return Outcome(ok=False, text=NOBODY_HERE)
+        if state.item_locations[items[0]] != INVENTORY:
+            return Outcome(ok=False, text=DONT_HAVE)
+        rule = self._find_rule(Action(verb=Verb.GIVE, target=items[0], with_=people[0]))
+        if rule is None:
+            return Outcome(ok=False, text=self.world.characters[people[0]].refuses or NOT_WANTED)
+        return self._apply_rule(state, rule)
+
+    def _apply_rule(self, state: GameState, rule: Rule) -> Outcome:
+        """The rule's text and effects, or `otherwise` when its condition doesn't hold."""
         if rule.when is not None and not holds(rule.when, state):
             return Outcome(ok=False, text=rule.otherwise or NOTHING_HAPPENS)
         for effect in rule.effects:
