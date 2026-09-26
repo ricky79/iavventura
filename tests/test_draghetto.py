@@ -5,6 +5,8 @@ Chain: berries -> the bear gives the honey; the branch knocks the feather out of
 the dragon (its throat), then the feather (a sneeze) -> its fire is back and the game ends.
 """
 
+import re
+
 import pytest
 
 from app.engine import engine as messages
@@ -12,6 +14,7 @@ from app.engine.engine import Engine
 from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import Action, Direction, GameState, World
 from app.game import Game
+from app.llm.client import FakeLLMClient
 
 
 @pytest.fixture(scope="module")
@@ -109,9 +112,15 @@ def test_the_feather_before_the_honey_is_only_a_hint(dragon):
         (False, Action(verb="usa", target="ramo", with_="quercia")),
         (True, Action(verb="usa", target="ramo", with_="piuma")),
         (True, Action(verb="prendi", target="piuma", with_="ramo")),
+        (False, Action(verb="tira", target="nido", with_="ramo")),
+        (False, Action(verb="spingi", target="nido", with_="ramo")),
+        (True, Action(verb="tira", target="piuma", with_="ramo")),
+        (True, Action(verb="spingi", target="piuma", with_="ramo")),
     ],
-    ids=["branch on the nest", "branch on the tree", "branch on the feather", "take the feather with the branch"],
-)
+    ids=["branch on the nest", "branch on the tree", "branch on the feather", "take the feather with the branch",
+         "pull the nest with the branch", "push the nest with the branch",
+         "pull the feather with the branch", "push the feather with the branch"],
+)  # fmt: skip
 def test_every_way_of_knocking_the_feather_down_works(dragon, looked, action):
     engine, state = start(dragon)
     play(engine, state, TO_THE_HONEY + [Action(verb="vai", direction="nord")])
@@ -220,3 +229,113 @@ def test_a_kid_can_finish_with_simple_commands(dragon):
     assert outputs[6].startswith(dragon.rules["scambia_more"].text)
     assert outputs[-1].endswith(dragon.game.endings[0].text)
     assert game.finished
+
+
+# --- What a kid meets while playing (found by the review) ---------------------------------------
+
+
+def test_the_bush_does_not_promise_berries_that_are_gone(dragon):
+    engine, state = start(dragon)
+    play(engine, state, TO_THE_HONEY[:2])
+
+    room = engine.execute(state, Action(verb="guarda")).room.description
+    bush = engine.execute(state, Action(verb="esamina", target="cespugli")).text
+
+    assert "more mature" not in room
+    assert "more mature" not in bush
+
+
+def test_the_greeting_says_what_to_ask_about(dragon):
+    # "come posso aiutarti?" gets the greeting: it has to name a topic, not answer with a question.
+    dragonet = dragon.characters["draghetto"]
+
+    invitation = re.search(r"[Cc]hiedimi (?:del|della|dello|dei|delle) (?:mio |mia )?(\w+)", dragonet.greeting)
+
+    assert invitation is not None
+    assert invitation.group(1) in {topic.name for topic in dragonet.topics.values()}
+
+
+def test_the_jar_is_already_open_and_not_for_the_player(dragon):
+    engine, state = start(dragon)
+    play(engine, state, TO_THE_HONEY[:7])
+    before = state.model_dump(exclude={"turns"})
+
+    outcome = engine.execute(state, Action(verb="apri", target="vasetto_miele"))
+
+    assert outcome.text == dragon.rules["apri_vasetto"].text
+    assert state.model_dump(exclude={"turns"}) == before
+
+
+@pytest.mark.parametrize(
+    ("room", "line", "expected_room"),
+    [
+        ("radura", "vai alla quercia", "quercia"),
+        ("ruscello", "vai nella tana", "tana"),
+        ("ruscello", "vai alla tana", "tana"),
+    ],
+)
+def test_places_can_be_named_the_way_a_kid_says_them(dragon, room, line, expected_room):
+    game = Game(Engine(dragon))
+    game.state.current_room = room
+
+    game.turn(line)
+
+    assert game.state.current_room == expected_room
+
+
+@pytest.mark.parametrize(
+    ("room", "line", "direction"),
+    [("radura", "vai a casa", Direction.SOUTH), ("quercia", "vai sull'albero", Direction.UP)],
+)
+def test_the_closed_ways_answer_even_when_named(dragon, room, line, direction):
+    game = Game(Engine(dragon))
+    game.state.current_room = room
+
+    assert game.turn(line) == dragon.rooms[room].exits[direction].otherwise
+    assert game.state.current_room == room
+
+
+# --- The kids' sentences through the whole turn, with the model's answers from the real runs ------
+
+DRAGON_REPLIES = [
+    # (room, carried, flags, seen, sentence, the model's answer, rule or character text the turn shows)
+    ("radura", (), (), (), "ciao draghetto", {"verbo": "parla", "bersaglio": "draghetto", "con": "nessuno"},
+     lambda w: w.characters["draghetto"].greeting),
+    ("radura", (), (), (), "come posso aiutarti?", {"verbo": "parla", "bersaglio": "draghetto", "con": "nessuno"},
+     lambda w: w.characters["draghetto"].greeting),
+    ("radura", (), (), (), "dai un'occhiata al draghetto",
+     {"verbo": "esamina", "bersaglio": "draghetto", "con": "nessuno"}, lambda w: w.characters["draghetto"].description),
+    ("roveto", (), (), (), "raccolgo le more", {"verbo": "prendi", "bersaglio": "more", "con": "nessuno"},
+     lambda w: messages.DONE),
+    ("tana", ("more",), (), (), "do le more all'orso", {"verbo": "dai", "bersaglio": "more", "con": "orso"},
+     lambda w: w.rules["scambia_more"].text),
+    ("quercia", ("ramo",), (), (), "salgo sull'albero", {"verbo": "vai", "bersaglio": "su", "con": "nessuno"},
+     lambda w: w.rooms["quercia"].exits[Direction.UP].otherwise),
+    ("quercia", ("ramo",), (), ("piuma",), "stacco la piuma col bastone",
+     {"verbo": "usa", "bersaglio": "ramo", "con": "piuma"}, lambda w: w.rules["stacca_piuma"].text),
+    ("radura", ("vasetto_miele",), (), (), "gli do il miele",
+     {"verbo": "dai", "bersaglio": "draghetto", "con": "vasetto di miele"}, lambda w: w.rules["miele_al_drago"].text),
+    ("radura", ("piuma",), ("gola_guarita",), (), "faccio il solletico al drago con la piuma",
+     {"verbo": "usa", "bersaglio": "draghetto", "con": "piuma"}, lambda w: w.rules["solletico"].text),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(
+    ("room", "carried", "flags", "seen", "sentence", "reply", "expected"),
+    DRAGON_REPLIES,
+    ids=[case[4] for case in DRAGON_REPLIES],
+)
+def test_kids_sentences_get_their_answer_at_once(dragon, room, carried, flags, seen, sentence, reply, expected):
+    game = Game(Engine(dragon), FakeLLMClient(json_replies=[reply]))
+    game.state.current_room = room
+    for item_id in carried:
+        game.state.item_locations[item_id] = "inventory"
+    game.state.flags.update(flags)
+    game.state.seen.update(seen)
+
+    shown, answer = game.turn(sentence).split("\n", 1)
+
+    # "(parla con il draghetto)", then the answer: no "Vuoi…?" first.
+    assert shown.startswith("(") and shown.endswith(")")
+    assert answer.startswith(expected(dragon))
+    assert game.pending is None

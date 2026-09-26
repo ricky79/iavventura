@@ -19,7 +19,7 @@ items:
     gender: m
     plural: true
     aliases: [cespuglio, rovi, rovo, roveto]
-    description: Rovi pieni di spine e di more mature. Attenzione a non pungerti!
+    description: Rovi pieni di spine. Attenzione a non pungerti!
     location: roveto
     scenery: true
 

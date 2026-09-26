@@ -217,8 +217,10 @@ tests/
   `data/worlds/draghetto/`, solo dati. Cinque luoghi intorno alla radura, tre enigmi (le more
   all'orso per il miele, il ramo per la piuma nel nido, prima il miele e poi la piuma al drago),
   il draghetto che dà indizi sempre più precisi, qualche regola-indizio per i regali sbagliati.
-  Le uscite chiuse con un indizio portano a stanze in cui non si entra mai (`sentiero`, `chioma`).
-  Testi senza aggettivi che diano un genere al giocatore.
+  Le uscite chiuse con un indizio portano a stanze in cui non si entra mai (`sentiero`, `chioma`),
+  chiamate come le scrive un bambino («Casa», «Albero»): così «vai a casa» e «vai sull'albero»
+  ricevono l'indizio col solo parser. Per lo stesso motivo i luoghi si chiamano «Quercia» e «Tana»:
+  il parser vuole tutte le parole del nome. Testi senza aggettivi che diano un genere al giocatore.
 
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.

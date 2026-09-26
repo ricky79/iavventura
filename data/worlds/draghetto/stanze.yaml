@@ -24,8 +24,8 @@ rooms:
   roveto:
     name: Roveto
     description: >
-      Cespugli di rovi alti fino alla tua testa, pieni di spine e di more
-      mature, nere e lucide. La radura è a ovest.
+      Cespugli di rovi alti fino alla tua testa, pieni di spine. Gli uccelli
+      hanno già mangiato quasi tutte le more. La radura è a ovest.
     exits:
       ovest: {to: radura}
 
@@ -40,7 +40,7 @@ rooms:
       ovest: {to: tana}
 
   tana:
-    name: Tana dell'orso
+    name: Tana
     description: >
       Davanti a una grotta tra le rocce l'erba è tutta schiacciata, e c'è un
       profumo di miele. Il ponticello sul ruscello è a est.
@@ -48,16 +48,16 @@ rooms:
       est: {to: ruscello}
 
   quercia:
-    name: Vecchia quercia
+    name: Quercia
     description: >
-      Una quercia enorme, più vecchia di tutto il bosco. I rami più bassi sono
-      troppo in alto per arrampicarsi. Lassù, tra le foglie, c'è un nido:
+      Una quercia enorme, l'albero più vecchio di tutto il bosco. I rami più
+      bassi sono troppo in alto per arrampicarsi. Lassù, tra le foglie, c'è un nido:
       chissà cosa c'è dentro. La radura è a sud.
     variants:
       - when: {flag: piuma_presa}
         text: >
-          Una quercia enorme, più vecchia di tutto il bosco. I rami più bassi
-          sono troppo in alto per arrampicarsi. Lassù, tra le foglie, c'è un
+          Una quercia enorme, l'albero più vecchio di tutto il bosco. I rami più
+          bassi sono troppo in alto per arrampicarsi. Lassù, tra le foglie, c'è un
           nido vuoto. La radura è a sud.
     exits:
       sud: {to: radura}
@@ -69,15 +69,17 @@ rooms:
           Provi ad arrampicarti, ma i rami più bassi sono troppo in alto. Ti
           servirebbe qualcosa di lungo per arrivare al nido.
 
-  # --- Stanze in cui non si entra mai: servono alle due uscite chiuse qui sopra ---
+  # --- Stanze in cui non si entra mai: servono alle due uscite chiuse qui sopra. I nomi sono
+  # quelli che un bambino scrive («vai a casa», «vai sull'albero»), e le descrizioni della radura
+  # e della quercia li nominano, così anche l'interprete sa dove portano. ---
   sentiero:
-    name: Sentiero
+    name: Casa
     description: Il sentiero che porta a casa.
     exits:
       nord: {to: radura}
 
   chioma:
-    name: Cima della quercia
+    name: Albero
     description: In cima alla quercia.
     exits:
       giù: {to: quercia}

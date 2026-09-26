@@ -22,6 +22,10 @@ rules:
       - {verb: usa, target: ramo, with: quercia}
       - {verb: usa, target: ramo, with: piuma}
       - {verb: prendi, target: piuma, with: ramo}
+      - {verb: tira, target: nido, with: ramo}
+      - {verb: spingi, target: nido, with: ramo}
+      - {verb: tira, target: piuma, with: ramo}
+      - {verb: spingi, target: piuma, with: ramo}
     when: {not: {flag: piuma_presa}}
     otherwise: Nel nido non c'è più niente.
     effects:
