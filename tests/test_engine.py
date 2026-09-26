@@ -1039,3 +1039,39 @@ def test_with_two_characters_here_the_game_asks_to_whom(keeper_world):
 
     assert not outcome.ok
     assert outcome.text == messages.GIVE_TO_WHOM
+
+
+def test_using_an_item_with_the_character_needs_it_carried_too(giving):
+    engine, state = giving
+    state.item_locations["moneta"] = "atrio"
+    before = snapshot(state)
+
+    outcome = engine.execute(state, Action(verb="usa", target="moneta", with_="custode"))
+
+    assert not outcome.ok
+    assert outcome.text == messages.DONT_HAVE
+    assert snapshot(state) == before
+
+
+def test_an_item_only_in_sight_cannot_be_given_by_using_it_either(keeper_world):
+    keeper_world["items"]["gemma"] = {
+        "name": "gemma",
+        "gender": "f",
+        "description": "Una gemma.",
+        "location": None,
+        "visible_from": {"room": "atrio"},
+    }
+    keeper_world["rules"]["dona_gemma"] = {
+        "trigger": {"verb": "dai", "target": "gemma", "with": "custode"},
+        "effects": [{"set_flag": "donata"}],
+        "text": "«Che bella!», dice il custode.",
+    }
+    engine, state = start(keeper_world)
+    state.seen.add("gemma")
+    before = snapshot(state)
+
+    outcome = engine.execute(state, Action(verb="usa", target="gemma", with_="custode"))
+
+    assert not outcome.ok
+    assert outcome.text == messages.DONT_HAVE
+    assert snapshot(state) == before

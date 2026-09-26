@@ -214,6 +214,9 @@ class Engine:
             if action.target in self.world.characters:
                 return self._default_on_character(state, action.verb, self.world.characters[action.target])
             return self._default(state, action.verb, self.world.items[action.target])
+        if items & self.world.characters.keys():
+            # Only "dai" rules name characters: "usa X con il personaggio" gives, with the same checks.
+            return self._give(state, action)
         return self._apply_rule(state, rule)
 
     def _give(self, state: GameState, action: Action) -> Outcome:
