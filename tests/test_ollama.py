@@ -43,7 +43,9 @@ def near(engine: Engine, state: GameState) -> list[Item]:
 def understood(llm, engine: Engine, state: GameState, sentence: str) -> Action | NotUnderstood:
     """The sentence interpreted as the game does it, with the time the call took."""
     start = time.perf_counter()
-    action = interpret(llm, sentence, near(engine, state), engine.known_exits(state), engine.characters_here(state))
+    action = interpret(
+        llm, sentence, near(engine, state), engine.known_exits(state), engine.characters_here(state), CASTLE.game.examples
+    )
     print(f"\n  {time.perf_counter() - start:4.1f}s  {sentence!r} -> {action}")
     return action
 

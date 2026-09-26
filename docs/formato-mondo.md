@@ -33,12 +33,19 @@ L'esempio completo è la Rocca di Serravento in `data/worlds/rocca/`.
 game:
   title: La Rocca di Serravento
   summary: Una o due righe per il menu delle avventure.
+  examples: |-             # facoltativo: esempi per l'interprete LLM (vedi sotto)
+    Oggetti: …
   intro: Testo mostrato all'inizio.
   start_room: cortile
   endings:                 # almeno uno; vale il primo la cui condizione è vera
     - when: {player_in: torre}
       text: Testo finale.
 ```
+
+`examples` sono esempi per l'interprete, scritti come nel prompt (`app/llm/prompts.py`): righe
+`Oggetti:`, `Uscite:`, `Frase:` e la risposta JSON. Si mettono solo per una frase che il modello
+sbaglia giocando, e ogni modifica va verificata su tutto `tests/test_ollama.py`. Nella Rocca c'è
+la frase del rampino.
 
 ## `rooms`
 

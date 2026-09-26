@@ -101,7 +101,7 @@ class Game:
         if self.llm is None:
             self._log("parser", None, "non capito", "il parser non la capisce e l'LLM è spento")
             return NOT_UNDERSTOOD
-        interpreted = interpret(self.llm, line, near, exits, characters)
+        interpreted = interpret(self.llm, line, near, exits, characters, self.world.game.examples)
         if isinstance(interpreted, NotUnderstood):
             if interpreted.not_an_action:
                 self._log("llm", None, "altro", interpreted.reason)

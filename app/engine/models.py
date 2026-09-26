@@ -314,6 +314,9 @@ class Ending(_Frozen):
 class GameInfo(_Frozen):
     title: Text
     summary: Text  # one or two lines for the menu of the adventures
+    # Examples for the LLM interpreter, in the prompt's format (app/llm/prompts.py): they go between
+    # the generic ones and the dialogue.
+    examples: Text | None = None
     intro: Text
     start_room: Id
     endings: tuple[Ending, ...]

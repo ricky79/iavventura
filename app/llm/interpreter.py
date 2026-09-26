@@ -13,7 +13,7 @@ from typing import Any, NamedTuple
 from app.engine.models import Action, Character, Command, Conversation, Direction, Item, Room, Topic, Verb
 from app.engine.parser import find_topic, significant_words
 from app.llm.client import LLMClient, LLMError
-from app.llm.prompts import INTERPRETER_SYSTEM, interpreter_user
+from app.llm.prompts import interpreter_system, interpreter_user
 
 log = logging.getLogger(__name__)
 
@@ -59,16 +59,18 @@ def interpret(
     in_reach: Sequence[Item],
     exits: Sequence[tuple[Direction, Room | None]] = (),
     characters: Characters = (),
+    examples: str | None = None,
 ) -> Action | NotUnderstood:
     """The action in the sentence, or why there is none: the model is unavailable, or its answer
     isn't an action on what the player can name.
 
     `exits` (Engine.known_exits) tell the model where each exit leads, for "torno nella scuderia".
     `characters` are those here, with their topics: the model is told about them only if there are any.
+    `examples` are the world's own (`game.examples`), for the system prompt.
     """
     try:
         reply = llm.complete_json(
-            INTERPRETER_SYSTEM,
+            interpreter_system(examples),
             interpreter_user(sentence, in_reach, exits, characters),
             interpreter_schema(in_reach, characters),
             max_tokens=MAX_TOKENS,
