@@ -63,7 +63,7 @@ input giocatore
 ## Struttura proposta
 ```
 app/
-  main.py            # FastAPI: la pagina e due endpoint (/api/new, /api/turn)
+  main.py            # FastAPI: la pagina e tre endpoint (/api/adventures, /api/new, /api/turn)
   config.py          # variabili d'ambiente
   game.py            # un turno: parser → interprete LLM → motore → testo fisso
   cli.py             # la partita nel terminale
@@ -81,7 +81,9 @@ app/
   storage/
     saves.py
 data/
-  world/*.yaml       # stanze, oggetti, personaggi
+  worlds/
+    avventure.yaml   # le avventure del menu, nell'ordine in cui compaiono
+    <id>/*.yaml      # un'avventura per cartella: stanze, oggetti, personaggi
 static/
   index.html
 tests/
@@ -97,7 +99,7 @@ tests/
 
 ## Decisioni prese
 - **Formato YAML del mondo** (fase 1, 2026-09-25): descritto in `docs/formato-mondo.md`.
-  Mondo di esempio: la Rocca di Serravento in `data/world/`.
+  Mondo di esempio: la Rocca di Serravento in `data/worlds/rocca/`.
 
 - **Motore di gioco** (fase 2, 2026-09-25): `Engine` in `app/engine/engine.py`.
   - Schema dell'Azione (`Action` in `models.py`): un solo modello piatto `verb`, `target`,
@@ -175,11 +177,11 @@ tests/
     richiesta e risposta, tenuto dal browser), non dentro `GameState`, che resta solo del motore.
     Lo stesso meccanismo potrà servire a rispondere a "Quale intendi: …?".
   - **Esempio nel prompt**: la frase del rampino, in fondo agli esempi (vedi i risultati sotto).
-    Lega il prompt fisso alla Rocca: quando ci sarà un secondo mondo, gli esempi andranno nel suo
-    YAML.
+    Oggi è in `game.examples` della Rocca (`data/worlds/rocca/gioco.yaml`): il prompt è testa fissa
+    + esempi del mondo + dialogo della cuoca, e `tests/prompt_rocca.txt` ne tiene la copia verificata.
 
 - **Personaggi e dialoghi** (fase 6, 2026-09-25): sezione `characters` (formato in
-  `docs/formato-mondo.md`), nella Rocca il pellegrino della scuderia (`data/world/personaggi.yaml`).
+  `docs/formato-mondo.md`), nella Rocca il pellegrino della scuderia (`data/worlds/rocca/personaggi.yaml`).
   - Si parla **per argomenti**, con testi d'autore: `parla con X` → `greeting`, `chiedi a X di Y`
     → testo dell'argomento, qualunque altra domanda → `unknown`. Scartate le risposte generate
     dal modello: con qwen2.5:3b su CPU tornerebbero i problemi del narratore.
@@ -193,6 +195,18 @@ tests/
     intorno: il modello risponde "parla", il gioco lo tratta come "altro".
   - Fuori da questa fase: personaggi che si spostano, dare o mostrare oggetti ("dai X a Y").
 
+- **Più avventure** (fase 7, pezzo 1, 2026-09-26; spec in
+  `docs/superpowers/specs/2026-09-26-piu-avventure-design.md`):
+  - Un'avventura per cartella in `data/worlds/`, l'ordine del menu in `avventure.yaml`;
+    `game.summary` per il menu, `game.examples` per gli esempi dell'interprete.
+  - Server: un `Engine` per avventura, `GET /api/adventures`, l'id dell'avventura in `/api/new` e
+    `/api/turn` accanto allo stato (404 se non c'è). Il log dei comandi ha il campo `avventura`.
+  - Pagina: menu nella console (tocco, numero o parola del titolo), titolo dell'avventura in alto,
+    «Avventure» nella riga di stato; un salvataggio per avventura (`castle-adventure.save.<id>`) e
+    si riprende l'ultima in corso. Il vecchio `castle-adventure.save` è diventato quello della Rocca.
+  - Terminale: lo stesso menu prima della partita.
+  - Prossimi pezzi: «dai X a qualcuno» (2), poi il draghetto raffreddato per bambini (3).
+
 ## Decisioni ancora aperte
 - Dare e mostrare oggetti ai personaggi, con regole che li nominano: servirà per un enigma.
 - Hosting pubblico (es. PC di casa + Cloudflare Tunnel) — non prioritario.
@@ -204,7 +218,7 @@ py -3.12 -m venv .venv
 .venv\Scripts\python -m pip install "pydantic>=2.11" "pyyaml>=6" "httpx>=0.27" "fastapi>=0.115" "uvicorn>=0.30" "pytest>=8"
 .venv\Scripts\python -m pytest
 
-.venv\Scripts\python -m app.cli      # giocare nel terminale (con Ollama acceso, anche frasi libere)
+.venv\Scripts\python -m app.cli      # giocare nel terminale: prima il menu delle avventure (con Ollama acceso, anche frasi libere)
 $env:LLM="off"                       # giocare senza LLM
 
 $env:OLLAMA_TESTS=1; .venv\Scripts\python -m pytest tests/test_ollama.py -v -s   # test col modello vero
@@ -249,5 +263,6 @@ ollama pull qwen2.5:3b
     con l'esempio prima di quello del rampino, "getta il rampino nel pozzo" andava al portone.
     In fondo funziona tutto. Con il dialogo nel prompt, "vai in cucina" dalla scuderia risponde
     "nessuno" (quindi "Non ho capito.") invece di "ovest". Per provare varianti del prompt senza
-    toccare il codice basta sostituire `interpreter.INTERPRETER_SYSTEM` in uno script.
+    toccare il codice basta sostituire in uno script `interpreter.interpreter_system`, oppure le
+    costanti `_HEAD` e `_DIALOGUE` di `app/llm/prompts.py`.
 - Narratore: provato e scartato (vedi sopra), anche con temperatura 0.2 e senza descrizioni.
