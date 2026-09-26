@@ -69,7 +69,8 @@ def test_the_page_is_served(client):
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/html")
-    assert "<title>I.A.vventura nel Castello</title>" in response.text
+    assert "<title>I.A.vventura</title>" in response.text
+    assert "/api/adventures" in response.text
 
 
 def test_a_new_game_starts_with_intro_first_room_and_state(client):
