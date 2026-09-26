@@ -64,6 +64,13 @@ ITEM_VERBS = {
     "premi": Verb.PUSH,
     "tira": Verb.PULL,
     "leggi": Verb.READ,
+    # "dai" is also "da" + "i" among the stopwords: only as the first word is it the verb.
+    "dai": Verb.GIVE,
+    "da": Verb.GIVE,  # "dà", without its accent
+    "porgi": Verb.GIVE,
+    "offri": Verb.GIVE,
+    "regala": Verb.GIVE,
+    "consegna": Verb.GIVE,
 }
 
 
