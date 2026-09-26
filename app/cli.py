@@ -12,7 +12,7 @@ from collections.abc import Callable
 
 from app.config import Settings, make_client, start_command_log, start_llm_log
 from app.engine.engine import Engine
-from app.engine.loader import load_world
+from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.parser import words_of
 from app.game import Game
 
@@ -63,7 +63,7 @@ def main() -> None:
         _log.info("--- nuova partita, senza LLM ---")
     else:
         _log.info("--- nuova partita: %s su %s ---", settings.model, settings.ollama_url)
-    game = Game(Engine(load_world()), llm)
+    game = Game(Engine(load_world(WORLDS_DIR / "rocca")), llm)
     try:
         run(game, lambda: input("\n> "), print)
     except KeyboardInterrupt:

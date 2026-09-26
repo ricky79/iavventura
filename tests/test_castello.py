@@ -7,13 +7,13 @@ The invariants fail if a data change opens a shortcut. Chain: gancio + corda -> 
 import pytest
 
 from app.engine.engine import Engine
-from app.engine.loader import load_world
+from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import Action, FlagSet, GameState, Give, Place, PlayerIn, Remove, Rule, SetFlag, World
 
 
 @pytest.fixture(scope="module")
 def castle() -> World:
-    return load_world()
+    return load_world(WORLDS_DIR / "rocca")
 
 
 def rules_bringing_in(world: World, item_id: str) -> list[Rule]:

@@ -2,11 +2,15 @@
 
 Guida per chi scrive stanze, oggetti ed enigmi. I modelli che la applicano sono in
 `app/engine/models.py`; i controlli tra le varie parti sono in `app/engine/validation.py`.
-L'esempio completo è la Rocca di Serravento in `data/world/`.
+L'esempio completo è la Rocca di Serravento in `data/worlds/rocca/`.
 
 ## File
 
-- Il mondo sta in `data/world/*.yaml`. Il loader legge tutti i file e ne unisce le sezioni.
+- Ogni avventura sta in una cartella `data/worlds/<id>/`: l'id è il nome della cartella. Il loader
+  legge tutti i file `.yaml` della cartella e ne unisce le sezioni.
+- `data/worlds/avventure.yaml` elenca le avventure nell'ordine del menu (`adventures: [rocca]`).
+  Una cartella che non è nell'elenco non viene caricata: così se ne può preparare una senza
+  mostrarla. Gli errori di un'avventura portano il suo id davanti (`rocca: items.pozzo: …`).
 - Sezioni ammesse: `game`, `rooms`, `items`, `rules`, `characters`. Un file può contenerne quante
   vuole e una sezione può continuare in più file. La divisione attuale (gioco, stanze, oggetti,
   regole, personaggi) è solo una convenzione.
@@ -28,6 +32,7 @@ L'esempio completo è la Rocca di Serravento in `data/world/`.
 ```yaml
 game:
   title: La Rocca di Serravento
+  summary: Una o due righe per il menu delle avventure.
   intro: Testo mostrato all'inizio.
   start_room: cortile
   endings:                 # almeno uno; vale il primo la cui condizione è vera

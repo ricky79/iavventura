@@ -1,19 +1,22 @@
-"""Loads the world from data/world/*.yaml and validates it.
+"""Loads the adventures from data/worlds/ and validates them.
 
-Every file may contain any of the top-level sections (game, rooms, items, rules, characters):
-the sections are merged, so how the world is split across files is only a convention.
+Each adventure is a folder of YAML files (its id is the folder's name); data/worlds/avventure.yaml
+lists the ones to load, in the order of the menu. Every file of a folder may contain any of the
+top-level sections (game, rooms, items, rules, characters): the sections are merged, so how a world
+is split across files is only a convention.
 """
 
 from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from app.engine.models import World
+from app.engine.models import Id, World
 from app.engine.validation import find_problems
 
-DEFAULT_WORLD_DIR = Path(__file__).resolve().parents[2] / "data" / "world"
+WORLDS_DIR = Path(__file__).resolve().parents[2] / "data" / "worlds"
+INDEX_FILE = "avventure.yaml"
 
 
 class WorldError(Exception):
@@ -24,7 +27,7 @@ class WorldError(Exception):
         super().__init__("invalid world:\n" + "\n".join(f"  - {problem}" for problem in problems))
 
 
-def load_world(directory: Path = DEFAULT_WORLD_DIR) -> World:
+def load_world(directory: Path) -> World:
     files = sorted(directory.glob("*.yaml"))
     if not files:
         raise WorldError([f"{directory}: no .yaml files found"])
@@ -68,6 +71,51 @@ def load_world(directory: Path = DEFAULT_WORLD_DIR) -> World:
     if problems:
         raise WorldError(problems)
     return parse_world(merged)
+
+
+def load_adventures(root: Path = WORLDS_DIR) -> dict[str, World]:
+    """Every adventure listed in the index, keyed by its folder, in the order of the menu.
+
+    The problems of all the adventures are reported together, each one after the id of its adventure.
+    """
+    worlds: dict[str, World] = {}
+    problems: list[str] = []
+    for adventure_id in _adventure_ids(root):
+        directory = root / adventure_id
+        if not directory.is_dir():
+            problems.append(f"{adventure_id}: folder not found")
+            continue
+        try:
+            worlds[adventure_id] = load_world(directory)
+        except WorldError as exc:
+            problems += [f"{adventure_id}: {problem}" for problem in exc.problems]
+    if problems:
+        raise WorldError(problems)
+    return worlds
+
+
+class _Index(BaseModel):
+    """avventure.yaml: the folders of the adventures, in the order of the menu."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    adventures: list[Id] = Field(min_length=1)
+
+
+def _adventure_ids(root: Path) -> list[str]:
+    path = root / INDEX_FILE
+    if not path.is_file():
+        raise WorldError([f"{INDEX_FILE}: not found in {root}"])
+    try:
+        index = _Index.model_validate(_read_yaml(path))
+    except yaml.YAMLError as exc:
+        raise WorldError([_describe_yaml_error(path, exc)]) from None
+    except ValidationError as exc:
+        raise WorldError([f"{INDEX_FILE}: {_describe_validation_error(err)}" for err in exc.errors()]) from None
+    repeated = sorted({adventure_id for adventure_id in index.adventures if index.adventures.count(adventure_id) > 1})
+    if repeated:
+        raise WorldError([f"{INDEX_FILE}: '{adventure_id}' is listed twice" for adventure_id in repeated])
+    return index.adventures
 
 
 def parse_world(data: Any) -> World:

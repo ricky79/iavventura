@@ -4,14 +4,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.engine.engine import Engine
-from app.engine.loader import load_world
+from app.engine.loader import WORLDS_DIR, load_world
 from app.llm.client import FakeLLMClient
 from app.main import WORLD_CHANGED, create_app
 
 
 @pytest.fixture(scope="module")
 def castle():
-    return load_world()
+    return load_world(WORLDS_DIR / "rocca")
 
 
 @pytest.fixture

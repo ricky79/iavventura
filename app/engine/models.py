@@ -313,6 +313,7 @@ class Ending(_Frozen):
 
 class GameInfo(_Frozen):
     title: Text
+    summary: Text  # one or two lines for the menu of the adventures
     intro: Text
     start_room: Id
     endings: tuple[Ending, ...]

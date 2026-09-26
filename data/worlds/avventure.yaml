@@ -1,0 +1,4 @@
+# Le avventure del menu, nell'ordine in cui compaiono: ogni id è una cartella accanto a questo
+# file. Una cartella che non è qui non viene caricata. Formato: docs/formato-mondo.md
+adventures:
+  - rocca

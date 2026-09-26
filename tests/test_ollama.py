@@ -14,14 +14,14 @@ import pytest
 
 from app.config import Settings, make_client
 from app.engine.engine import Engine
-from app.engine.loader import load_world
+from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import Action, GameState, Item
 from app.game import Game
 from app.llm.interpreter import NotUnderstood, interpret
 
 pytestmark = pytest.mark.skipif(os.environ.get("OLLAMA_TESTS") != "1", reason="needs Ollama: set OLLAMA_TESTS=1")
 
-CASTLE = load_world()
+CASTLE = load_world(WORLDS_DIR / "rocca")
 RULE = {rule_id: rule.text for rule_id, rule in CASTLE.rules.items()}
 PILGRIM = CASTLE.characters["pellegrino"]
 ANSWER = {topic_id: topic.text for topic_id, topic in PILGRIM.topics.items()}

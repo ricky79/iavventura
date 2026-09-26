@@ -3,7 +3,7 @@
 import pytest
 
 from app.engine.engine import Engine
-from app.engine.loader import load_world
+from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import World
 from app.engine.models import Action
 from app.game import ALL_RIGHT, HELP, NOT_A_GAME_ACTION, NOT_UNDERSTOOD, Game
@@ -12,7 +12,7 @@ from app.llm.client import FakeLLMClient
 
 @pytest.fixture(scope="module")
 def castle() -> World:
-    return load_world()
+    return load_world(WORLDS_DIR / "rocca")
 
 
 def say(game: Game, line: str) -> str:

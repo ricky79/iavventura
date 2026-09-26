@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from app.config import LOGS_DIR, Settings, make_client, start_command_log, start_llm_log
 from app.engine.engine import Engine, StateError
-from app.engine.loader import load_world
+from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import Action, GameState
 from app.game import Game
 from app.llm.client import LLMClient
@@ -103,7 +103,7 @@ def create_app_from_env() -> FastAPI:
     settings = Settings.from_env(default_llm_log=LOGS_DIR / "llm-web.log")
     start_llm_log(settings.llm_log)
     start_command_log(settings.command_log, origin="web")
-    return create_app(Engine(load_world()), make_client(settings))
+    return create_app(Engine(load_world(WORLDS_DIR / "rocca")), make_client(settings))
 
 
 def main() -> None:

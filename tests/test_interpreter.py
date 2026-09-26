@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.engine.loader import load_world
+from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import Action, Direction, Item, World
 from app.llm.client import FakeLLMClient
 from app.llm.interpreter import NotUnderstood, interpret, interpreter_schema
@@ -11,7 +11,7 @@ from app.llm.prompts import INTERPRETER_SYSTEM
 
 @pytest.fixture(scope="module")
 def castle() -> World:
-    return load_world()
+    return load_world(WORLDS_DIR / "rocca")
 
 
 @pytest.fixture
