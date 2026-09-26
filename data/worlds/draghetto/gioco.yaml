@@ -1,0 +1,22 @@
+# Il draghetto raffreddato — dati generali della partita.
+# Un'avventura per bambini dagli 8 anni: testi brevi, nessun pericolo, nessun vicolo cieco.
+# Formato: docs/formato-mondo.md
+
+game:
+  title: Il draghetto raffreddato
+  summary: "Per bambini dagli 8 anni: aiuta un draghetto a ritrovare il suo fuoco."
+  intro: >
+    Stai raccogliendo funghi ai margini del Bosco Fatato quando senti uno
+    starnuto enorme, così forte che le foglie tremano. Segui il rumore fino a
+    una radura e resti a bocca aperta: su un sasso coperto di muschio c'è un
+    draghetto verde, con il naso tutto rosso.
+  start_room: radura
+  endings:
+    - when: {flag: fuoco_tornato}
+      text: >
+        Il draghetto spalanca le ali: adesso sono calde come una coperta.
+        «Salta su!», dice, e tu ti aggrappi al suo collo. Volate sopra il
+        Bosco Fatato, sopra il ruscello e la tana di Tobia, che vi saluta con
+        la zampa. In un attimo sei davanti a casa tua. Il draghetto ti fa
+        l'occhiolino e riparte verso la Montagna Rossa, lasciando nel cielo una
+        scia di scintille. Che avventura!

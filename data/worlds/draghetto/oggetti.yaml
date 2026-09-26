@@ -1,0 +1,108 @@
+# Oggetti del Bosco Fatato. location: una stanza, inventory, oppure null
+# (fuori gioco: l'oggetto compare solo grazie a una regola).
+
+items:
+  # --- Radura ---
+  sasso:
+    name: sasso
+    gender: m
+    aliases: [masso, muschio, pietra]
+    description: >
+      Un grosso sasso rotondo, coperto di muschio morbido. È il posto
+      preferito del draghetto.
+    location: radura
+    scenery: true
+
+  # --- Roveto ---
+  cespugli:
+    name: cespugli
+    gender: m
+    plural: true
+    aliases: [cespuglio, rovi, rovo, roveto]
+    description: Rovi pieni di spine e di more mature. Attenzione a non pungerti!
+    location: roveto
+    scenery: true
+
+  more:
+    name: more
+    gender: f
+    plural: true
+    aliases: [mora]
+    description: Una manciata di more nere e lucide. Hanno un profumo dolcissimo.
+    location: roveto
+
+  # --- Ruscello ---
+  ruscello:
+    name: ruscello
+    gender: m
+    aliases: [acqua, torrente]
+    description: Acqua limpida e freddissima. Sul fondo i sassi brillano come monete.
+    location: ruscello
+    scenery: true
+
+  ponticello:
+    name: ponticello
+    gender: m
+    aliases: [ponte]
+    description: >
+      Un ponticello di legno, un po' traballante ma solido. Porta alla tana
+      dell'orso, a ovest.
+    location: ruscello
+    scenery: true
+
+  ramo:
+    name: ramo
+    gender: m
+    aliases: [bastone, legno]
+    description: Un ramo lungo e dritto, leggero ma robusto. Con questo si arriva in alto!
+    location: ruscello
+
+  # --- Vecchia quercia ---
+  quercia:
+    name: quercia
+    gender: f
+    aliases: [albero, tronco]
+    description: >
+      Una quercia enorme: il tronco è così largo che non lo abbracceresti
+      nemmeno in tre. Lassù, tra i rami, c'è un nido, e dal bordo spunta una
+      lunga piuma bianca.
+    location: quercia
+    scenery: true
+    reveals: [piuma]
+    variants:
+      - when: {flag: piuma_presa}
+        text: >
+          Una quercia enorme: il tronco è così largo che non lo abbracceresti
+          nemmeno in tre. Lassù, tra i rami, c'è un nido vuoto.
+
+  nido:
+    name: nido
+    gender: m
+    description: >
+      Un nido di rametti e paglia, lassù tra i rami, troppo in alto per le
+      tue braccia. Dal bordo spunta una lunga piuma bianca.
+    location: quercia
+    scenery: true
+    reveals: [piuma]
+    variants:
+      - when: {flag: piuma_presa}
+        text: Un nido vuoto, lassù tra i rami.
+
+  # --- Fuori gioco all'inizio ---
+  piuma:
+    name: piuma
+    gender: f
+    aliases: [penna, piuma bianca]
+    description: Una piuma bianca, lunga e morbidissima. Fa il solletico solo a guardarla.
+    location: null
+    # Nel nido: si vede dalla quercia dopo aver guardato il nido o l'albero; solo il ramo ci arriva.
+    visible_from:
+      room: quercia
+      when: {not: {flag: piuma_presa}}
+
+  vasetto_miele:
+    name: vasetto di miele
+    gender: m
+    aliases: [vasetto, miele, barattolo]
+    description: Un vasetto di miele dorato, che profuma di fiori di campo.
+    location: null
