@@ -164,6 +164,8 @@
   button:hover, button:focus-visible { background: var(--bright); color: var(--glass); text-shadow: none; }
   .status button { color: var(--glass); text-decoration: underline; text-underline-offset: 0.2em; }
   .status button:hover, .status button:focus-visible { background: var(--glass); color: var(--bright); }
+  /* Waiting for an answer: the controls fade and don't react. */
+  .status button:disabled, .status button:disabled:hover { background: transparent; color: var(--glass); opacity: 0.5; cursor: default; }
   /* The phosphor in use is shown in reverse video; the other one is only underlined on hover. */
   .status .colors button { text-decoration: none; }
   .status .colors button[aria-pressed="true"] { background: var(--glass); color: var(--bright); }
@@ -259,8 +261,6 @@
   let adventures = [];
   // The adventure being played ({id, title, summary}); null while the menu is on screen.
   let current = null;
-  // A request is on its way: the answer will go to the current adventure.
-  let busy = false;
   // Everything the page needs to pick a game up again: the engine's state, what is on screen
   // and the action the game is asking about ("Vuoi…?"), which goes back with the next line.
   let save = blank();
@@ -334,8 +334,10 @@
     $("to-menu").hidden = $("new-game").hidden = !current;
   }
 
-  function setBusy(value) {
-    busy = value;
+  // While a request is on its way nothing else starts: its answer belongs to the game on screen,
+  // so «Avventure» and «Nuova partita» wait for it (a turn with the LLM takes seconds).
+  function setBusy(busy) {
+    $("to-menu").disabled = $("new-game").disabled = busy;
     input.disabled = busy || save.finished;
     input.placeholder = save.finished ? "La partita è finita." : "";
   }
@@ -379,8 +381,9 @@
     status();
     setBusy(false);
     screen.scrollTop = 0;
-    // A touch on an adventure is the easy way on a phone: the keyboard stays closed.
-    menu.querySelector("button")?.focus();
+    // A number or a name can be typed at once. Not on a touch screen: the keyboard would cover the
+    // menu, and a touch on an adventure is the easy way there.
+    if (!matchMedia("(pointer: coarse)").matches) input.focus();
   }
 
   function entry(adventure, index) {
@@ -526,7 +529,7 @@
   $("restart").addEventListener("click", () => { askRestart(false); newGame(); });
   confirmBar.addEventListener("keydown", (event) => { if (event.key === "Escape") askRestart(false); });
   // Back to the menu at once: nothing is lost, the game stays saved. Not while an answer is coming.
-  $("to-menu").addEventListener("click", () => { if (!busy) openMenu(); });
+  $("to-menu").addEventListener("click", () => openMenu());
 
   // Green or amber: kept apart from the games, so a new game doesn't change it.
   const COLOR_KEY = "castle-adventure.color";

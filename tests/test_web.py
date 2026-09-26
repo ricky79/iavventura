@@ -237,3 +237,8 @@ def test_an_unknown_adventure_is_not_found(two, url, body):
 @pytest.mark.parametrize("url", ["/api/new", "/api/turn"])
 def test_the_adventure_is_required(two, url):
     assert two.post(url, json={"line": "guarda", "state": None}).status_code == 422
+
+
+def test_the_browser_checks_the_page_with_the_server_every_time(client):
+    # Without it the browser kept the old page after an update, and the old page no longer fits the API.
+    assert client.get("/").headers["cache-control"] == "no-cache"

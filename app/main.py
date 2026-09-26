@@ -78,7 +78,8 @@ def create_app(engines: dict[str, Engine], llm: LLMClient | None) -> FastAPI:
 
     @app.get("/", include_in_schema=False)
     def page() -> FileResponse:
-        return FileResponse(PAGE, media_type="text/html")
+        # Checked with the server every time: an old page kept by the browser wouldn't fit the API.
+        return FileResponse(PAGE, media_type="text/html", headers={"Cache-Control": "no-cache"})
 
     @app.get("/api/adventures")
     def adventures() -> list[Adventure]:
