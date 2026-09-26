@@ -411,3 +411,10 @@ def test_the_llm_gets_the_examples_of_the_world(castle):
 
     assert llm.calls[0][0] == interpreter_system(castle.game.examples)
     assert "usa il rampino per recuperare la chiave dal pozzo" in llm.calls[0][0]
+
+
+def test_the_log_names_the_adventure_when_the_game_knows_it(castle, caplog):
+    [entry] = logged(caplog, Game(Engine(castle), adventure="rocca"), "nord")
+
+    assert list(entry)[:2] == ["avventura", "stanza"]
+    assert entry["avventura"] == "rocca"
