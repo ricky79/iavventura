@@ -33,8 +33,8 @@ rooms:
     name: Cucina
     description: >
       Una cucina dal soffitto annerito dal fumo. Nel grande camino spento
-      pendono ancora le catene per i paioli. Su un ceppo di legno, segnato da
-      mille colpi, qualcuno ha lasciato i suoi attrezzi. Il cortile è a est.
+      pendono ancora le catene per i paioli. Accanto al camino c'è un ceppo di
+      legno, segnato da mille colpi. Il cortile è a est.
     exits:
       est: {to: cortile}
 
