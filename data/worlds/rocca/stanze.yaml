@@ -1,9 +1,12 @@
 # Stanze della rocca. Le descrizioni citano gli arredi (scenery: true),
 # mentre gli oggetti trasportabili li elenca il motore.
+# Gli alias sono gli altri modi di indicare il luogo, anche chi o cosa ci si trova
+# («torna al pozzo», «vai dal pellegrino»).
 
 rooms:
   cortile:
     name: Cortile
+    aliases: [pozzo]
     description: >
       Un cortile lastricato, invaso dall'edera e dalle foglie portate dal
       vento. Al centro c'è un vecchio pozzo di pietra. A nord si
@@ -37,6 +40,7 @@ rooms:
 
   scuderia:
     name: Scuderia
+    aliases: [scuderie, stalla, pellegrino]
     description: >
       Una scuderia senza più cavalli, che sa ancora di fieno. Le poste sono
       deserte e le mangiatoie piene di polvere. Il cortile è a ovest.
@@ -45,6 +49,7 @@ rooms:
 
   torre:
     name: Torre
+    aliases: [scala, scale]
     description: >
       La base della torre, fredda e buia. Una scala a chiocciola sale verso
       l'alto. La porta sul cortile è a sud.

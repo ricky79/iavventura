@@ -2,11 +2,11 @@
 
 import pytest
 
-from app.engine.engine import Engine
+from app.engine.engine import NO_EXIT, NOBODY_HERE, NOT_HERE, Engine
 from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import World
 from app.engine.models import Action
-from app.game import ALL_RIGHT, HELP, NOT_A_GAME_ACTION, NOT_UNDERSTOOD, Game
+from app.game import ALL_RIGHT, ALREADY_HERE, HELP, NOBODY_TO_TALK_TO, NOT_A_GAME_ACTION, NOT_UNDERSTOOD, Game
 from app.llm.client import FakeLLMClient
 from app.llm.prompts import interpreter_system
 
@@ -140,19 +140,32 @@ def test_an_interpreted_sentence_is_shown_before_the_answer(castle):
 # --- An interpreted action nothing in the world foresees: ask first --------------------------------
 
 
+# The model understood the sentence, but nothing in the world foresees it.
+THROW = "lancio il rampino contro il portone"
+
+
 def misunderstood_grapple(castle: World) -> Game:
-    """The bug found while playing: the model aims the grapple at the door instead of the well."""
+    """The model aims the grapple at the door: "usa il portone con la corda con gancio"."""
     llm = FakeLLMClient(json_replies=[{"verbo": "usa", "bersaglio": "portone", "con": "corda con gancio"}])
     game = Game(Engine(castle), llm)
     game.state.item_locations["corda_con_gancio"] = "inventory"
     return game
 
 
+def test_the_grapple_aimed_at_a_door_the_sentence_does_not_name_is_not_understood(castle):
+    # The bug found while playing: the game asked "Vuoi usare la corda con gancio con il portone?".
+    game = misunderstood_grapple(castle)
+    say(game, "esamina il pozzo")  # the key is in sight, and the sentence names it
+
+    assert say(game, "usa il rampino per recuperare la chiave dal pozzo") == NOT_UNDERSTOOD
+    assert game.pending is None
+
+
 def test_an_unexpected_interpreted_action_is_asked_before_doing_it(castle):
     game = misunderstood_grapple(castle)
     before = game.state.model_copy(deep=True)
 
-    output = say(game, "usa il rampino per recuperare la chiave dal pozzo")
+    output = say(game, THROW)
 
     # The carried item comes first: "usare la corda con gancio con il portone".
     assert output == "Vuoi usare la corda con gancio con il portone?"
@@ -163,7 +176,7 @@ def test_an_unexpected_interpreted_action_is_asked_before_doing_it(castle):
 @pytest.mark.parametrize("answer", ["sì", "si", "Sì, certo", "ok"])
 def test_yes_does_the_action_asked_about(castle, answer):
     game = misunderstood_grapple(castle)
-    say(game, "usa il rampino per recuperare la chiave dal pozzo")
+    say(game, THROW)
 
     output = say(game, answer)
 
@@ -175,7 +188,7 @@ def test_yes_does_the_action_asked_about(castle, answer):
 @pytest.mark.parametrize("answer", ["no", "No, grazie"])
 def test_no_drops_the_action_asked_about(castle, answer):
     game = misunderstood_grapple(castle)
-    say(game, "usa il rampino per recuperare la chiave dal pozzo")
+    say(game, THROW)
 
     output = say(game, answer)
 
@@ -186,7 +199,7 @@ def test_no_drops_the_action_asked_about(castle, answer):
 
 def test_any_other_line_after_the_question_is_a_new_command(castle):
     game = misunderstood_grapple(castle)
-    say(game, "usa il rampino per recuperare la chiave dal pozzo")
+    say(game, THROW)
 
     output = say(game, "usa il rampino con il pozzo")
 
@@ -196,7 +209,7 @@ def test_any_other_line_after_the_question_is_a_new_command(castle):
 
 def test_s_and_n_after_the_question_are_still_directions(castle):
     game = misunderstood_grapple(castle)
-    say(game, "usa il rampino per recuperare la chiave dal pozzo")
+    say(game, THROW)
 
     assert say(game, "n") == "La porta della torre è chiusa a chiave."
     assert game.pending is None
@@ -234,7 +247,11 @@ def test_going_to_a_named_room_needs_no_llm(castle):
 
 @pytest.mark.parametrize(
     ("sentence", "direction"),
-    [("torna verso ovest", "ovest"), ("torno di corsa nella cucina", "ovest"), ("scendo giù per le scale", "giù")],
+    [
+        ("torno di corsa verso ovest", "ovest"),
+        ("torno di corsa nella cucina", "ovest"),
+        ("scendo giù per le scale", "giù"),
+    ],
 )
 def test_an_interpreted_move_that_names_the_way_is_done(castle, sentence, direction):
     llm = FakeLLMClient(json_replies=[{"verbo": "vai", "bersaglio": direction, "con": "nessuno"}])
@@ -258,13 +275,37 @@ def test_an_interpreted_move_that_names_neither_direction_nor_room_is_asked(cast
     assert game.pending == Action(verb="vai", direction="ovest")
 
 
+def going_east(world: World) -> Game:
+    return Game(Engine(world), FakeLLMClient(json_replies=[{"verbo": "vai", "bersaglio": "est", "con": "nessuno"}]))
+
+
+def test_an_interpreted_move_to_a_room_named_nearly_is_done(castle):
+    # Found while playing: "vai alle scuderie" was asked about, three times (now the parser knows
+    # "scuderie"). A typo is fine too.
+    output = say(going_east(castle), "corri alla scudria")
+
+    assert output.startswith("(vai a est)\nScuderia\n")
+
+
+def test_an_interpreted_move_to_a_room_named_by_an_alias_is_done(castle):
+    output = say(going_east(castle), "corro di nuovo dal pellegrino")
+
+    assert output.startswith("(vai a est)\nScuderia\n")
+
+
+def test_a_single_letter_is_no_direction_in_a_free_sentence(castle):
+    # "e" is also "and": the move is asked about.
+    assert say(going_east(castle), "prendi fiato e scappa") == "Vuoi andare a est?"
+
+
 def test_the_llm_is_told_where_the_exits_lead(castle):
     llm = FakeLLMClient(json_replies=[{"verbo": "vai", "bersaglio": "est", "con": "nessuno"}])
     game = Game(Engine(castle), llm)
 
     output = say(game, "torno di corsa nella scuderia")
 
-    assert "\nUscite: nord (Torre), est (Scuderia), ovest (Cucina)\n" in llm.calls[0][1]
+    exits = "Uscite: nord (Torre: scala, scale), est (Scuderia: scuderie, stalla, pellegrino), ovest (Cucina)"
+    assert f"\n{exits}\n" in llm.calls[0][1]
     assert output.startswith("(vai a est)\nScuderia\n")
 
 
@@ -383,7 +424,7 @@ def test_a_failed_action_is_logged_with_the_answer(castle, caplog):
 
 
 def test_a_question_before_an_unexpected_action_is_logged(castle, caplog):
-    [entry] = logged(caplog, misunderstood_grapple(castle), "usa il rampino per recuperare la chiave dal pozzo")
+    [entry] = logged(caplog, misunderstood_grapple(castle), THROW)
 
     assert entry["da"] == "llm"
     assert entry["azione"] == "usa corda_con_gancio con portone"
@@ -430,3 +471,236 @@ def test_giving_is_never_asked_about(castle):
 
     assert output == f"(dai la corda al pellegrino)\n{castle.characters['pellegrino'].refuses}"
     assert game.pending is None
+
+
+# --- Someone or something that isn't here (found while playing, 2026-09-28) ------------------------
+
+
+@pytest.fixture(scope="module")
+def dragon() -> World:
+    return load_world(WORLDS_DIR / "draghetto")
+
+
+def talking(reply: dict) -> FakeLLMClient:
+    return FakeLLMClient(json_replies=[reply])
+
+
+def test_talking_with_nobody_around_says_so(castle):
+    game = Game(Engine(castle), talking({"verbo": "parla", "bersaglio": "nessuno", "con": "nessuno"}))
+
+    assert say(game, "ciao, come va?") == NOBODY_TO_TALK_TO
+
+
+def test_greeting_a_character_who_is_elsewhere_says_nobody_like_that_is_here(dragon):
+    # "ciao orso" at the brook: the game answered "Non sembra un'azione del gioco."
+    game = Game(Engine(dragon), talking({"verbo": "parla", "bersaglio": "nessuno", "con": "nessuno"}))
+    game.state.current_room = "ruscello"
+
+    assert say(game, "ciao orso") == NOBODY_HERE
+
+
+def test_greeting_a_character_who_is_elsewhere_does_not_greet_the_one_here(dragon):
+    # "ciao orso" in the glade: the dragon answered.
+    game = Game(Engine(dragon), talking({"verbo": "parla", "bersaglio": "draghetto", "con": "nessuno"}))
+
+    assert say(game, "ciao orso") == NOBODY_HERE
+
+
+def test_greeting_the_one_here_may_name_someone_else(dragon):
+    # The bear is elsewhere, but the dragon is named: it answers about the bear, one of its topics.
+    game = Game(Engine(dragon), talking({"verbo": "parla", "bersaglio": "draghetto", "con": "nessuno"}))
+
+    assert say(game, "ciao draghetto, sai dov'è l'orso?").endswith(dragon.characters["draghetto"].topics["orso"].text)
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        {"verbo": "prendi", "bersaglio": "sasso", "con": "nessuno"},
+        {"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"},
+    ],
+    ids=["the model picks something else", "the model says it is no game action"],
+)
+def test_an_item_that_is_elsewhere_is_not_here(dragon, reply):
+    # "mangio una mora" in the glade: the model took the stone. The berries are also a topic of the
+    # dragon, but this is no question about them.
+    game = Game(Engine(dragon), talking(reply))
+
+    assert say(game, "mangio una mora") == NOT_HERE
+    assert game.state.turns == 0
+
+
+def test_going_where_the_player_already_is(dragon):
+    # "torno dal draghetto" in the glade: the game asked "Vuoi andare a est?".
+    game = Game(Engine(dragon), talking({"verbo": "vai", "bersaglio": "est", "con": "nessuno"}))
+
+    assert say(game, "torno dal draghetto") == ALREADY_HERE
+    assert game.pending is None
+
+
+def test_going_to_a_place_that_is_no_exit_is_not_understood(dragon):
+    # "vai a casa" at the oak: the game asked "Vuoi andare su?".
+    game = Game(Engine(dragon), talking({"verbo": "vai", "bersaglio": "su", "con": "nessuno"}))
+    game.state.current_room = "quercia"
+
+    assert say(game, "vai a casa") == NOT_UNDERSTOOD
+    assert game.pending is None
+
+
+def test_a_name_shared_with_something_here_is_not_elsewhere(castle):
+    # "corda" is the plain rope (out of play) and the grapple (carried).
+    game = Game(Engine(castle), talking({"verbo": "usa", "bersaglio": "portone", "con": "corda con gancio"}))
+    game.state.item_locations.update({"corda_con_gancio": "inventory", "corda": None, "gancio": None})
+
+    assert say(game, "aggancia la corda alla vera") == NOT_UNDERSTOOD
+
+
+@pytest.mark.parametrize(
+    ("room", "sentence", "character", "topic"),
+    [("radura", "mi dai il miele?", "draghetto", "miele"), ("tana", "mi dai il tuo miele?", "orso", "miele")],
+)
+def test_a_question_the_model_misses_is_asked_about_the_topic_it_names(dragon, room, sentence, character, topic):
+    # The model answered "dai le more": the kid was asking for the honey.
+    game = Game(Engine(dragon), talking({"verbo": "dai", "bersaglio": "more", "con": "nessuno"}))
+    game.state.current_room = room
+    game.state.item_locations["more"] = "inventory"
+
+    output = say(game, sentence)
+
+    assert output.endswith(dragon.characters[character].topics[topic].text)
+    assert output.startswith(f"(chiedi {'al draghetto' if character == 'draghetto' else "all'orso"} del miele)\n")
+    assert game.state.item_locations["more"] == "inventory"
+
+
+@pytest.mark.parametrize("sentence", ["perche hai il naso rosso", "come mai hai il naso rosso"])
+def test_a_question_without_its_question_mark_is_asked_too(dragon, sentence):
+    # Kids leave out the "?": a sentence starting with perché, cosa, come... is a question.
+    game = Game(Engine(dragon), talking({"verbo": "prendi", "bersaglio": "sasso", "con": "nessuno"}))
+
+    output = say(game, sentence)
+
+    assert output == f"(chiedi al draghetto del solletico)\n{dragon.characters['draghetto'].topics['solletico'].text}"
+
+
+@pytest.mark.parametrize(
+    ("sentence", "topic"),
+    [("chi sei?", "pellegrino"), ("vecchio, come ti chiami?", "pellegrino"), ("com'è andato il viaggio?", "pellegrino")],
+)
+def test_talking_about_a_topic_is_asking_about_it(castle, sentence, topic):
+    # "chi sei?": the model answered "parla", and the pilgrim only greeted.
+    game = in_the_stable(castle, talking({"verbo": "parla", "bersaglio": "pellegrino", "con": "nessuno"}))
+
+    output = say(game, sentence)
+
+    assert output == f"(chiedi al pellegrino del pellegrino)\n{castle.characters['pellegrino'].topics[topic].text}"
+
+
+def test_greeting_the_character_by_name_is_still_greeting(castle):
+    game = in_the_stable(castle, talking({"verbo": "parla", "bersaglio": "pellegrino", "con": "nessuno"}))
+
+    assert say(game, "salve, pellegrino!").endswith(castle.characters["pellegrino"].greeting)
+
+
+@pytest.mark.parametrize(
+    ("sentence", "reply", "topic"),
+    [
+        ("cosa ti serve?", {"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}, "raffreddore"),
+        ("cosa ti è successo?", {"verbo": "chiedi", "bersaglio": "draghetto", "con": "quercia"}, "raffreddore"),
+    ],
+)
+def test_the_dragon_answers_what_it_needs(dragon, sentence, reply, topic):
+    output = say(Game(Engine(dragon), talking(reply)), sentence)
+
+    assert output.endswith(dragon.characters["draghetto"].topics[topic].text)
+
+
+def test_an_item_elsewhere_comes_before_nobody_to_talk_to(castle):
+    # "ma non c'è la chiave nel pozzo": the model heard talking, the game said nobody is here.
+    game = Game(Engine(castle), talking({"verbo": "parla", "bersaglio": "nessuno", "con": "nessuno"}))
+
+    assert say(game, "ma non c'è la chiave nel pozzo") == NOT_HERE
+
+
+def test_going_to_a_place_farther_on_is_asked_when_the_way_leads_there(dragon):
+    # "vai dall orso" in the glade: the den is past the brook, and west is the way.
+    game = Game(Engine(dragon), talking({"verbo": "vai", "bersaglio": "ovest", "con": "nessuno"}))
+
+    assert say(game, "vai dall orso") == "Vuoi andare a ovest?"
+    assert game.pending == Action(verb="vai", direction="ovest")
+
+
+# --- Found by the review: someone elsewhere, for any action on a character --------------------------
+
+
+@pytest.mark.parametrize(
+    ("room", "carried", "sentence", "reply"),
+    [
+        ("tana", "more", "do le more al drago", {"verbo": "dai", "bersaglio": "more", "con": "orso"}),
+        # "dai le more" to nobody goes to the only one here: the bear again.
+        ("tana", "more", "do le more al drago", {"verbo": "dai", "bersaglio": "more", "con": "nessuno"}),
+        ("radura", "vasetto_miele", "porto il miele all'orso",
+         {"verbo": "dai", "bersaglio": "vasetto di miele", "con": "draghetto"}),
+    ],
+)  # fmt: skip
+def test_giving_to_someone_elsewhere_gives_nothing_to_the_one_here(dragon, room, carried, sentence, reply):
+    # The model gave to the one here: the bear's trade, or the honey used up on the dragon.
+    game = Game(Engine(dragon), talking(reply))
+    game.state.current_room = room
+    game.state.item_locations[carried] = "inventory"
+    before = game.state.model_copy(deep=True)
+
+    assert say(game, sentence) == NOBODY_HERE
+    assert game.state == before
+
+
+@pytest.mark.parametrize("sentence", ["conosci l'orso?", "hai visto l'orso?"])
+def test_asking_the_one_here_about_someone_elsewhere(dragon, sentence):
+    game = Game(Engine(dragon), talking({"verbo": "parla", "bersaglio": "draghetto", "con": "nessuno"}))
+
+    assert say(game, sentence).endswith(dragon.characters["draghetto"].topics["orso"].text)
+
+
+def test_a_question_for_someone_elsewhere_about_nothing_known(keeper_world):
+    # A prisoner in the cell, who is no topic of the keeper in the atrium.
+    keeper_world["characters"]["prigioniero"] = {
+        "name": "prigioniero", "gender": "m", "description": "-", "location": "cella",
+        "greeting": "-", "unknown": "-", "topics": {},
+    }  # fmt: skip
+    world = World.model_validate(keeper_world)
+    game = Game(Engine(world), talking({"verbo": "chiedi", "bersaglio": "custode", "con": "nessuno"}))
+
+    assert say(game, "chiedi al prigioniero se ha fame") == NOBODY_HERE
+
+
+@pytest.mark.parametrize(
+    ("room", "sentence"), [("radura", "salgo sul sasso"), ("ruscello", "scendo nel ruscello")]
+)
+def test_climbing_on_something_here_is_no_way_out(dragon, room, sentence):
+    # The game answered "Sei già qui.": the stone and the brook are also names of the places.
+    game = Game(Engine(dragon), talking({"verbo": "vai", "bersaglio": "nord", "con": "nessuno"}))
+    game.state.current_room = room
+
+    assert say(game, sentence).endswith(NO_EXIT)
+    assert game.state.current_room == room
+
+
+def test_of_two_topics_named_the_last_one_wins(dragon):
+    # "serve" names the cold, "piuma" the tickle: the question is about the feather.
+    game = Game(Engine(dragon), talking({"verbo": "chiedi", "bersaglio": "draghetto", "con": "nessuno"}))
+
+    assert say(game, "cosa serve per prendere la piuma?").endswith(dragon.characters["draghetto"].topics["solletico"].text)
+
+
+@pytest.mark.parametrize(
+    ("sentence", "reply", "answer"),
+    [
+        ("mangio una mora", {"verbo": "prendi", "bersaglio": "sasso", "con": "nessuno"}, NOT_HERE),
+        ("mi dai il miele?", {"verbo": "prendi", "bersaglio": "sasso", "con": "nessuno"},
+         "(chiedi al draghetto del miele)"),
+    ],
+)  # fmt: skip
+def test_the_log_says_what_the_game_answered_instead(dragon, caplog, sentence, reply, answer):
+    [entry] = logged(caplog, Game(Engine(dragon), talking(reply)), sentence)
+
+    assert entry["esito"] == "non capito"
+    assert entry["dettaglio"] == f"la frase non nomina 'sasso'; risposta: {answer}"

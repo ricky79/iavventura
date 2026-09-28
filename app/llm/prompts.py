@@ -15,10 +15,11 @@ Verbi:
 - prendi: prendere, raccogliere
 - lascia: posare, mettere giù, buttare
 - usa: usare un oggetto con un altro, legarli, calarne uno in un altro
-- apri, chiudi, spingi, tira, leggi
-- parla: salutare un personaggio, rivolgergli la parola
+- apri, chiudi, spingi, tira
+- leggi: leggere uno scritto
+- parla: salutare un personaggio, ringraziarlo, rivolgergli la parola
 - chiedi: fare una domanda a un personaggio
-- dai: dare, porgere, offrire un oggetto a un personaggio
+- dai: dare, porgere, offrire un oggetto a un personaggio (anche "ecco", "tieni")
 - vai: spostarsi in una direzione o verso una delle uscite elencate
 - guarda: guardarsi intorno
 - inventario: controllare cosa si ha con sé
@@ -38,6 +39,8 @@ Frase: provo ad aprire il baule usando la chiavetta
 {"verbo": "apri", "bersaglio": "baule", "con": "chiavetta d'ottone"}
 Frase: chiudi la finestra
 {"verbo": "chiudi", "bersaglio": "finestra della cucina", "con": "nessuno"}
+Frase: a cosa serve questa chiavetta?
+{"verbo": "esamina", "bersaglio": "chiavetta d'ottone", "con": "nessuno"}
 Frase: torno indietro verso sud
 {"verbo": "vai", "bersaglio": "sud", "con": "nessuno"}
 Frase: torno in biblioteca
@@ -84,9 +87,14 @@ def interpreter_user(
             f"Personaggi: {_names(character for character, _ in characters)}",
             f"Argomenti: {_names(topics) or 'nessuno'}",
         ]
-    ways = ", ".join(f"{direction} ({room.name})" if room else direction for direction, room in exits)
+    ways = ", ".join(f"{direction} ({_place(room)})" if room else direction for direction, room in exits)
     lines += [f"Uscite: {ways or 'nessuna'}", f"Frase: {sentence}"]
     return "\n".join(lines)
+
+
+def _place(room: Room) -> str:
+    """"Tana: orso, grotta": the room with its other names."""
+    return f"{room.name}: {', '.join(room.aliases)}" if room.aliases else room.name
 
 
 def _names(things: Iterable[Item | Character | Topic]) -> str:

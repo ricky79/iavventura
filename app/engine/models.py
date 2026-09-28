@@ -218,6 +218,8 @@ class Exit(_Frozen):
 class Room(_Frozen):
     id: Id
     name: Text
+    # Other ways to name the place, also who or what is there: "vai dall'orso" for the den.
+    aliases: tuple[Text, ...] = ()
     description: Text
     variants: tuple[TextVariant, ...] = ()
     exits: dict[Direction, Exit] = {}

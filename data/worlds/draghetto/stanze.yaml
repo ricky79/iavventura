@@ -1,9 +1,12 @@
 # Stanze del Bosco Fatato. La radura è al centro: il draghetto sta lì e ci si torna spesso.
 # Le descrizioni citano gli arredi (scenery: true); gli oggetti trasportabili li elenca il motore.
+# Gli alias sono gli altri modi di indicare il luogo, anche chi o cosa ci si trova («torna dal
+# drago», «vado dall'orso»).
 
 rooms:
   radura:
     name: Radura
+    aliases: [draghetto, drago, sasso]
     description: >
       Una radura piena di sole, in mezzo al Bosco Fatato. Al centro c'è un
       grosso sasso coperto di muschio. A nord si vede una vecchia quercia, a
@@ -23,6 +26,7 @@ rooms:
 
   roveto:
     name: Roveto
+    aliases: [more, rovi, cespugli]
     description: >
       Cespugli di rovi alti fino alla tua testa, pieni di spine. Gli uccelli
       hanno già mangiato quasi tutte le more. La radura è a ovest.
@@ -31,6 +35,7 @@ rooms:
 
   ruscello:
     name: Ruscello
+    aliases: [acqua, ponte, ponticello]
     description: >
       Un ruscello di acqua limpida chiacchiera tra i sassi. Un ponticello di
       legno lo attraversa verso ovest, dove c'è la tana di un orso. La radura è
@@ -41,6 +46,7 @@ rooms:
 
   tana:
     name: Tana
+    aliases: [orso, tobia, grotta, ponte, ponticello]
     description: >
       Davanti a una grotta tra le rocce l'erba è tutta schiacciata, e c'è un
       profumo di miele. Il ponticello sul ruscello è a est.
@@ -49,6 +55,7 @@ rooms:
 
   quercia:
     name: Quercia
+    aliases: [albero, nido]
     description: >
       Una quercia enorme, l'albero più vecchio di tutto il bosco. I rami più
       bassi sono troppo in alto per arrampicarsi. Lassù, tra le foglie, c'è un nido:
@@ -74,12 +81,14 @@ rooms:
   # e della quercia li nominano, così anche l'interprete sa dove portano. ---
   sentiero:
     name: Casa
+    aliases: [sentiero]
     description: Il sentiero che porta a casa.
     exits:
       nord: {to: radura}
 
   chioma:
     name: Albero
+    aliases: [quercia, cima]
     description: In cima alla quercia.
     exits:
       giù: {to: quercia}

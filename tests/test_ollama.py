@@ -13,10 +13,10 @@ import time
 import pytest
 
 from app.config import Settings, make_client
-from app.engine.engine import Engine
+from app.engine.engine import NOBODY_HERE, NOT_HERE, NOTHING_HAPPENS, OUT_OF_REACH, Engine
 from app.engine.loader import WORLDS_DIR, load_world
-from app.engine.models import Action, GameState, Item
-from app.game import Game
+from app.engine.models import Action, GameState, Item, World
+from app.game import NOT_A_GAME_ACTION, NOT_UNDERSTOOD, Game
 from app.llm.interpreter import NotUnderstood, interpret
 
 pytestmark = pytest.mark.skipif(os.environ.get("OLLAMA_TESTS") != "1", reason="needs Ollama: set OLLAMA_TESTS=1")
@@ -227,3 +227,142 @@ def test_kids_sentences_in_the_dragon_adventure(llm, room, carried, flags, seen,
 
     assert isinstance(action, Action)
     assert check(engine.execute(state, action), state)
+
+
+# --- Sentences found while playing both adventures (2026-09-28) ----------------------------------
+# Through the whole turn, as the player gets it: the model's answer, the checks on it, the engine
+# and the fixed text. The check is on what the player sees, or on the game not doing what the
+# sentence doesn't ask for.
+
+TOPIC = {topic_id: topic.text for topic_id, topic in DRAGONET.topics.items()}
+BEAR = DRAGON.characters["orso"]
+
+
+def playing(llm, world: World, room: str, carried=(), flags=(), seen=()) -> Game:
+    game = Game(Engine(world), llm)
+    state = game.state
+    state.current_room = room
+    state.visited.add(room)
+    for item_id in carried:
+        state.item_locations[item_id] = "inventory"
+    if "corda_con_gancio" in carried:
+        state.item_locations["corda"] = state.item_locations["gancio"] = None
+    state.flags.update(flags)
+    state.seen.update(seen)
+    return game
+
+
+def says(*texts: str):
+    """The answer has one of the texts (after "(…)" for an interpreted action, before an ending)."""
+    return lambda answer, game: any(text in answer for text in texts)
+
+
+def stays_in(room: str):
+    """Nothing done and nothing asked: the sentence is no move ("attento alle spine")."""
+    return lambda answer, game: game.state.current_room == room and game.pending is None
+
+
+def goes_to(room: str):
+    return lambda answer, game: game.state.current_room == room
+
+
+NOTHING_DONE = (NOT_UNDERSTOOD, NOT_A_GAME_ACTION)
+
+PLAYED = [
+    # (world, room, carried, flags, seen, sentence, check on (answer, game))
+    # A question became an action: this one tied the hook to the rope, puzzle solved.
+    (CASTLE, "scuderia", ("gancio",), (), (), "a cosa mi serve questa corda?",
+     lambda a, g: g.state.item_locations["corda_con_gancio"] is None and g.pending is None),
+    (CASTLE, "scuderia", (), (), (), "come si fa a usire",
+     says(ANSWER["portone"], PILGRIM.unknown, PILGRIM.greeting, *NOTHING_DONE)),
+    (CASTLE, "scuderia", (), (), (), "chi sei?", says(ANSWER["pellegrino"])),
+    (CASTLE, "scuderia", (), (), (), "vecchio, come ti chiami?", says(ANSWER["pellegrino"])),
+    (CASTLE, "cortile", (), (), (), "ma non c'è la chiave nel pozzo",
+     says(CASTLE.items["pozzo"].description, NOT_HERE, *NOTHING_DONE)),
+    (CASTLE, "scuderia", (), (), (), "grazie mille", says(PILGRIM.greeting, *NOTHING_DONE)),
+    (CASTLE, "scuderia", (), (), (), "arrivederci", says(PILGRIM.greeting, *NOTHING_DONE)),
+    # Something that isn't here: the model picked anything ("apri il pellegrino").
+    (CASTLE, "scuderia", (), (), (), "apro la porta di ferro", says(NOT_HERE)),
+    (CASTLE, "cortile", (), (), (), "scavalco le mura", stays_in("cortile")),
+    (CASTLE, "cortile", (), (), (), "busso alla porta della torre", stays_in("cortile")),
+    (CASTLE, "cortile", (), (), (), "sfondo la porta a calci",
+     says(RULE["apri_torre_senza_chiave"], NOTHING_HAPPENS)),
+    (CASTLE, "cortile", ("corda_con_gancio",), (), (), "aggancia la corda alla vera di pietra",
+     says(RULE["pesca_chiave"])),
+    (CASTLE, "cortile", ("corda",), (), (),
+     "bene ora utilizza la corda che hai preso nella scuderia e legala alla vera del pozzo", says(RULE["cala_corda"])),
+    (CASTLE, "cortile", ("corda_con_gancio",), (), ("chiave_torre",), "afferra la ciave nel pozzo",
+     says(RULE["pesca_chiave"], OUT_OF_REACH)),
+    (CASTLE, "cortile", (), (), (), "sali la scala", says(CASTLE.rooms["cortile"].exits["nord"].otherwise)),
+    # Il draghetto, played as a kid.
+    (DRAGON, "radura", (), (), (), "perche hai il naso rosso", says(*DRAGON_SAYS)),
+    (DRAGON, "radura", (), (), (), "cosa ti è successo?", says(TOPIC["raffreddore"], DRAGONET.greeting)),
+    (DRAGON, "radura", (), (), (), "cosa ti serve?", says(TOPIC["raffreddore"], DRAGONET.greeting)),
+    (DRAGON, "radura", (), (), (), "aiuta il draghetto", stays_in("radura")),
+    (DRAGON, "quercia", ("ramo",), (), (), "quanto è lungo il ramo?", says(DRAGON.items["ramo"].description)),
+    (DRAGON, "roveto", (), (), (), "attento alle spine", stays_in("roveto")),
+    (DRAGON, "ruscello", ("more",), (), (), "vuoi delle more?", stays_in("ruscello")),
+    (DRAGON, "radura", (), (), (), "mangio una mora", says(NOT_HERE)),
+    (DRAGON, "quercia", (), (), (), "prendi una scala", says(*NOTHING_DONE)),
+    (DRAGON, "ruscello", ("more",), (), (), "bevo un po' d'acqua",
+     lambda a, g: g.pending is None and g.state.item_locations["more"] == "inventory"),
+    (DRAGON, "tana", ("more",), (), (), "ecco le more", says(DRAGON_RULE["scambia_more"])),
+    (DRAGON, "tana", ("more",), (), (), "mi dai il tuo miele?", says(BEAR.topics["miele"].text)),
+    (DRAGON, "radura", ("more",), (), (), "mi dai il miele?", says(TOPIC["miele"])),
+    (DRAGON, "radura", ("ramo", "piuma"), ("gola_guarita",), (), "ti faccio il solletico sul naso con la piuma",
+     says(DRAGON_RULE["solletico"])),
+    (DRAGON, "quercia", ("ramo",), (), (), "guardo su nell'albero",
+     says(DRAGON.items["quercia"].description, DRAGON.items["nido"].description)),
+    (DRAGON, "ruscello", (), (), (), "attraverso il ponte", goes_to("tana")),
+    (DRAGON, "radura", (), (), (), "torno dal draghetto", stays_in("radura")),
+    (DRAGON, "quercia", (), (), (), "vai a casa",
+     lambda a, g: CLIMB not in a and g.pending != Action(verb="vai", direction="su")),
+    (DRAGON, "radura", (), (), (), "ciao orso", says(NOBODY_HERE)),
+    (DRAGON, "ruscello", (), (), (), "ciao orso", says(NOBODY_HERE)),
+    (DRAGON, "quercia", (), (), (), "mi arrampico sulla quercia", says(CLIMB)),
+    (DRAGON, "radura", (), (), (), "vado a prendere le more", lambda a, g: g.state.current_room == "roveto" or a == NOT_HERE),
+    # From the kid's game: the den is past the brook, so west is asked about, never another way.
+    (DRAGON, "radura", (), (), (), "vai dall orso",
+     lambda a, g: g.state.current_room in ("radura", "ruscello") and g.pending in (None, Action(verb="vai", direction="ovest"))),
+    # Found by the review: a gift or a question naming someone who isn't here.
+    (DRAGON, "tana", ("more",), (), (), "do le more al drago", lambda a, g: g.state.item_locations["more"] == "inventory"),
+    (DRAGON, "radura", ("vasetto_miele",), (), (), "porto il miele all'orso",
+     lambda a, g: "gola_guarita" not in g.state.flags and g.state.item_locations["vasetto_miele"] == "inventory"),
+    (DRAGON, "radura", (), (), (), "conosci l'orso?", says(TOPIC["orso"])),
+    (DRAGON, "radura", (), (), (), "hai visto l'orso?", says(TOPIC["orso"])),
+    (DRAGON, "radura", (), (), (), "salgo sul sasso", stays_in("radura")),
+    (DRAGON, "ruscello", (), (), (), "scendo nel ruscello", stays_in("ruscello")),
+]  # fmt: skip
+
+
+# Still wrong with qwen2.5:3b (2026-09-28). None of them changes the game: at worst the game asks,
+# says "Non ho capito." or does something harmless ("lascia" the door: "Non ce l'hai.").
+KNOWN_LIMITS = {
+    "busso alla porta della torre": "no verb for knocking: the model says 'tira' and the game asks",
+    "sfondo la porta a calci": "the model says 'lascia' the door: 'Non ce l'hai.'",
+    "aggancia la corda alla vera di pietra": "unstable: right in some runs, 'Non ho capito.' in others",
+    "afferra la ciave nel pozzo": "the well comes back as the tool: 'Vuoi prendere la chiave di ferro con il pozzo?'",
+    "ti faccio il solletico sul naso con la piuma": "with 'ti' the model loses the dragon: 'Vuoi usare la piuma?'",
+    "guardo su nell'albero": "'guarda su' is looking around, not at the oak",
+}
+
+
+@pytest.mark.parametrize(
+    ("world", "room", "carried", "flags", "seen", "sentence", "check"),
+    [
+        pytest.param(
+            *case,
+            id=f"{case[1]}: {case[5]}",
+            marks=pytest.mark.xfail(reason=KNOWN_LIMITS[case[5]], strict=False) if case[5] in KNOWN_LIMITS else (),
+        )
+        for case in PLAYED
+    ],
+)
+def test_sentences_found_while_playing(llm, world, room, carried, flags, seen, sentence, check):
+    game = playing(llm, world, room, carried, flags, seen)
+
+    start = time.perf_counter()
+    answer = game.turn(sentence)
+    print(f"\n  {time.perf_counter() - start:4.1f}s  {sentence!r} -> {answer.splitlines()[0]!r}")
+
+    assert check(answer, game)

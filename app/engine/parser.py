@@ -33,11 +33,14 @@ DIRECTIONS = {
     "o": Direction.WEST,
     "su": Direction.UP,
     "sali": Direction.UP,
+    "salgo": Direction.UP,
+    "arrampicati": Direction.UP,
     "giu": Direction.DOWN,
     "scendi": Direction.DOWN,
+    "scendo": Direction.DOWN,
 }
 
-GO_WORDS = frozenset({"vai", "va", "cammina"})
+GO_WORDS = frozenset({"vai", "va", "vado", "cammina", "torna", "torno", "ritorna", "ritorno", "entra", "entro"})
 LOOK_WORDS = frozenset({"guarda", "g", "descrivi"})  # with an item they mean "esamina"
 INVENTORY_WORDS = frozenset({"inventario", "inv", "i"})
 TALK_WORDS = frozenset({"parla", "saluta"})
@@ -71,6 +74,7 @@ ITEM_VERBS = {
     "offri": Verb.GIVE,
     "regala": Verb.GIVE,
     "consegna": Verb.GIVE,
+    "ecco": Verb.GIVE,  # "ecco le more": handing over. Not "tieni", which is also "hold".
 }
 
 
@@ -107,7 +111,7 @@ def parse(
         if len(rest) == 1 and rest[0] in DIRECTIONS:
             return Action(verb=Command.GO, direction=DIRECTIONS[rest[0]])
         for direction, room in exits:
-            if room is not None and significant_words(room.name) == tuple(rest):
+            if room is not None and tuple(rest) in {significant_words(name) for name in (room.name, *room.aliases)}:
                 return Action(verb=Command.GO, direction=direction)
         return None
     if first in INVENTORY_WORDS:
@@ -178,6 +182,58 @@ def words_of(text: str) -> list[str]:
 def significant_words(text: str) -> tuple[str, ...]:
     """The words without articles and prepositions: "la porta della torre" -> ("porta", "torre")."""
     return tuple(word for word in words_of(text) if word not in STOPWORDS)
+
+
+def is_named(thing: Named | Room, words: Sequence[str]) -> bool:
+    """Whether the words name the thing: every significant word of its name or of an alias is there,
+    at least nearly ("scuderie" for "Scuderia", "ciave" for "chiave"). To check the LLM's answers,
+    not by the parser, which wants the exact words."""
+    return bool(names_said(thing, words))
+
+
+def names_said(thing: Named | Room, words: Sequence[str]) -> list[tuple[str, ...]]:
+    """The names and aliases of the thing that the words say (see is_named), as significant words."""
+    names = dict.fromkeys(significant_words(name) for name in (thing.name, *thing.aliases))
+    return [name for name in names if all(any(_nearly(word, name_word) for word in words) for name_word in name)]
+
+
+def topics_named(character: Character, topics: Iterable[Topic], words: Sequence[str]) -> list[Topic]:
+    """The topics the words name, the last named first ("cosa serve per prendere la piuma?" is about
+    the feather); the character's own name is no topic ("pellegrino, cosa sai della torre?")."""
+    words = [word for word in words if not is_named(character, [word])]
+    named = [(position, topic) for topic in topics if (position := _last_mention(topic, words)) is not None]
+    return [topic for _, topic in sorted(named, key=lambda pair: -pair[0])]
+
+
+def _last_mention(thing: Named, words: Sequence[str]) -> int | None:
+    """Where the words last name the thing, if they do."""
+    said = [name_word for name in names_said(thing, words) for name_word in name]
+    return max((index for index, word in enumerate(words) if any(_nearly(word, other) for other in said)), default=None)
+
+
+def names_the_way(direction: Direction, words: Sequence[str], exits: Sequence[tuple[Direction, Room | None]]) -> bool:
+    """Whether a free sentence names the way out: the direction (not by a single letter: "e" is also
+    "and"), or the known room it leads to, by its name or an alias, at least nearly."""
+    if any(len(word) > 1 and DIRECTIONS.get(word) == direction for word in words):
+        return True
+    room = dict(exits).get(direction)
+    return room is not None and is_named(room, words)
+
+
+def _nearly(word: str, other: str) -> bool:
+    """The same word; between words of four letters another ending ("more", "mora"); with a longer one,
+    one letter more, less or different (a typo: "pozo", "ciave"), but never the first ("lancio" is no
+    "gancio")."""
+    if word == other:
+        return True
+    shorter, longer = sorted((word, other), key=len)
+    if len(shorter) < 4 or len(longer) - len(shorter) > 1 or word[0] != other[0]:
+        return False
+    if len(longer) == 4:
+        return word[:-1] == other[:-1]
+    if len(shorter) == len(longer):
+        return sum(a != b for a, b in zip(word, other)) == 1
+    return any(longer[:i] + longer[i + 1 :] == shorter for i in range(len(longer)))
 
 
 _Phrases = dict[tuple[str, ...], list[Named]]

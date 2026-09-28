@@ -23,6 +23,7 @@ from app.engine.models import (
     Verb,
     World,
 )
+from app.engine.parser import significant_words
 
 
 def find_problems(world: World) -> list[str]:
@@ -124,6 +125,11 @@ def find_problems(world: World) -> list[str]:
             else:
                 owner_of_name[key] = f"{section[:-1]} '{thing.id}'"
 
+    # A name made only of articles and prepositions ("su", "la") would match every sentence.
+    for path, name in _names(world):
+        if not significant_words(name):
+            report(path, f"'{name}' has only articles and prepositions: it names nothing")
+
     for character in world.characters.values():
         topic_of_name: dict[str, str] = {}
         for topic in character.topics.values():
@@ -137,6 +143,24 @@ def find_problems(world: World) -> list[str]:
                 topic_of_name[key] = topic.id
 
     return problems
+
+
+def _names(world: World) -> Iterator[tuple[str, str]]:
+    """Every name and alias the player can use, with its path."""
+    named = [
+        *((f"rooms.{room.id}", room) for room in world.rooms.values()),
+        *((f"items.{item.id}", item) for item in world.items.values()),
+        *((f"characters.{character.id}", character) for character in world.characters.values()),
+        *(
+            (f"characters.{character.id}.topics.{topic.id}", topic)
+            for character in world.characters.values()
+            for topic in character.topics.values()
+        ),
+    ]
+    for path, thing in named:
+        yield f"{path}.name", thing.name
+        for index, alias in enumerate(thing.aliases):
+            yield f"{path}.aliases.{index}", alias
 
 
 def _effects(world: World) -> Iterator[tuple[str, Effect]]:
