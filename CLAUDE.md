@@ -224,7 +224,7 @@ tests/
   il parser vuole tutte le parole del nome. Testi senza aggettivi che diano un genere al giocatore.
 
 - **Interprete più robusto, seconda parte** (2026-09-28, branch `interprete-robusto`): giocate le
-  due avventure col modello vero e rilette le partite in `logs/comandi.jsonl`; le 37 frasi
+  due avventure col modello vero e rilette le partite in `logs/comandi.jsonl`; le 38 frasi
   sbagliate sono ora `test_sentences_found_while_playing` in `tests/test_ollama.py`.
   - Il modello sceglie da elenchi e, senza niente di adatto, sceglie a caso («mangio una mora» →
     prendi il sasso; «a cosa mi serve questa corda?» legava il gancio alla corda: enigma risolto da
@@ -310,7 +310,7 @@ ollama pull qwen2.5:3b
     (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
     sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
     invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
-    `tests/test_ollama.py` (oggi 68 su 74, ~620 s: i 37 casi di prima tutti, e 31 delle 37 frasi
+    `tests/test_ollama.py` (oggi 69 su 75, ~630 s: i 37 casi di prima tutti, e 32 delle 38 frasi
     trovate giocando; le altre 6 sono limiti noti).
   - Il modello non è del tutto deterministico: con lo stesso prompt e `temperature: 0`, 2 o 3 frasi
     su 70 cambiano risposta da un giro all'altro (la cache di Ollama?). Un caso che passa una volta
