@@ -12,16 +12,18 @@ logger "app.commands", which the front ends write to logs/comandi.jsonl (app/con
 """
 
 import logging
+from collections.abc import Iterable
 
-from app.engine.engine import Engine
-from app.engine.models import INVENTORY, Action, Direction, GameState, Room, Verb, World
-from app.engine.parser import DIRECTIONS, Ambiguous, parse, significant_words, words_of
+from app.engine.engine import NOBODY_HERE, NOT_HERE, Engine
+from app.engine.models import INVENTORY, Action, Character, Conversation, Direction, GameState, Item, Room, Verb, World
+from app.engine.parser import DIRECTIONS, Ambiguous, is_named, parse, significant_words, words_of
 from app.engine.text import action_text, confirmation, render, which_one
 from app.llm.client import LLMClient
 from app.llm.interpreter import NotUnderstood, describe, interpret
 
 NOT_UNDERSTOOD = "Non ho capito."
 NOT_A_GAME_ACTION = "Non sembra un'azione del gioco. Scrivi «aiuto» per qualche esempio."
+NOBODY_TO_TALK_TO = "Qui non c'è nessuno con cui parlare."
 ALL_RIGHT = "Va bene."
 HELP = """Scrivi comandi semplici, per esempio:
   nord, sud, est, ovest, su, giù (oppure n, s, e, o)
@@ -105,12 +107,14 @@ class Game:
             self._log("parser", None, "non capito", "il parser non la capisce e l'LLM è spento")
             return NOT_UNDERSTOOD
         interpreted = interpret(self.llm, line, near, exits, characters, self.world.game.examples)
+        here = {item.id for item in near} | {person.id for person, _ in characters}
         if isinstance(interpreted, NotUnderstood):
-            if interpreted.not_an_action:
-                self._log("llm", None, "altro", interpreted.reason)
-                return NOT_A_GAME_ACTION
-            self._log("llm", None, "non capito", interpreted.reason)
-            return NOT_UNDERSTOOD
+            self._log("llm", None, "altro" if interpreted.not_an_action else "non capito", interpreted.reason)
+            return self._not_understood(interpreted, words, here)
+        if interpreted.verb is Conversation.TALK and self._greets_someone_else(interpreted.target, words, here):
+            # "ciao orso" with only the dragon here: the model greets the dragon.
+            self._log("llm", interpreted, "fallita", NOBODY_HERE)
+            return NOBODY_HERE
         if not self._foreseen(interpreted, words, exits):
             self.pending = self._carried_first(interpreted)
             question = confirmation(self.pending, self.world)
@@ -118,6 +122,30 @@ class Game:
             return question
         # Show how the sentence was understood: if the model got it wrong, the player sees why.
         return f"({action_text(interpreted, self.world)})\n" + self._execute(interpreted, "llm")
+
+    def _not_understood(self, result: NotUnderstood, words: list[str], here: set[str]) -> str:
+        """Why nothing is done: better than "Non ho capito" when the sentence names someone or something
+        that isn't here ("ciao orso" at the brook, "mangio una mora" in the glade)."""
+        someone_elsewhere = self._names_one_elsewhere(self.world.characters.values(), words, here)
+        if result.talking:
+            return NOBODY_HERE if someone_elsewhere else NOBODY_TO_TALK_TO
+        if self._names_one_elsewhere(self.world.items.values(), words, here):
+            return NOT_HERE
+        # Not for a word that is also an adjective ("il vecchio pozzo"): only if nothing here is named.
+        if someone_elsewhere and not self._names_one_here(words, here):
+            return NOBODY_HERE
+        return NOT_A_GAME_ACTION if result.not_an_action else NOT_UNDERSTOOD
+
+    def _greets_someone_else(self, character_id: str, words: list[str], here: set[str]) -> bool:
+        return not is_named(self.world.characters[character_id], words) and self._names_one_elsewhere(
+            self.world.characters.values(), words, here
+        )
+
+    def _names_one_elsewhere(self, things: Iterable[Item | Character], words: list[str], here: set[str]) -> bool:
+        return any(thing.id not in here and is_named(thing, words) for thing in things)
+
+    def _names_one_here(self, words: list[str], here: set[str]) -> bool:
+        return any(is_named(self.world.thing(thing_id), words) for thing_id in here)
 
     def _foreseen(self, action: Action, words: list[str], exits: list[tuple[Direction, Room | None]]) -> bool:
         """Whether the world foresees an interpreted action (Engine.expects). A move must also name

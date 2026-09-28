@@ -60,10 +60,12 @@ def interpreter_schema(in_reach: Sequence[Item], characters: Characters = ()) ->
 
 class NotUnderstood(NamedTuple):
     """No action came out of the sentence. `reason` says why, for the logs; `not_an_action` is set
-    when the model judged that the sentence isn't a game action at all ("altro")."""
+    when the model judged that the sentence isn't a game action at all ("altro"), `talking` when the
+    player talks to someone and nobody is here."""
 
     reason: str
     not_an_action: bool = False
+    talking: bool = False
 
 
 def interpret(
@@ -136,7 +138,7 @@ def _to_conversation(verb: str, target: str, tool: str, characters: Characters) 
     key the pilgrim talks about); anything else is a topic it doesn't know."""
     if not characters:
         # "ciao, come stai?" with nobody around
-        return NotUnderstood("non c'è nessuno con cui parlare", not_an_action=True)
+        return NotUnderstood("non c'è nessuno con cui parlare", not_an_action=True, talking=True)
     found = next(((person, topics) for person, topics in characters if person.name == target), None)
     if found is None and target == NOTHING and len(characters) == 1:
         found = characters[0]

@@ -287,7 +287,7 @@ def test_with_nobody_here_talking_is_no_game_action(keeper):
 
     result = interpret(FakeLLMClient(json_replies=[reply]), "ciao, come stai?", items)
 
-    assert result == NotUnderstood("non c'è nessuno con cui parlare", not_an_action=True)
+    assert result == NotUnderstood("non c'è nessuno con cui parlare", not_an_action=True, talking=True)
 
 
 def test_a_question_is_logged_with_its_topic(keeper, caplog):

@@ -2,11 +2,11 @@
 
 import pytest
 
-from app.engine.engine import Engine
+from app.engine.engine import NOBODY_HERE, NOT_HERE, Engine
 from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import World
 from app.engine.models import Action
-from app.game import ALL_RIGHT, HELP, NOT_A_GAME_ACTION, NOT_UNDERSTOOD, Game
+from app.game import ALL_RIGHT, HELP, NOBODY_TO_TALK_TO, NOT_A_GAME_ACTION, NOT_UNDERSTOOD, Game
 from app.llm.client import FakeLLMClient
 from app.llm.prompts import interpreter_system
 
@@ -155,6 +155,7 @@ def misunderstood_grapple(castle: World) -> Game:
 def test_the_grapple_aimed_at_a_door_the_sentence_does_not_name_is_not_understood(castle):
     # The bug found while playing: the game asked "Vuoi usare la corda con gancio con il portone?".
     game = misunderstood_grapple(castle)
+    say(game, "esamina il pozzo")  # the key is in sight, and the sentence names it
 
     assert say(game, "usa il rampino per recuperare la chiave dal pozzo") == NOT_UNDERSTOOD
     assert game.pending is None
@@ -442,3 +443,58 @@ def test_giving_is_never_asked_about(castle):
 
     assert output == f"(dai la corda al pellegrino)\n{castle.characters['pellegrino'].refuses}"
     assert game.pending is None
+
+
+# --- Someone or something that isn't here (found while playing, 2026-09-28) ------------------------
+
+
+@pytest.fixture(scope="module")
+def dragon() -> World:
+    return load_world(WORLDS_DIR / "draghetto")
+
+
+def talking(reply: dict) -> FakeLLMClient:
+    return FakeLLMClient(json_replies=[reply])
+
+
+def test_talking_with_nobody_around_says_so(castle):
+    game = Game(Engine(castle), talking({"verbo": "parla", "bersaglio": "nessuno", "con": "nessuno"}))
+
+    assert say(game, "ciao, come va?") == NOBODY_TO_TALK_TO
+
+
+def test_greeting_a_character_who_is_elsewhere_says_nobody_like_that_is_here(dragon):
+    # "ciao orso" at the brook: the game answered "Non sembra un'azione del gioco."
+    game = Game(Engine(dragon), talking({"verbo": "parla", "bersaglio": "nessuno", "con": "nessuno"}))
+    game.state.current_room = "ruscello"
+
+    assert say(game, "ciao orso") == NOBODY_HERE
+
+
+def test_greeting_a_character_who_is_elsewhere_does_not_greet_the_one_here(dragon):
+    # "ciao orso" in the glade: the dragon answered.
+    game = Game(Engine(dragon), talking({"verbo": "parla", "bersaglio": "draghetto", "con": "nessuno"}))
+
+    assert say(game, "ciao orso") == NOBODY_HERE
+
+
+def test_greeting_the_one_here_may_name_someone_else(dragon):
+    game = Game(Engine(dragon), talking({"verbo": "parla", "bersaglio": "draghetto", "con": "nessuno"}))
+
+    assert say(game, "ciao draghetto, sai dov'è l'orso?").endswith(dragon.characters["draghetto"].greeting)
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        {"verbo": "prendi", "bersaglio": "sasso", "con": "nessuno"},
+        {"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"},
+    ],
+    ids=["the model picks something else", "the model says it is no game action"],
+)
+def test_an_item_that_is_elsewhere_is_not_here(dragon, reply):
+    # "mangio una mora" in the glade: the model took the stone.
+    game = Game(Engine(dragon), talking(reply))
+
+    assert say(game, "mangio una mora") == NOT_HERE
+    assert game.state.turns == 0
