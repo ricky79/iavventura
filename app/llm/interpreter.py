@@ -15,7 +15,17 @@ from collections.abc import Sequence
 from typing import Any, NamedTuple
 
 from app.engine.models import Action, Character, Command, Conversation, Direction, Item, Room, Topic, Verb
-from app.engine.parser import find_topic, is_named, names_the_way, significant_words, topics_named, words_of
+from app.engine.parser import (
+    DIRECTIONS,
+    GO_WORDS,
+    find_topic,
+    is_named,
+    names_said,
+    names_the_way,
+    significant_words,
+    topics_named,
+    words_of,
+)
 from app.llm.client import LLMClient, LLMError
 from app.llm.prompts import interpreter_system, interpreter_user
 
@@ -25,12 +35,12 @@ NOT_AN_ACTION = "altro"
 NOTHING = "nessuno"
 MAX_TOKENS = 60  # the JSON answer is short: a low cap stops a model that rambles
 
-# Words that ask for a move even without a direction or a place: "torno indietro", "scappa".
-MOVE_WORDS = frozenset(
+# Words that ask for a move even without a direction or a place: "torno indietro", "scappa". Those
+# of the parser, and more; "salgo", "scendo" are directions (DIRECTIONS).
+MOVE_WORDS = GO_WORDS | frozenset(
     """
-    vai va vado andare andiamo torna torno tornare ritorna ritorno entra entro entrare esci esco uscire
-    sali salgo salire scendi scendo scendere corri corro scappa scappo raggiungi raggiungo cammina cammino
-    attraversa attraverso arrampica arrampico arrampicati arrampicarmi avvicinati spostati sposto
+    andare andiamo tornare entrare esci esco uscire salire scendere corri corro scappa scappo raggiungi
+    raggiungo cammino attraversa attraverso arrampica arrampico arrampicarmi avvicinati spostati sposto
     """.split()
 )
 
@@ -160,15 +170,7 @@ def _checked(
 ) -> Action | NotUnderstood:
     """The action, if the sentence asks for it; a question about a topic the sentence names."""
     if action.verb is Command.GO:
-        if names_the_way(action.direction, words, exits):
-            return action
-        ways = [direction for direction, _ in exits if names_the_way(direction, words, exits)]
-        if len(ways) == 1:
-            # "attraverso il ponte": the model went east, the bridge is west.
-            return Action(verb=Command.GO, direction=ways[0])
-        if MOVE_WORDS.intersection(words):
-            return action
-        return NotUnderstood("la frase non chiede di spostarsi")
+        return _checked_move(action, words, exits)
     if action.verb is Conversation.ASK:
         return _about_the_topic_named(action, words, characters)
     if not isinstance(action.verb, Verb):
@@ -185,6 +187,24 @@ def _checked(
         if not is_named(things[thing_id], words):
             return NotUnderstood(f"la frase non nomina {things[thing_id].name!r}")
     return action
+
+
+def _checked_move(
+    action: Action, words: list[str], exits: Sequence[tuple[Direction, Room | None]]
+) -> Action | NotUnderstood:
+    """A move needs a verb of motion, a direction or a place named by its own name: not only what is
+    there ("mangio una mora" doesn't go to the brambles). Then the way the sentence names wins over the
+    model's: its direction ("salgo sul sasso": up), or the only exit it names ("attraverso il ponte")."""
+    said = {DIRECTIONS[word] for word in words if len(word) > 1 and word in DIRECTIONS}  # "e" is also "and"
+    places = [room for _, room in exits if room is not None and significant_words(room.name) in names_said(room, words)]
+    if not (said or places or MOVE_WORDS.intersection(words)):
+        return NotUnderstood("la frase non chiede di spostarsi")
+    if names_the_way(action.direction, words, exits):
+        return action
+    if len(said) == 1:
+        return Action(verb=Command.GO, direction=said.pop())
+    ways = [direction for direction, _ in exits if names_the_way(direction, words, exits)]
+    return Action(verb=Command.GO, direction=ways[0]) if len(ways) == 1 else action
 
 
 def _about_the_topic_named(action: Action, words: list[str], characters: Characters) -> Action:

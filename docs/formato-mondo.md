@@ -254,10 +254,12 @@ characters:
   volta, basta un `when` su un flag. Un personaggio che dà solo indizi non ne ha.
 - I personaggi si possono esaminare; "prendi" risponde "Non si può prendere.", gli altri verbi non
   fanno niente.
-- **Dare**: `dai X a Y` (anche porgi, offri, regala, consegna, "ecco X", "tieni X"). Si dà solo ciò
-  che si porta con sé, a un personaggio presente; "dai X" senza nome va all'unico personaggio presente ("A chi?" se sono
-  di più). Una regola `verb: dai` decide cosa succede; senza regola il personaggio risponde
-  `refuses` e lo stato non cambia. "usa X con il personaggio" ricade sulla stessa regola.
+- **Dare**: `dai X a Y` (anche porgi, offri, regala, consegna, "ecco X"). Si dà solo ciò che si
+  porta con sé, a un personaggio presente; "dai X" senza nome va all'unico personaggio presente
+  ("A chi?" se sono di più). Una regola `verb: dai` decide cosa succede; senza regola il personaggio
+  risponde `refuses` e lo stato non cambia. "usa X con il personaggio" ricade sulla stessa regola.
+  Una frase libera che nomina solo un personaggio che non c'è ("do le more al drago" nella tana)
+  riceve "Non vedi nessuno del genere qui.": non va a chi è presente.
 
 ## Condizioni
 

@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.engine.engine import NOBODY_HERE, NOT_HERE, Engine
+from app.engine.engine import NO_EXIT, NOBODY_HERE, NOT_HERE, Engine
 from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import World
 from app.engine.models import Action
@@ -522,7 +522,8 @@ def test_greeting_the_one_here_may_name_someone_else(dragon):
     ids=["the model picks something else", "the model says it is no game action"],
 )
 def test_an_item_that_is_elsewhere_is_not_here(dragon, reply):
-    # "mangio una mora" in the glade: the model took the stone.
+    # "mangio una mora" in the glade: the model took the stone. The berries are also a topic of the
+    # dragon, but this is no question about them.
     game = Game(Engine(dragon), talking(reply))
 
     assert say(game, "mangio una mora") == NOT_HERE
@@ -569,13 +570,6 @@ def test_a_question_the_model_misses_is_asked_about_the_topic_it_names(dragon, r
     assert output.endswith(dragon.characters[character].topics[topic].text)
     assert output.startswith(f"(chiedi {'al draghetto' if character == 'draghetto' else "all'orso"} del miele)\n")
     assert game.state.item_locations["more"] == "inventory"
-
-
-def test_only_a_question_is_asked_about_the_topic(dragon):
-    game = Game(Engine(dragon), talking({"verbo": "prendi", "bersaglio": "sasso", "con": "nessuno"}))
-
-    assert say(game, "mangio una mora") == NOT_HERE
-
 
 
 @pytest.mark.parametrize("sentence", ["perche hai il naso rosso", "come mai hai il naso rosso"])
@@ -633,3 +627,80 @@ def test_going_to_a_place_farther_on_is_asked_when_the_way_leads_there(dragon):
 
     assert say(game, "vai dall orso") == "Vuoi andare a ovest?"
     assert game.pending == Action(verb="vai", direction="ovest")
+
+
+# --- Found by the review: someone elsewhere, for any action on a character --------------------------
+
+
+@pytest.mark.parametrize(
+    ("room", "carried", "sentence", "reply"),
+    [
+        ("tana", "more", "do le more al drago", {"verbo": "dai", "bersaglio": "more", "con": "orso"}),
+        # "dai le more" to nobody goes to the only one here: the bear again.
+        ("tana", "more", "do le more al drago", {"verbo": "dai", "bersaglio": "more", "con": "nessuno"}),
+        ("radura", "vasetto_miele", "porto il miele all'orso",
+         {"verbo": "dai", "bersaglio": "vasetto di miele", "con": "draghetto"}),
+    ],
+)  # fmt: skip
+def test_giving_to_someone_elsewhere_gives_nothing_to_the_one_here(dragon, room, carried, sentence, reply):
+    # The model gave to the one here: the bear's trade, or the honey used up on the dragon.
+    game = Game(Engine(dragon), talking(reply))
+    game.state.current_room = room
+    game.state.item_locations[carried] = "inventory"
+    before = game.state.model_copy(deep=True)
+
+    assert say(game, sentence) == NOBODY_HERE
+    assert game.state == before
+
+
+@pytest.mark.parametrize("sentence", ["conosci l'orso?", "hai visto l'orso?"])
+def test_asking_the_one_here_about_someone_elsewhere(dragon, sentence):
+    game = Game(Engine(dragon), talking({"verbo": "parla", "bersaglio": "draghetto", "con": "nessuno"}))
+
+    assert say(game, sentence).endswith(dragon.characters["draghetto"].topics["orso"].text)
+
+
+def test_a_question_for_someone_elsewhere_about_nothing_known(keeper_world):
+    # A prisoner in the cell, who is no topic of the keeper in the atrium.
+    keeper_world["characters"]["prigioniero"] = {
+        "name": "prigioniero", "gender": "m", "description": "-", "location": "cella",
+        "greeting": "-", "unknown": "-", "topics": {},
+    }  # fmt: skip
+    world = World.model_validate(keeper_world)
+    game = Game(Engine(world), talking({"verbo": "chiedi", "bersaglio": "custode", "con": "nessuno"}))
+
+    assert say(game, "chiedi al prigioniero se ha fame") == NOBODY_HERE
+
+
+@pytest.mark.parametrize(
+    ("room", "sentence"), [("radura", "salgo sul sasso"), ("ruscello", "scendo nel ruscello")]
+)
+def test_climbing_on_something_here_is_no_way_out(dragon, room, sentence):
+    # The game answered "Sei già qui.": the stone and the brook are also names of the places.
+    game = Game(Engine(dragon), talking({"verbo": "vai", "bersaglio": "nord", "con": "nessuno"}))
+    game.state.current_room = room
+
+    assert say(game, sentence).endswith(NO_EXIT)
+    assert game.state.current_room == room
+
+
+def test_of_two_topics_named_the_last_one_wins(dragon):
+    # "serve" names the cold, "piuma" the tickle: the question is about the feather.
+    game = Game(Engine(dragon), talking({"verbo": "chiedi", "bersaglio": "draghetto", "con": "nessuno"}))
+
+    assert say(game, "cosa serve per prendere la piuma?").endswith(dragon.characters["draghetto"].topics["solletico"].text)
+
+
+@pytest.mark.parametrize(
+    ("sentence", "reply", "answer"),
+    [
+        ("mangio una mora", {"verbo": "prendi", "bersaglio": "sasso", "con": "nessuno"}, NOT_HERE),
+        ("mi dai il miele?", {"verbo": "prendi", "bersaglio": "sasso", "con": "nessuno"},
+         "(chiedi al draghetto del miele)"),
+    ],
+)  # fmt: skip
+def test_the_log_says_what_the_game_answered_instead(dragon, caplog, sentence, reply, answer):
+    [entry] = logged(caplog, Game(Engine(dragon), talking(reply)), sentence)
+
+    assert entry["esito"] == "non capito"
+    assert entry["dettaglio"] == f"la frase non nomina 'sasso'; risposta: {answer}"

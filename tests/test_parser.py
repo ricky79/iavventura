@@ -373,6 +373,7 @@ def test_a_sentence_names_a_thing_by_its_name_or_an_alias_nearly(world, text):
         ("prendo il ferro", "chiave"),
         ("cala la fine nel pozzo", "corda"),  # four letters: only the ending may change
         ("prendi una scala", "pozzo"),
+        ("lancio la fune", "gancio"),  # a typo keeps the first letter
     ],
 )
 def test_a_sentence_that_does_not_name_a_thing(world, text, item_id):
@@ -387,7 +388,12 @@ def test_rooms_are_named_like_items(world_data):
     assert not is_named(room, words_of("vai in cucina"))
 
 
-@pytest.mark.parametrize("text", ["ecco la moneta", "tieni il soldo"])
+@pytest.mark.parametrize("text", ["ecco la moneta", "ecco il soldo"])
 def test_handing_over_an_item_is_giving_it(keeper, text):
     # "ecco le more" to the bear: the model answered "guarda", or nothing at all.
     assert parse_giving(keeper, text) == Action(verb="dai", target="moneta")
+
+
+def test_holding_an_item_is_left_to_the_llm(keeper):
+    # "tieni la corda" may be "take it" or "hold it".
+    assert parse_giving(keeper, "tieni la moneta") is None

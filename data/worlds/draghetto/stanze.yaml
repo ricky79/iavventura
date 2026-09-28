@@ -88,7 +88,7 @@ rooms:
 
   chioma:
     name: Albero
-    aliases: [quercia, cima, rami]
+    aliases: [quercia, cima]
     description: In cima alla quercia.
     exits:
       giù: {to: quercia}

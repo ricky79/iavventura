@@ -124,20 +124,24 @@ class Game:
             return NOT_UNDERSTOOD
         interpreted = interpret(self.llm, line, near, exits, characters, self.world.game.examples)
         here = {item.id for item in near} | {person.id for person, _ in characters}
+        asking = _is_question(line, words)
         if isinstance(interpreted, NotUnderstood):
-            self._log("llm", None, "altro" if interpreted.not_an_action else "non capito", interpreted.reason)
-            asked = self._question_about_a_topic(words, characters)
+            asked = _topic_asked(words, characters) if asking else None
             if asked is not None:
-                return f"({action_text(asked, self.world)})\n" + self._execute(asked, "llm")
-            return self._not_understood(interpreted, words, here)
-        if interpreted.verb is Conversation.TALK:
-            if self._greets_someone_else(interpreted.target, words, here):
-                # "ciao orso" with only the dragon here: the model greets the dragon.
-                self._log("llm", interpreted, "fallita", NOBODY_HERE)
-                return NOBODY_HERE
-            # "chi sei?": the model answered "parla", the pilgrim has a topic about himself.
-            character = [(person, topics) for person, topics in characters if person.id == interpreted.target]
-            interpreted = self._question_about_a_topic(words, character) or interpreted
+                answer = f"({action_text(asked, self.world)})\n" + self._execute(asked, "llm")
+            else:
+                answer = self._not_understood(interpreted, words, here)
+            # What the game answered instead, if it isn't the usual: the log is for finding sentences to fix.
+            detail = interpreted.reason
+            if answer not in (NOT_UNDERSTOOD, NOT_A_GAME_ACTION):
+                detail += f"; risposta: {answer.splitlines()[0]}"
+            self._log("llm", None, "altro" if interpreted.not_an_action else "non capito", detail)
+            return answer
+        to_whom = self._to_whom(interpreted, words, asking, characters, here)
+        if isinstance(to_whom, str):
+            self._log("llm", interpreted, "fallita", to_whom)
+            return to_whom
+        interpreted = to_whom
         if interpreted.verb is Command.GO and not names_the_way(interpreted.direction, words, exits):
             instead = self._place_instead(interpreted.direction, words)
             if instead is not None:
@@ -166,19 +170,6 @@ class Game:
             return NOBODY_HERE
         return NOT_A_GAME_ACTION if result.not_an_action else NOT_UNDERSTOOD
 
-    def _question_about_a_topic(
-        self, words: list[str], characters: list[tuple[Character, list[Topic]]]
-    ) -> Action | None:
-        """A question ("mi dai il miele?", "perche hai il naso rosso") that names a topic of the one here:
-        it is asked. Only a question: "mangio una mora" is no question about the berries."""
-        if not self._line.rstrip().endswith("?") and words[0] not in _QUESTION_WORDS:
-            return None
-        asked = [(person, named[0]) for person, topics in characters if (named := topics_named(person, topics, words))]
-        if len(asked) != 1:
-            return None
-        person, topic = asked[0]
-        return Action(verb=Conversation.ASK, target=person.id, topic=topic.id)
-
     def _place_instead(self, direction: Direction, words: list[str]) -> str | None:
         """For a move the sentence doesn't name the way of: it names where the player already is
         ("torno dal draghetto" in the glade), or a place farther on that the direction doesn't lead
@@ -205,10 +196,35 @@ class Game:
                     queue.append(exit_.to)
         return first.get(room_id)
 
-    def _greets_someone_else(self, character_id: str, words: list[str], here: set[str]) -> bool:
-        return not is_named(self.world.characters[character_id], words) and self._names_one_elsewhere(
+    def _to_whom(
+        self,
+        action: Action,
+        words: list[str],
+        asking: bool,
+        characters: list[tuple[Character, list[Topic]]],
+        here: set[str],
+    ) -> Action | str:
+        """An action on the character here, checked against who the sentence names. A question about
+        one of its topics is asked ("conosci l'orso?", "chi sei?": the model said "parla"); otherwise,
+        naming only someone elsewhere is "Non vedi nessuno del genere qui." ("ciao orso", or "do le
+        more al drago" in the den, where the model gave them to the bear)."""
+        person = next((person for person, _ in characters if person.id in (action.target, action.with_)), None)
+        if person is None and action.verb is Verb.GIVE and len(characters) == 1:
+            person = characters[0][0]  # "dai le more" goes to the only one here
+        if person is None:
+            return action
+        topics = next(topics for someone, topics in characters if someone is person)
+        if action.verb is Conversation.TALK and asking and (question := _topic_asked(words, [(person, topics)])):
+            return question
+        someone_elsewhere = not is_named(person, words) and self._names_one_elsewhere(
             self.world.characters.values(), words, here
         )
+        if someone_elsewhere and (action.verb is not Conversation.ASK or action.topic is None):
+            return NOBODY_HERE
+        if action.verb is Conversation.TALK and (named := topics_named(person, topics, words)):
+            # A greeting naming a topic: "com'è andato il viaggio" is about the journey.
+            return Action(verb=Conversation.ASK, target=person.id, topic=named[0].id)
+        return action
 
     def _names_one_elsewhere(self, things: Iterable[Item | Character], words: list[str], here: set[str]) -> bool:
         """A name shared with something here doesn't count: "corda" is also the grapple."""
@@ -253,3 +269,18 @@ class Game:
         if action.verb is Verb.USE and action.with_ in carried and action.target not in carried:
             return Action(verb=action.verb, target=action.with_, with_=action.target)
         return action
+
+
+def _is_question(line: str, words: list[str]) -> bool:
+    """"?" at the end, or a first word like perché, cosa, come: kids leave the "?" out."""
+    return line.rstrip().endswith("?") or words[0] in _QUESTION_WORDS
+
+
+def _topic_asked(words: list[str], characters: list[tuple[Character, list[Topic]]]) -> Action | None:
+    """The question about the topic a sentence names ("mi dai il miele?"), if it names a topic of
+    exactly one of the characters here."""
+    asked = [(person, named[0]) for person, topics in characters if (named := topics_named(person, topics, words))]
+    if len(asked) != 1:
+        return None
+    person, topic = asked[0]
+    return Action(verb=Conversation.ASK, target=person.id, topic=topic.id)

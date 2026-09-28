@@ -493,3 +493,27 @@ def test_a_move_goes_the_only_way_the_sentence_names(castle):
     action = interpret(FakeLLMClient(json_replies=[reply]), "attraverso il ponte", [], exits)
 
     assert action == Action(verb="vai", direction="ovest")
+
+
+def test_a_direction_the_sentence_says_wins_over_the_model(castle):
+    # "salgo sul sasso" in the glade: the model went north, and the game answered "Sei già qui.".
+    reply = {"verbo": "vai", "bersaglio": "nord", "con": "nessuno"}
+
+    exits = [(Direction.NORTH, castle.rooms["torre"])]
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), "salgo sul sasso", [], exits)
+
+    assert action == Action(verb="vai", direction="su")
+
+
+@pytest.mark.parametrize(
+    ("sentence", "name", "alias"), [("mangio una mora", "Roveto", "more"), ("parlo con l'orso", "Tana", "orso")]
+)
+def test_naming_what_is_in_a_place_is_no_move(castle, sentence, name, alias):
+    # Only a verb of motion, a direction or the place's own name ask for a move: not what is there.
+    place = castle.rooms["cucina"].model_copy(update={"name": name, "aliases": (alias,)})
+    reply = {"verbo": "vai", "bersaglio": "ovest", "con": "nessuno"}
+
+    result = interpret(FakeLLMClient(json_replies=[reply]), sentence, [], [(Direction.WEST, place)])
+
+    assert result == NotUnderstood("la frase non chiede di spostarsi")

@@ -123,6 +123,15 @@ BROKEN_WORLDS = {
         lambda d: d["items"]["chiave"].update(name="Moneta "),
         ["name", "moneta", "chiave"],
     ),
+    # A name of articles and prepositions only would match every sentence of the player.
+    "item alias with no significant word": (
+        lambda d: d["items"]["moneta"].update(aliases=["soldo", "la"]),
+        ["items.moneta.aliases.1", "'la'"],
+    ),
+    "room alias with no significant word": (
+        lambda d: d["rooms"]["cella"].update(aliases=["su"]),
+        ["rooms.cella.aliases.0", "'su'"],
+    ),
 }
 
 
@@ -181,6 +190,10 @@ BROKEN_KEEPERS = {
     "character with the name of an item": (
         lambda d: keeper(d).update(name="Moneta"),
         ["characters.custode.name", "moneta"],
+    ),
+    "topic alias with no significant word": (
+        lambda d: topic(d, "cella").update(aliases=["della"]),
+        ["characters.custode.topics.cella.aliases.0", "'della'"],
     ),
     "two topics of a character with the same name": (
         lambda d: topic(d, "leva").update(name="Cella"),

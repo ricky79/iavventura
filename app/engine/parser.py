@@ -74,8 +74,7 @@ ITEM_VERBS = {
     "offri": Verb.GIVE,
     "regala": Verb.GIVE,
     "consegna": Verb.GIVE,
-    "ecco": Verb.GIVE,  # "ecco le more", "tieni il miele": handing over
-    "tieni": Verb.GIVE,
+    "ecco": Verb.GIVE,  # "ecco le more": handing over. Not "tieni", which is also "hold".
 }
 
 
@@ -199,10 +198,17 @@ def names_said(thing: Named | Room, words: Sequence[str]) -> list[tuple[str, ...
 
 
 def topics_named(character: Character, topics: Iterable[Topic], words: Sequence[str]) -> list[Topic]:
-    """The topics the words name; the character's own name is no topic ("pellegrino, cosa sai della
-    torre?" is about the tower)."""
+    """The topics the words name, the last named first ("cosa serve per prendere la piuma?" is about
+    the feather); the character's own name is no topic ("pellegrino, cosa sai della torre?")."""
     words = [word for word in words if not is_named(character, [word])]
-    return [topic for topic in topics if is_named(topic, words)]
+    named = [(position, topic) for topic in topics if (position := _last_mention(topic, words)) is not None]
+    return [topic for _, topic in sorted(named, key=lambda pair: -pair[0])]
+
+
+def _last_mention(thing: Named, words: Sequence[str]) -> int | None:
+    """Where the words last name the thing, if they do."""
+    said = [name_word for name in names_said(thing, words) for name_word in name]
+    return max((index for index, word in enumerate(words) if any(_nearly(word, other) for other in said)), default=None)
 
 
 def names_the_way(direction: Direction, words: Sequence[str], exits: Sequence[tuple[Direction, Room | None]]) -> bool:
@@ -216,11 +222,12 @@ def names_the_way(direction: Direction, words: Sequence[str], exits: Sequence[tu
 
 def _nearly(word: str, other: str) -> bool:
     """The same word; between words of four letters another ending ("more", "mora"); with a longer one,
-    one letter more, less or different (a typo: "pozo", "ciave")."""
+    one letter more, less or different (a typo: "pozo", "ciave"), but never the first ("lancio" is no
+    "gancio")."""
     if word == other:
         return True
     shorter, longer = sorted((word, other), key=len)
-    if len(shorter) < 4 or len(longer) - len(shorter) > 1:
+    if len(shorter) < 4 or len(longer) - len(shorter) > 1 or word[0] != other[0]:
         return False
     if len(longer) == 4:
         return word[:-1] == other[:-1]

@@ -324,11 +324,19 @@ PLAYED = [
     # From the kid's game: the den is past the brook, so west is asked about, never another way.
     (DRAGON, "radura", (), (), (), "vai dall orso",
      lambda a, g: g.state.current_room in ("radura", "ruscello") and g.pending in (None, Action(verb="vai", direction="ovest"))),
+    # Found by the review: a gift or a question naming someone who isn't here.
+    (DRAGON, "tana", ("more",), (), (), "do le more al drago", lambda a, g: g.state.item_locations["more"] == "inventory"),
+    (DRAGON, "radura", ("vasetto_miele",), (), (), "porto il miele all'orso",
+     lambda a, g: "gola_guarita" not in g.state.flags and g.state.item_locations["vasetto_miele"] == "inventory"),
+    (DRAGON, "radura", (), (), (), "conosci l'orso?", says(TOPIC["orso"])),
+    (DRAGON, "radura", (), (), (), "hai visto l'orso?", says(TOPIC["orso"])),
+    (DRAGON, "radura", (), (), (), "salgo sul sasso", stays_in("radura")),
+    (DRAGON, "ruscello", (), (), (), "scendo nel ruscello", stays_in("ruscello")),
 ]  # fmt: skip
 
 
-# Still wrong with qwen2.5:3b (2026-09-28): none of them does something by itself, at worst the game
-# asks or says "Non ho capito.".
+# Still wrong with qwen2.5:3b (2026-09-28). None of them changes the game: at worst the game asks,
+# says "Non ho capito." or does something harmless ("lascia" the door: "Non ce l'hai.").
 KNOWN_LIMITS = {
     "busso alla porta della torre": "no verb for knocking: the model says 'tira' and the game asks",
     "sfondo la porta a calci": "the model says 'lascia' the door: 'Non ce l'hai.'",
