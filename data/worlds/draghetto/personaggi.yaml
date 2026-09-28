@@ -32,7 +32,8 @@ characters:
       raffreddore:
         name: raffreddore
         gender: m
-        aliases: [fuoco, fiamma, gola, febbre, aiuto, bisogno]
+        # anche «cosa ti serve?», «cosa ti è successo?»
+        aliases: [fuoco, fiamma, gola, febbre, aiuto, bisogno, serve, successo]
         text: >
           «Ieri ho fatto il bagno nel ruscello gelato, e stamattina… etciù! Il
           raffreddore mi ha spento il fuoco. La nonna diceva che per la gola ci

@@ -18,8 +18,9 @@ Il castello, gli enigmi e i personaggi sono **originali**: non copiare contenuti
 ## Flusso di un turno
 ```
 input giocatore
-  → parser classico (comandi semplici: "nord", "prendi X", "inventario")
-  → se non riconosciuto: LLM interprete → Azione (JSON), mostrata al giocatore tra parentesi
+  → parser classico (comandi semplici: "nord", "prendi X", "inventario", "vai dall'orso")
+  → se non riconosciuto: LLM interprete → Azione (JSON), controllata sulla frase (oggetti nominati,
+    spostamento chiesto, argomento nominato), mostrata al giocatore tra parentesi
     (se il mondo non la prevede: "Vuoi usare X con Y?" e si esegue solo dopo un sì)
   → motore: valida ed esegue → Esito
   → testo fisso (app/engine/text.py)
@@ -222,6 +223,40 @@ tests/
   ricevono l'indizio col solo parser. Per lo stesso motivo i luoghi si chiamano «Quercia» e «Tana»:
   il parser vuole tutte le parole del nome. Testi senza aggettivi che diano un genere al giocatore.
 
+- **Interprete più robusto, seconda parte** (2026-09-28, branch `interprete-robusto`): giocate le
+  due avventure col modello vero e rilette le partite in `logs/comandi.jsonl`; le 37 frasi
+  sbagliate sono ora `test_sentences_found_while_playing` in `tests/test_ollama.py`.
+  - Il modello sceglie da elenchi e, senza niente di adatto, sceglie a caso («mangio una mora» →
+    prendi il sasso; «a cosa mi serve questa corda?» legava il gancio alla corda: enigma risolto da
+    una domanda). Istruzioni ed esempi non bastavano: la risposta si **controlla sulla frase**
+    (`interpreter._checked`). Un oggetto vale solo se la frase lo nomina (`parser.is_named`: nome o
+    alias, anche con un'altra desinenza o, da cinque lettere, un errore di battitura); un
+    personaggio presente vale anche senza nome, ma solo per dai/usa e con un oggetto («gli do il
+    miele»). Uno spostamento deve nominare la direzione (non con una lettera sola: «e» è anche
+    "e"), il luogo o avere un verbo di moto (`MOVE_WORDS`); se la frase nomina una sola uscita
+    vale quella («attraverso il ponte»). Un argomento nominato vince su quello scelto.
+  - Gioco (`game.py`), invece di «Non ho capito» o di una conferma sbagliata: «Non vedi niente del
+    genere qui.» (nomina un oggetto che non è qui, se il nome non indica anche una cosa presente:
+    «corda» è anche il rampino), «Non vedi nessuno del genere qui.» («ciao orso» dove l'orso non
+    c'è, anche se il modello saluta il draghetto), «Qui non c'è nessuno con cui parlare.», «Sei già
+    qui.» («torno dal draghetto» nella radura), «Non ho capito.» per un luogo che non è tra le
+    uscite («vai a casa» dalla quercia). Una domanda non capita («…?», o che comincia con perché,
+    cosa, come…) che nomina un argomento del personaggio presente diventa quella domanda («mi dai
+    il miele?»); un saluto che nomina un argomento anche («chi sei?», con l'alias «chi sei»).
+  - **Alias delle stanze** (`rooms.X.aliases`), anche chi o cosa ci si trova: il parser capisce
+    «torna dal drago», «vado dall'orso», «vai alle scuderie» (con più verbi di moto: torna, vado,
+    entra, ritorna…), l'interprete vede «ovest (Tana: orso, grotta)», la conferma degli spostamenti
+    li accetta. Nel parser anche «salgo», «scendo», «arrampicati» e «ecco X», «tieni X» (dai).
+  - Prompt: solo l'esempio «a cosa serve questa chiavetta?» → esamina e tre ritocchi al glossario
+    (ringraziare, leggi, ecco/tieni). Scartato un prompt più ricco (esempi di dialogo «ecco il
+    mestolo», «grazie, arrivederci», gli alias spiegati nelle uscite): una frase nuova in più, ma
+    di nuovo «butta/getta il rampino» sul portone e «come si esce» senza argomento.
+  - Limiti noti (`KNOWN_LIMITS`, xfail): «busso alla porta», «sfondo la porta a calci», «afferra la
+    ciave nel pozzo», «ti faccio il solletico… con la piuma», «guardo su nell'albero», e «aggancia
+    la corda alla vera», che cambia da un giro all'altro. Nessuno fa un'azione da solo: al massimo
+    il gioco chiede conferma o dice «Non ho capito». Scelto anche: «tieni, è per te» senza nominare
+    l'oggetto non si capisce più (prima il modello indovinava, come indovinava a caso negli altri casi).
+
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.
 - Hosting pubblico (es. PC di casa + Cloudflare Tunnel) — non prioritario.
@@ -273,7 +308,11 @@ ollama pull qwen2.5:3b
     (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
     sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
     invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
-    `tests/test_ollama.py` (oggi 37 su 37, ~260 s: 28 della Rocca e 9 del draghetto).
+    `tests/test_ollama.py` (oggi 68 su 74, ~620 s: i 37 casi di prima tutti, e 31 delle 37 frasi
+    trovate giocando; le altre 6 sono limiti noti).
+  - Il modello non è del tutto deterministico: con lo stesso prompt e `temperature: 0`, 2 o 3 frasi
+    su 70 cambiano risposta da un giro all'altro (la cache di Ollama?). Un caso che passa una volta
+    sola non dimostra niente.
   - Dialoghi (fase 6): senza l'esempio del dialogo, "chi era il castellano?" diventava "altro";
     con l'esempio prima di quello del rampino, "getta il rampino nel pozzo" andava al portone.
     In fondo funziona tutto. Con il dialogo nel prompt, "vai in cucina" dalla scuderia risponde

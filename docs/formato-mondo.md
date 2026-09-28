@@ -242,14 +242,20 @@ characters:
 - La descrizione della stanza elenca i personaggi presenti: "Qui c'è un pellegrino."
 - Un argomento si riconosce dal nome o da un alias. Un alias può ripetere il nome di un oggetto
   ("chiave di ferro"): se l'LLM sceglie l'oggetto per una domanda, la risposta è quella dell'argomento.
+- Nelle frasi libere un argomento nominato vince su quello scelto dall'LLM, e una domanda che il
+  modello non capisce ("mi dai il miele?", anche senza "?" se comincia con perché, cosa, come…)
+  riceve la risposta dell'argomento che nomina. Così un alias può essere anche una frase breve
+  che i giocatori scrivono davvero: `[chi sei, chiami]` sull'argomento del pellegrino risponde a
+  "chi sei?" e "come ti chiami?", `[serve, successo]` sul raffreddore a "cosa ti serve?". Il nome
+  del personaggio non conta come argomento ("pellegrino, cosa sai della torre?" parla della torre).
 - Una domanda su un argomento sconosciuto (con `when` falsa, o che non c'è) riceve `unknown` e
   non cambia lo stato. Finisce in `logs/comandi.jsonl`: mostra cosa chiedono i giocatori.
 - `effects` si applicano ogni volta che si chiede dell'argomento; per un effetto solo la prima
   volta, basta un `when` su un flag. Un personaggio che dà solo indizi non ne ha.
 - I personaggi si possono esaminare; "prendi" risponde "Non si può prendere.", gli altri verbi non
   fanno niente.
-- **Dare**: `dai X a Y` (anche porgi, offri, regala, consegna). Si dà solo ciò che si porta con sé,
-  a un personaggio presente; "dai X" senza nome va all'unico personaggio presente ("A chi?" se sono
+- **Dare**: `dai X a Y` (anche porgi, offri, regala, consegna, "ecco X", "tieni X"). Si dà solo ciò
+  che si porta con sé, a un personaggio presente; "dai X" senza nome va all'unico personaggio presente ("A chi?" se sono
   di più). Una regola `verb: dai` decide cosa succede; senza regola il personaggio risponde
   `refuses` e lo stato non cambia. "usa X con il personaggio" ricade sulla stessa regola.
 

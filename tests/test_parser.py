@@ -385,3 +385,9 @@ def test_rooms_are_named_like_items(world_data):
 
     assert is_named(room, words_of("vai alle scuderie"))
     assert not is_named(room, words_of("vai in cucina"))
+
+
+@pytest.mark.parametrize("text", ["ecco la moneta", "tieni il soldo"])
+def test_handing_over_an_item_is_giving_it(keeper, text):
+    # "ecco le more" to the bear: the model answered "guarda", or nothing at all.
+    assert parse_giving(keeper, text) == Action(verb="dai", target="moneta")

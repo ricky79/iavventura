@@ -48,6 +48,8 @@ HELP = """Scrivi comandi semplici, per esempio:
 Per terminare la partita: fine."""
 
 _HELP_WORDS = frozenset({"aiuto", "help"})
+# A sentence starting with one of these is a question, even without "?" (kids leave it out).
+_QUESTION_WORDS = frozenset({"perche", "cosa", "come", "chi", "dove", "quanto", "quanti", "quale", "quali", "quando"})
 # Answers to "Vuoi…?", by their first word. Not "s" and "n": they are south and north.
 _YES_WORDS = frozenset({"si", "certo", "ok", "okay", "sicuro", "confermo"})
 _NO_WORDS = frozenset({"no"})
@@ -128,10 +130,14 @@ class Game:
             if asked is not None:
                 return f"({action_text(asked, self.world)})\n" + self._execute(asked, "llm")
             return self._not_understood(interpreted, words, here)
-        if interpreted.verb is Conversation.TALK and self._greets_someone_else(interpreted.target, words, here):
-            # "ciao orso" with only the dragon here: the model greets the dragon.
-            self._log("llm", interpreted, "fallita", NOBODY_HERE)
-            return NOBODY_HERE
+        if interpreted.verb is Conversation.TALK:
+            if self._greets_someone_else(interpreted.target, words, here):
+                # "ciao orso" with only the dragon here: the model greets the dragon.
+                self._log("llm", interpreted, "fallita", NOBODY_HERE)
+                return NOBODY_HERE
+            # "chi sei?": the model answered "parla", the pilgrim has a topic about himself.
+            character = [(person, topics) for person, topics in characters if person.id == interpreted.target]
+            interpreted = self._question_about_a_topic(words, character) or interpreted
         if interpreted.verb is Command.GO and not names_the_way(interpreted.direction, words, exits):
             instead = self._place_instead(words)
             if instead is not None:
@@ -149,19 +155,23 @@ class Game:
         """Why nothing is done: better than "Non ho capito" when the sentence names someone or something
         that isn't here ("ciao orso" at the brook, "mangio una mora" in the glade)."""
         someone_elsewhere = self._names_one_elsewhere(self.world.characters.values(), words, here)
-        if result.talking:
-            return NOBODY_HERE if someone_elsewhere else NOBODY_TO_TALK_TO
+        if result.talking and someone_elsewhere:
+            return NOBODY_HERE
         if self._names_one_elsewhere(self.world.items.values(), words, here):
             return NOT_HERE
+        if result.talking:
+            return NOBODY_TO_TALK_TO
         # Not for a word that is also an adjective ("il vecchio pozzo"): only if nothing here is named.
         if someone_elsewhere and not self._names_one_here(words, here):
             return NOBODY_HERE
         return NOT_A_GAME_ACTION if result.not_an_action else NOT_UNDERSTOOD
 
-    def _question_about_a_topic(self, words: list[str], characters: list[tuple[Character, list[Topic]]]) -> Action | None:
-        """A question the model missed ("mi dai il miele?") that names a topic of the one here: it is
-        asked. Only a question: "mangio una mora" is no question about the berries."""
-        if not self._line.rstrip().endswith("?"):
+    def _question_about_a_topic(
+        self, words: list[str], characters: list[tuple[Character, list[Topic]]]
+    ) -> Action | None:
+        """A question ("mi dai il miele?", "perche hai il naso rosso") that names a topic of the one here:
+        it is asked. Only a question: "mangio una mora" is no question about the berries."""
+        if not self._line.rstrip().endswith("?") and words[0] not in _QUESTION_WORDS:
             return None
         asked = [(person, named[0]) for person, topics in characters if (named := topics_named(person, topics, words))]
         if len(asked) != 1:

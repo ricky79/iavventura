@@ -507,9 +507,10 @@ def test_greeting_a_character_who_is_elsewhere_does_not_greet_the_one_here(drago
 
 
 def test_greeting_the_one_here_may_name_someone_else(dragon):
+    # The bear is elsewhere, but the dragon is named: it answers about the bear, one of its topics.
     game = Game(Engine(dragon), talking({"verbo": "parla", "bersaglio": "draghetto", "con": "nessuno"}))
 
-    assert say(game, "ciao draghetto, sai dov'è l'orso?").endswith(dragon.characters["draghetto"].greeting)
+    assert say(game, "ciao draghetto, sai dov'è l'orso?").endswith(dragon.characters["draghetto"].topics["orso"].text)
 
 
 @pytest.mark.parametrize(
@@ -574,3 +575,53 @@ def test_only_a_question_is_asked_about_the_topic(dragon):
     game = Game(Engine(dragon), talking({"verbo": "prendi", "bersaglio": "sasso", "con": "nessuno"}))
 
     assert say(game, "mangio una mora") == NOT_HERE
+
+
+
+@pytest.mark.parametrize("sentence", ["perche hai il naso rosso", "come mai hai il naso rosso"])
+def test_a_question_without_its_question_mark_is_asked_too(dragon, sentence):
+    # Kids leave out the "?": a sentence starting with perché, cosa, come... is a question.
+    game = Game(Engine(dragon), talking({"verbo": "prendi", "bersaglio": "sasso", "con": "nessuno"}))
+
+    output = say(game, sentence)
+
+    assert output == f"(chiedi al draghetto del solletico)\n{dragon.characters['draghetto'].topics['solletico'].text}"
+
+
+@pytest.mark.parametrize(
+    ("sentence", "topic"),
+    [("chi sei?", "pellegrino"), ("vecchio, come ti chiami?", "pellegrino"), ("com'è andato il viaggio?", "pellegrino")],
+)
+def test_talking_about_a_topic_is_asking_about_it(castle, sentence, topic):
+    # "chi sei?": the model answered "parla", and the pilgrim only greeted.
+    game = in_the_stable(castle, talking({"verbo": "parla", "bersaglio": "pellegrino", "con": "nessuno"}))
+
+    output = say(game, sentence)
+
+    assert output == f"(chiedi al pellegrino del pellegrino)\n{castle.characters['pellegrino'].topics[topic].text}"
+
+
+def test_greeting_the_character_by_name_is_still_greeting(castle):
+    game = in_the_stable(castle, talking({"verbo": "parla", "bersaglio": "pellegrino", "con": "nessuno"}))
+
+    assert say(game, "salve, pellegrino!").endswith(castle.characters["pellegrino"].greeting)
+
+
+@pytest.mark.parametrize(
+    ("sentence", "reply", "topic"),
+    [
+        ("cosa ti serve?", {"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}, "raffreddore"),
+        ("cosa ti è successo?", {"verbo": "chiedi", "bersaglio": "draghetto", "con": "quercia"}, "raffreddore"),
+    ],
+)
+def test_the_dragon_answers_what_it_needs(dragon, sentence, reply, topic):
+    output = say(Game(Engine(dragon), talking(reply)), sentence)
+
+    assert output.endswith(dragon.characters["draghetto"].topics[topic].text)
+
+
+def test_an_item_elsewhere_comes_before_nobody_to_talk_to(castle):
+    # "ma non c'è la chiave nel pozzo": the model heard talking, the game said nobody is here.
+    game = Game(Engine(castle), talking({"verbo": "parla", "bersaglio": "nessuno", "con": "nessuno"}))
+
+    assert say(game, "ma non c'è la chiave nel pozzo") == NOT_HERE

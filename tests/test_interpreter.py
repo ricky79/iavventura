@@ -357,7 +357,7 @@ def test_the_system_prompt_carries_the_examples_it_is_given(in_reach):
 
 
 def test_the_prompt_explains_giving():
-    assert "- dai: dare, porgere, offrire un oggetto a un personaggio\n" in interpreter_system()
+    assert '- dai: dare, porgere, offrire un oggetto a un personaggio (anche "ecco", "tieni")\n' in interpreter_system()
 
 
 @pytest.mark.parametrize(

@@ -74,6 +74,8 @@ ITEM_VERBS = {
     "offri": Verb.GIVE,
     "regala": Verb.GIVE,
     "consegna": Verb.GIVE,
+    "ecco": Verb.GIVE,  # "ecco le more", "tieni il miele": handing over
+    "tieni": Verb.GIVE,
 }
 
 
