@@ -27,7 +27,7 @@ def test_schema_limits_the_answer_to_known_verbs_items_in_reach_and_directions(i
 
     assert schema["required"] == ["verbo", "bersaglio", "con"]
     assert properties["verbo"]["enum"] == [
-        "esamina", "prendi", "lascia", "usa", "apri", "chiudi", "spingi", "tira", "leggi", "dai",
+        "esamina", "prendi", "lascia", "usa", "apri", "chiudi", "spingi", "tira", "leggi", "dai", "salta",
         "parla", "chiedi", "vai", "guarda", "inventario", "altro",
     ]  # fmt: skip
     assert properties["bersaglio"]["enum"] == [
@@ -203,6 +203,53 @@ def test_dropping_one_thing_into_another_is_using_them_together(in_reach):
     action = interpret(fake, "butta il rampino nel pozzo", in_reach)
 
     assert action == Action(verb="usa", target="pozzo", with_="corda_con_gancio")
+
+
+# --- Jumping -----------------------------------------------------------------------------------------
+
+
+def test_the_prompt_explains_jumping():
+    assert "- salta: saltare, tuffarsi o buttarsi dentro qualcosa\n" in interpreter_system()
+
+
+@pytest.mark.parametrize("sentence", ["mi butto nel pozzo", "voglio saltare giù nel pozzo"])
+def test_jumping_into_an_item(in_reach, sentence):
+    fake = FakeLLMClient(json_replies=[{"verbo": "salta", "bersaglio": "pozzo", "con": "nessuno"}])
+
+    assert interpret(fake, sentence, in_reach) == Action(verb="salta", target="pozzo")
+
+
+@pytest.mark.parametrize(
+    ("sentence", "tool"),
+    [("butta il rampino nel pozzo", "corda con gancio"), ("lancio il rampino nel pozzo", "nessuno")],
+    ids=["the model gives the other item", "the sentence names it"],
+)
+def test_jumping_with_another_item_is_using_them_together(in_reach, sentence, tool):
+    # Jumping may kill: throwing the grapple into the well must never become a jump.
+    fake = FakeLLMClient(json_replies=[{"verbo": "salta", "bersaglio": "pozzo", "con": tool}])
+
+    assert interpret(fake, sentence, in_reach) == Action(verb="usa", target="pozzo", with_="corda_con_gancio")
+
+
+@pytest.mark.parametrize(
+    ("sentence", "direction"), [("salgo sulla vera del pozzo", "su"), ("scendo nel pozzo", "giù")]
+)
+def test_climbing_is_no_jump(castle, in_reach, sentence, direction):
+    # "salgo sul sasso" in the glade: with "salta" in the prompt the model heard a jump.
+    fake = FakeLLMClient(json_replies=[{"verbo": "salta", "bersaglio": "pozzo", "con": "nessuno"}])
+
+    action = interpret(fake, sentence, in_reach, [(Direction.NORTH, castle.rooms["torre"])])
+
+    assert action == Action(verb="vai", direction=direction)
+
+
+def test_nobody_can_be_jumped_into(keeper):
+    items, characters = near_keeper(keeper)
+    fake = FakeLLMClient(json_replies=[{"verbo": "salta", "bersaglio": "custode", "con": "nessuno"}])
+
+    result = interpret(fake, "salto addosso al custode", items, (), characters)
+
+    assert isinstance(result, NotUnderstood)
 
 
 # --- Characters ----------------------------------------------------------------------------------

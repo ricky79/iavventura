@@ -88,6 +88,19 @@ def test_entering_the_tower_ends_the_game(castle):
 
 
 
+def test_jumping_into_the_well_ends_the_game_with_a_death(castle):
+    [jump] = [rule for rule in castle.rules.values() if Action(verb="salta", target="pozzo") in actions_of(rule)]
+    [death] = [ending for ending in castle.game.endings if ending.when == FlagSet(flag="caduto_nel_pozzo")]
+
+    assert SetFlag(set_flag="caduto_nel_pozzo") in jump.effects
+    assert jump.when is None  # always deadly, even with the key already fished out
+    assert "Sei morto" in death.text
+
+
+def actions_of(rule: Rule) -> list[Action]:
+    return [Action(verb=trigger.verb, target=trigger.target, with_=trigger.with_) for trigger in rule.triggers]
+
+
 def test_the_pilgrim_waits_in_the_stable_and_only_gives_hints(castle):
     pilgrim = castle.characters["pellegrino"]
 
@@ -200,6 +213,19 @@ def test_the_key_can_also_be_taken_with_the_grapple_once_seen(castle):
     assert unseen.text == "Non vedi niente del genere qui."
     assert fished.text == castle.rules["pesca_chiave"].text
     assert state.item_locations["chiave_torre"] == "inventory"
+
+
+@pytest.mark.parametrize("flags", [set(), {"chiave_pescata"}], ids=["key in the well", "key fished out"])
+def test_the_player_who_jumps_into_the_well_dies(castle, flags):
+    game = Game(Engine(castle))
+    game.state.flags.update(flags)
+
+    answer = game.turn("salta nel pozzo")
+
+    death = next(ending for ending in castle.game.endings if ending.when == FlagSet(flag="caduto_nel_pozzo"))
+    assert answer == f"{castle.rules['salto_nel_pozzo'].text}\n\n{death.text}"
+    assert game.finished
+    assert game.turn("guarda") == "La partita è finita."
 
 
 @pytest.mark.parametrize(

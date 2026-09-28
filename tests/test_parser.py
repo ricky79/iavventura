@@ -140,6 +140,19 @@ def test_two_items_in_reach_with_the_same_name_are_ambiguous(world):
     assert result == Ambiguous(candidates=(world.items["corda"], world.items["corda_con_gancio"]))
 
 
+@pytest.mark.parametrize(
+    "text",
+    ["salta nel pozzo", "salto nel pozzo", "tuffati nel pozzo", "buttati nel pozzo", "gettati nel pozzo", "lanciati dentro il pozzo"],
+)  # fmt: skip
+def test_jumping_into_an_item(world, text):
+    assert parse_with(world, text, "corda", "pozzo") == Action(verb="salta", target="pozzo")
+
+
+@pytest.mark.parametrize("text", ["salta", "mi butto nel pozzo", "butta la corda nel pozzo", "salta giù nel pozzo"])
+def test_other_ways_of_jumping_are_left_to_the_llm(world, text):
+    assert parse_with(world, text, "corda", "pozzo") is None
+
+
 # --- What the parser does not understand --------------------------------------------------------
 
 

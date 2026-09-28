@@ -2,7 +2,8 @@
 
     python -m app.cli
 
-First the menu of the adventures (data/worlds/avventure.yaml), then the game.
+First the menu of the adventures (data/worlds/avventure.yaml), then the game; when it ends, won or
+lost, the player may play again.
 The LLM (Ollama by default, see app/config.py) interprets the sentences the classic parser
 doesn't understand; without it the game goes on with simple commands only.
 """
@@ -21,6 +22,7 @@ from app.game import Game
 CONFIRM_QUIT = "Vuoi davvero terminare la partita? (s/n)"
 GOODBYE = "Alla prossima!"
 GO_ON = "Allora continuiamo."
+PLAY_AGAIN = "\nVuoi giocare ancora? (s/n)"  # a blank line after the ending
 CHOOSE = "Scegli la tua avventura:"
 WHICH_ADVENTURE = "Scrivi il numero dell'avventura."
 
@@ -63,6 +65,29 @@ def choose(worlds: Mapping[str, World], read_line: Callable[[], str], write: Cal
     return adventure_id
 
 
+def session(
+    worlds: Mapping[str, World],
+    new_game: Callable[[str], Game],
+    read_line: Callable[[], str],
+    write: Callable[[str], None],
+) -> None:
+    """Menu and game, again and again: a game that ends (won or lost) asks whether to play another.
+    Quitting, or the input running out, ends the session."""
+    try:
+        while True:
+            game = new_game(choose(worlds, read_line, write))
+            run(game, read_line, write)
+            if not game.finished:
+                return
+            write(PLAY_AGAIN)
+            answer = words_of(read_line())
+            if not (answer and answer[0] in _YES_WORDS):
+                write(GOODBYE)
+                return
+    except EOFError:
+        return
+
+
 def run(game: Game, read_line: Callable[[], str], write: Callable[[str], None]) -> None:
     """Plays until the game ends, the player quits, or the input runs out (EOFError)."""
     write(game.opening())
@@ -97,18 +122,16 @@ def main() -> None:
         print(f"[{reason} Si gioca con i soli comandi semplici.]\n")
         llm = None
     worlds = load_adventures()
+
+    def new_game(adventure_id: str) -> Game:
+        if llm is None:
+            _log.info("--- nuova partita (%s), senza LLM ---", adventure_id)
+        else:
+            _log.info("--- nuova partita (%s): %s su %s ---", adventure_id, settings.model, settings.ollama_url)
+        return Game(Engine(worlds[adventure_id]), llm, adventure=adventure_id)
+
     try:
-        adventure_id = choose(worlds, lambda: input("\n> "), print)
-    except (EOFError, KeyboardInterrupt):
-        print()
-        return
-    if llm is None:
-        _log.info("--- nuova partita (%s), senza LLM ---", adventure_id)
-    else:
-        _log.info("--- nuova partita (%s): %s su %s ---", adventure_id, settings.model, settings.ollama_url)
-    game = Game(Engine(worlds[adventure_id]), llm, adventure=adventure_id)
-    try:
-        run(game, lambda: input("\n> "), print)
+        session(worlds, new_game, lambda: input("\n> "), print)
     except KeyboardInterrupt:
         print()
 

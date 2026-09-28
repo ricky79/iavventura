@@ -35,6 +35,7 @@ _INFINITIVES = {
     Verb.PULL: "tirare",
     Verb.READ: "leggere",
     Verb.GIVE: "dare",
+    Verb.JUMP: "saltare",
     Conversation.TALK: "parlare",
     Conversation.ASK: "chiedere",
 }
@@ -42,6 +43,7 @@ _INFINITIVES = {
 _ARTICULATED = {
     "a": {"il ": "al ", "lo ": "allo ", "l'": "all'", "la ": "alla ", "i ": "ai ", "gli ": "agli ", "le ": "alle "},
     "di": {"il ": "del ", "lo ": "dello ", "l'": "dell'", "la ": "della ", "i ": "dei ", "gli ": "degli ", "le ": "delle "},
+    "in": {"il ": "nel ", "lo ": "nello ", "l'": "nell'", "la ": "nella ", "i ": "nei ", "gli ": "negli ", "le ": "nelle "},
 }  # fmt: skip
 
 
@@ -51,7 +53,7 @@ def definite(item: Named) -> str:
 
 
 def articulated(preposition: str, item: Named) -> str:
-    """The name after "a" or "di", joined to its article: al pellegrino, della torre, dell'uncino."""
+    """The name after "a", "di" or "in", joined to its article: al pellegrino, della torre, nel pozzo."""
     return _ARTICULATED[preposition][_definite_article(item)] + item.name
 
 
@@ -119,7 +121,7 @@ def plain(text: str) -> str:
 
 def _complements(action: Action, world: World) -> list[str]:
     """What follows the verb: "la corda con il gancio", "con il pellegrino", "al pellegrino della torre",
-    "la moneta al custode"."""
+    "la moneta al custode", "nel pozzo"."""
     if action.verb is Conversation.TALK:
         return ["con", definite(world.thing(action.target))]
     if action.verb is Conversation.ASK:
@@ -137,7 +139,8 @@ def _complements(action: Action, world: World) -> list[str]:
         ]
     words = []
     if action.target is not None:
-        words.append(definite(world.thing(action.target)))
+        thing = world.thing(action.target)
+        words.append(articulated("in", thing) if action.verb is Verb.JUMP else definite(thing))
     if action.with_ is not None:
         words += ["con", definite(world.thing(action.with_))]
     return words

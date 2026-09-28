@@ -75,6 +75,12 @@ ITEM_VERBS = {
     "regala": Verb.GIVE,
     "consegna": Verb.GIVE,
     "ecco": Verb.GIVE,  # "ecco le more": handing over. Not "tieni", which is also "hold".
+    "salta": Verb.JUMP,
+    "salto": Verb.JUMP,
+    "tuffati": Verb.JUMP,
+    "buttati": Verb.JUMP,  # not "butta": "butta la corda nel pozzo" is throwing it
+    "gettati": Verb.JUMP,
+    "lanciati": Verb.JUMP,
 }
 
 

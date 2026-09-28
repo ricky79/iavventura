@@ -60,3 +60,12 @@ rules:
     text: >
       Spingi, tiri, dai una spallata: il portone non si muove di un dito.
       Dovrai trovare un'altra via d'uscita.
+
+  # --- Pericoli: si muore, e la partita finisce (il finale è in gioco.yaml) ---
+  salto_nel_pozzo:
+    trigger: {verb: salta, target: pozzo}
+    effects:
+      - set_flag: caduto_nel_pozzo
+    text: >
+      Scavalchi la vera di pietra e ti lasci cadere nel pozzo. Il volo è
+      breve, il fondo duro e pieno di sassi.

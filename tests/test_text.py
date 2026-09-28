@@ -132,6 +132,7 @@ def test_text_room_and_ending_are_separate_paragraphs(world):
         (Action(verb="vai", direction="giù"), "vai giù"),
         (Action(verb="guarda"), "guarda"),
         (Action(verb="inventario"), "inventario"),
+        (Action(verb="salta", target="gancio"), "salta nel gancio"),
     ],
 )
 def test_actions_read_as_commands(world, action, expected):
@@ -147,6 +148,7 @@ def test_actions_read_as_commands(world, action, expected):
         (Action(verb="apri", target="gancio", with_="corda"), "Vuoi aprire il gancio con la corda?"),
         (Action(verb="vai", direction="ovest"), "Vuoi andare a ovest?"),
         (Action(verb="vai", direction="giù"), "Vuoi andare giù?"),
+        (Action(verb="salta", target="corda"), "Vuoi saltare nella corda?"),
     ],
 )
 def test_an_unexpected_action_is_asked_as_a_question(world, action, expected):
@@ -157,21 +159,22 @@ def test_an_unexpected_action_is_asked_as_a_question(world, action, expected):
 
 
 @pytest.mark.parametrize(
-    ("name", "gender", "plural", "to_the", "of_the"),
+    ("name", "gender", "plural", "to_the", "of_the", "in_the"),
     [
-        ("gancio", "m", False, "al gancio", "del gancio"),
-        ("specchio", "m", False, "allo specchio", "dello specchio"),
-        ("uncino", "m", False, "all'uncino", "dell'uncino"),
-        ("corda", "f", False, "alla corda", "della corda"),
-        ("ascia", "f", False, "all'ascia", "dell'ascia"),
-        ("sassi", "m", True, "ai sassi", "dei sassi"),
-        ("attrezzi", "m", True, "agli attrezzi", "degli attrezzi"),
-        ("chiavi", "f", True, "alle chiavi", "delle chiavi"),
+        ("gancio", "m", False, "al gancio", "del gancio", "nel gancio"),
+        ("specchio", "m", False, "allo specchio", "dello specchio", "nello specchio"),
+        ("uncino", "m", False, "all'uncino", "dell'uncino", "nell'uncino"),
+        ("corda", "f", False, "alla corda", "della corda", "nella corda"),
+        ("ascia", "f", False, "all'ascia", "dell'ascia", "nell'ascia"),
+        ("sassi", "m", True, "ai sassi", "dei sassi", "nei sassi"),
+        ("attrezzi", "m", True, "agli attrezzi", "degli attrezzi", "negli attrezzi"),
+        ("chiavi", "f", True, "alle chiavi", "delle chiavi", "nelle chiavi"),
     ],
 )
-def test_prepositions_join_the_article(name, gender, plural, to_the, of_the):
+def test_prepositions_join_the_article(name, gender, plural, to_the, of_the, in_the):
     assert articulated("a", item(name, gender, plural)) == to_the
     assert articulated("di", item(name, gender, plural)) == of_the
+    assert articulated("in", item(name, gender, plural)) == in_the
 
 
 @pytest.fixture

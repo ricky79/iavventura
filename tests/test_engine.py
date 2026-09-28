@@ -225,6 +225,22 @@ def test_no_ending_while_no_condition_holds(data):
     assert not state.finished
 
 
+def test_a_rule_can_end_the_game_with_a_death(data):
+    # A danger is a rule that sets a flag and an ending before the others: jumping into the well.
+    data["rules"]["salta_leva"] = {
+        "trigger": {"verb": "salta", "target": "leva"},
+        "effects": [{"set_flag": "caduto"}],
+        "text": "Salti.",
+    }
+    data["game"]["endings"].insert(0, {"when": {"flag": "caduto"}, "text": "Sei morto."})
+    engine, state = start(data)
+
+    outcome = engine.execute(state, Action(verb="salta", target="leva"))
+
+    assert (outcome.text, outcome.ending) == ("Salti.", "Sei morto.")
+    assert state.finished
+
+
 def test_nothing_can_be_done_once_the_game_is_over(data):
     engine, state = start(data)
     state.finished = True
@@ -665,8 +681,9 @@ def test_dropping_an_item_not_carried_is_refused(data):
         ("usa", messages.NOTHING_HAPPENS),
         ("spingi", messages.NOTHING_HAPPENS),
         ("tira", messages.NOTHING_HAPPENS),
+        ("salta", messages.NOTHING_HAPPENS),
     ],
-    ids=["apri", "chiudi", "leggi", "usa", "spingi", "tira"],
+    ids=["apri", "chiudi", "leggi", "usa", "spingi", "tira", "salta"],
 )
 def test_verbs_that_need_a_rule_do_nothing_without_one(data, verb, expected):
     engine, state = start(data)
@@ -802,8 +819,9 @@ def test_commands_rules_and_verbs_that_work_alone_are_expected(data, action):
         Action(verb="apri", target="candela"),
         Action(verb="usa", target="candela", with_="moneta"),
         Action(verb="prendi", target="candela", with_="moneta"),
+        Action(verb="salta", target="leva"),
     ],
-    ids=["use", "push", "open", "use with", "take with a tool"],
+    ids=["use", "push", "open", "use with", "take with a tool", "jump"],
 )
 def test_actions_no_rule_reacts_to_are_not_expected(data, action):
     engine, _ = start(data)

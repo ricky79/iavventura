@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.cli import WHICH_ADVENTURE, choose, menu, pick, run
+from app.cli import GOODBYE, PLAY_AGAIN, WHICH_ADVENTURE, choose, menu, pick, run, session
 from app.engine.engine import Engine
 from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import World
@@ -141,3 +141,48 @@ def test_an_answer_that_fits_no_adventure_is_asked_again(worlds):
 
     assert choose(worlds, lambda: next(answers), output.append) == "prova"
     assert output == [menu(worlds), WHICH_ADVENTURE]
+
+
+# --- Playing again -----------------------------------------------------------------------------------
+
+
+def play_session(worlds: dict[str, World], *lines: str) -> list[str]:
+    """Menu, games and the question at the end of each, as main() runs them."""
+    output: list[str] = []
+    answers = iter(lines)
+
+    def read_line() -> str:
+        try:
+            return next(answers)
+        except StopIteration:
+            raise EOFError from None
+
+    session(worlds, lambda adventure_id: Game(Engine(worlds[adventure_id])), read_line, output.append)
+    return output
+
+
+# In the test world the lever opens the cell, and entering it ends the game.
+TO_THE_END = ["2", "tira la leva", "nord"]
+
+
+def test_a_game_that_ends_asks_whether_to_play_again(worlds):
+    output = play_session(worlds, *TO_THE_END, "sì", "2")
+
+    # menu, opening, the lever, the cell with the ending; then the question, the menu, a new opening
+    assert len(output) == 7
+    assert output[3].endswith("Fine.")
+    assert output[4:6] == [PLAY_AGAIN, menu(worlds)]
+    assert output[6].startswith("Inizio.")
+
+
+def test_not_playing_again_says_goodbye(worlds):
+    output = play_session(worlds, *TO_THE_END, "no", "2")
+
+    assert output[-2:] == [PLAY_AGAIN, GOODBYE]
+
+
+def test_quitting_does_not_ask_to_play_again(worlds):
+    output = play_session(worlds, "2", "fine", "s")
+
+    assert PLAY_AGAIN not in output
+    assert output[-1] == GOODBYE

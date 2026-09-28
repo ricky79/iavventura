@@ -281,6 +281,25 @@ tests/
   descrizione e more dell'orso dopo lo scambio; nella Rocca la cucina non promette più attrezzi
   sul ceppo (gli oggetti presenti li elenca il motore). Regola per chi scrive: un indizio che
   manda a fare qualcosa ha una variante per quando è fatto.
+- **Pericoli** (2026-09-28, branch `pericoli`): nella Rocca chi salta nel pozzo muore e la partita
+  finisce. Una morte è un finale come gli altri: la regola `salto_nel_pozzo` attiva
+  `caduto_nel_pozzo`, e il finale con quel flag chiude con «Sei morto.». Nuovo verbo `salta`
+  (saltare dentro qualcosa; senza regola «Non succede niente.»), che il parser riconosce da salta,
+  salto, tuffati, buttati, gettati e lanciati. Nel glossario del prompt: `- salta: saltare, tuffarsi o
+  buttarsi dentro qualcosa`. Un salto interpretato può uccidere, quindi ha due protezioni:
+  - con un altro oggetto nominato, o scelto dal modello, è un lancio e diventa `usa` («lancio il
+    rampino nel pozzo»);
+  - senza una parola da salto (`JUMP_WORDS` in `interpreter.py`), il gioco chiede «Vuoi saltare nel
+    pozzo?» («entro nel pozzo»).
+  
+  Un salto su un personaggio non si capisce. Nel terminale, a fine partita, vinta o persa, il gioco
+  chiede «Vuoi giocare ancora?» e torna al menu. «Scendi nel pozzo» resta «giù», senza uscita:
+  calarsi non è saltare.
+  Col modello vero la riga nuova ha rotto due frasi, riparate senza toccare il prompt:
+  - «salgo sul sasso» diventava `salta`: un salto senza parola da salto ma con una direzione
+    («salgo», «scendo») torna uno spostamento;
+  - «chiedo al vecchio come si esce da qui» perdeva l'argomento (3 volte su 3; col prompt di prima
+    3 su 3 giuste): l'argomento `portone` del pellegrino ha gli alias `esce` e `uscire`.
 
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.
@@ -333,8 +352,8 @@ ollama pull qwen2.5:3b
     (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
     sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
     invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
-    `tests/test_ollama.py` (oggi 75 su 81, ~690 s: i 37 casi di prima tutti, e 38 delle 44 frasi
-    trovate giocando; le altre 6 sono limiti noti).
+    `tests/test_ollama.py` (oggi 83 su 89, ~680 s: i 37 casi di prima e gli 8 dei pericoli tutti,
+    e 38 delle 44 frasi trovate giocando; le altre 6 sono limiti noti).
   - Il modello non è del tutto deterministico: con lo stesso prompt e `temperature: 0`, 2 o 3 frasi
     su 70 cambiano risposta da un giro all'altro (la cache di Ollama?). Un caso che passa una volta
     sola non dimostra niente.

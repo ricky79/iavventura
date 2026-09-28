@@ -48,6 +48,7 @@ class Verb(StrEnum):
     PULL = "tira"
     READ = "leggi"
     GIVE = "dai"  # to a character: in a rule, `with` is the character who receives the item
+    JUMP = "salta"  # into something: "salta nel pozzo"
 
 
 class Command(StrEnum):

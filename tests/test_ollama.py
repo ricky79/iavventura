@@ -15,7 +15,7 @@ import pytest
 from app.config import Settings, make_client
 from app.engine.engine import NOBODY_HERE, NOT_HERE, NOTHING_HAPPENS, OUT_OF_REACH, Engine
 from app.engine.loader import WORLDS_DIR, load_world
-from app.engine.models import Action, GameState, Item, World
+from app.engine.models import Action, FlagSet, GameState, Item, World
 from app.game import NOT_A_GAME_ACTION, NOT_UNDERSTOOD, Game
 from app.llm.interpreter import NotUnderstood, interpret
 
@@ -172,6 +172,45 @@ def test_the_pilgrim_refuses_what_he_is_given(llm, sentence):
     assert isinstance(action, Action)
     assert engine.execute(state, action).text == PILGRIM.refuses
     assert state.item_locations["corda"] == "inventory"
+
+
+# --- Dangers: jumping into the well kills ---------------------------------------------------------
+
+DEATH = next(ending.text for ending in CASTLE.game.endings if ending.when == FlagSet(flag="caduto_nel_pozzo"))
+# Sentences the parser leaves to the model ("salta nel pozzo" it knows by itself).
+JUMPS = ["mi butto nel pozzo", "mi tuffo nel pozzo", "voglio saltare dentro il pozzo", "salto giù nel pozzo"]
+
+
+@pytest.mark.parametrize("sentence", JUMPS)
+def test_jumping_into_the_well_kills(llm, sentence):
+    engine, state = game_in("cortile")
+    game = Game(engine, llm, state=state)
+
+    answer = game.turn(sentence)
+    print(f"\n  {sentence!r} -> {answer.splitlines()[0]!r}")
+
+    assert answer.endswith(DEATH)
+    assert game.finished
+
+
+# Nobody dies without asking for it: at worst the game asks "Vuoi saltare nel pozzo?".
+NOT_JUMPS = [
+    ((), "guardo giù nel pozzo"),
+    ((), "mi affaccio al pozzo"),
+    ((), "entro nel pozzo"),
+    (("corda_con_gancio",), "lancio il rampino nel pozzo"),
+]
+
+
+@pytest.mark.parametrize(("carried", "sentence"), NOT_JUMPS, ids=[case[1] for case in NOT_JUMPS])
+def test_only_asking_for_it_jumps_into_the_well(llm, carried, sentence):
+    engine, state = game_in("cortile", *carried)
+    game = Game(engine, llm, state=state)
+
+    answer = game.turn(sentence)
+    print(f"\n  {sentence!r} -> {answer.splitlines()[0]!r}")
+
+    assert not game.finished
 
 
 # --- Il draghetto raffreddato: frasi da bambino --------------------------------------------------
