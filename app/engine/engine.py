@@ -22,6 +22,7 @@ from app.engine.models import (
     Effect,
     FlagSet,
     GameState,
+    Gender,
     Give,
     Has,
     Item,
@@ -41,7 +42,8 @@ from app.engine.models import (
 )
 from app.engine.parser import significant_words, words_of
 
-# Engine messages. They never name the item, so they need no article or gender.
+# Engine messages. They never name the item, so they need no article; a few agree with a plural
+# item (_PLURAL below).
 GAME_OVER = "La partita è finita."
 NO_EXIT = "Non puoi andare da quella parte."
 NOT_HERE = "Non vedi niente del genere qui."
@@ -61,6 +63,24 @@ NOBODY_TO_GIVE_TO = "Qui non c'è nessuno."
 CANT_GIVE = "Non si può dare."
 
 _NOTHING_WITHOUT_A_RULE = {Verb.OPEN: CANT_OPEN, Verb.CLOSE: CANT_CLOSE, Verb.READ: NOTHING_TO_READ}
+
+# The messages above for a plural item: "Ce le hai già." for the berries. By gender where the
+# pronoun shows it.
+_PLURAL = {
+    ALREADY_HAVE: {Gender.MASCULINE: "Ce li hai già.", Gender.FEMININE: "Ce le hai già."},
+    DONT_HAVE: {Gender.MASCULINE: "Non ce li hai.", Gender.FEMININE: "Non ce le hai."},
+    CANT_TAKE: "Non si possono prendere.",
+    CANT_OPEN: "Non si possono aprire.",
+    CANT_CLOSE: "Non si possono chiudere.",
+}
+
+
+def _said_of(thing: Item | Character, message: str) -> str:
+    """The engine's message, agreeing with a plural item or character."""
+    plural = _PLURAL.get(message) if thing.plural else None
+    if plural is None:
+        return message
+    return plural if isinstance(plural, str) else plural[thing.gender]
 
 
 class StateError(Exception):
@@ -193,7 +213,7 @@ class Engine:
             return Outcome(ok=False, text=NOBODY_HERE)
         character, topics = here
         if action.verb is Conversation.TALK:
-            return Outcome(ok=True, text=character.greeting)
+            return Outcome(ok=True, text=_first_variant(character.greeting_variants, character.greeting, state))
         topic = next((topic for topic in topics if topic.id == action.topic), None)
         if topic is None:
             return Outcome(ok=False, text=character.unknown)
@@ -236,7 +256,7 @@ class Engine:
         if people[0] not in here:
             return Outcome(ok=False, text=NOBODY_HERE)
         if state.item_locations[items[0]] != INVENTORY:
-            return Outcome(ok=False, text=DONT_HAVE)
+            return Outcome(ok=False, text=_said_of(self.world.items[items[0]], DONT_HAVE))
         rule = self._find_rule(Action(verb=Verb.GIVE, target=items[0], with_=people[0]))
         if rule is None:
             return Outcome(ok=False, text=self.world.characters[people[0]].refuses or NOT_WANTED)
@@ -258,18 +278,18 @@ class Engine:
                 state.seen.update(item.reveals)
                 return Outcome(ok=True, text=_description(item, state))
             case Verb.TAKE if item.scenery:
-                return Outcome(ok=False, text=CANT_TAKE)
+                return Outcome(ok=False, text=_said_of(item, CANT_TAKE))
             case Verb.TAKE if location == INVENTORY:
-                return Outcome(ok=False, text=ALREADY_HAVE)
+                return Outcome(ok=False, text=_said_of(item, ALREADY_HAVE))
             case Verb.TAKE:
                 state.item_locations[item.id] = INVENTORY
                 return Outcome(ok=True, text=DONE)
             case Verb.DROP if location != INVENTORY:
-                return Outcome(ok=False, text=DONT_HAVE)
+                return Outcome(ok=False, text=_said_of(item, DONT_HAVE))
             case Verb.DROP:
                 state.item_locations[item.id] = state.current_room
                 return Outcome(ok=True, text=DONE)
-        return Outcome(ok=False, text=_NOTHING_WITHOUT_A_RULE.get(verb, NOTHING_HAPPENS))
+        return Outcome(ok=False, text=_said_of(item, _NOTHING_WITHOUT_A_RULE.get(verb, NOTHING_HAPPENS)))
 
     def _default_on_character(self, state: GameState, verb: Verb, character: Character) -> Outcome:
         """Characters can be looked at; the other verbs on them do nothing (rules never name them)."""
@@ -277,10 +297,10 @@ class Engine:
             case Verb.EXAMINE:
                 return Outcome(ok=True, text=_description(character, state))
             case Verb.TAKE:
-                return Outcome(ok=False, text=CANT_TAKE)
+                return Outcome(ok=False, text=_said_of(character, CANT_TAKE))
             case Verb.DROP:
-                return Outcome(ok=False, text=DONT_HAVE)
-        return Outcome(ok=False, text=_NOTHING_WITHOUT_A_RULE.get(verb, NOTHING_HAPPENS))
+                return Outcome(ok=False, text=_said_of(character, DONT_HAVE))
+        return Outcome(ok=False, text=_said_of(character, _NOTHING_WITHOUT_A_RULE.get(verb, NOTHING_HAPPENS)))
 
     def _find_rule(self, action: Action) -> Rule | None:
         """The first rule with a trigger for this verb on exactly these items, in either order.

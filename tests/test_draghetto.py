@@ -201,6 +201,22 @@ def test_the_bear_remembers_the_trade(dragon):
     assert after == topic.variants[0].text
 
 
+def test_the_bear_greets_differently_after_the_trade(dragon):
+    # Found while playing: after the trade the bear still said «Grrr… chi va là?».
+    engine, state = start(dragon)
+    play(engine, state, TO_THE_HONEY[:6])
+    talk = Action(verb="parla", target="orso")
+
+    before = engine.execute(state, talk).text
+    play(engine, state, [TO_THE_HONEY[6]])
+    after = engine.execute(state, talk).text
+
+    bear = dragon.characters["orso"]
+    assert before == bear.greeting
+    assert after == bear.greeting_variants[0].text
+    assert "chi va là" not in after
+
+
 # --- Typed commands ------------------------------------------------------------------------------
 
 TYPED = [

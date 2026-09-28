@@ -663,6 +663,34 @@ def test_verbs_that_need_a_rule_do_nothing_without_one(data, verb, expected):
     assert snapshot(state) == before
 
 
+@pytest.mark.parametrize(
+    ("location", "action", "feminine", "masculine"),
+    [
+        ("inventory", "prendi", "Ce le hai già.", "Ce li hai già."),
+        ("atrio", "lascia", "Non ce le hai.", "Non ce li hai."),
+        ("atrio", "apri", "Non si possono aprire.", "Non si possono aprire."),
+        ("atrio", "chiudi", "Non si possono chiudere.", "Non si possono chiudere."),
+    ],
+)
+def test_the_answers_agree_with_plural_items(data, location, action, feminine, masculine):
+    # "prendi le more" with the berries in the bag answered "Ce l'hai già.".
+    data["items"]["more"] = {"name": "more", "gender": "f", "plural": True, "description": "-", "location": location}
+    data["items"]["sassi"] = {"name": "sassi", "gender": "m", "plural": True, "description": "-", "location": location}
+    engine, state = start(data)
+
+    assert engine.execute(state, Action(verb=action, target="more")).text == feminine
+    assert engine.execute(state, Action(verb=action, target="sassi")).text == masculine
+
+
+def test_plural_scenery_cannot_be_taken(data):
+    data["items"]["cespugli"] = {
+        "name": "cespugli", "gender": "m", "plural": True, "description": "-", "location": "atrio", "scenery": True,
+    }  # fmt: skip
+    engine, state = start(data)
+
+    assert engine.execute(state, Action(verb="prendi", target="cespugli")).text == "Non si possono prendere."
+
+
 def test_default_behaviour_ignores_the_tool(data):
     engine, state = start(data)
 
@@ -811,6 +839,21 @@ def test_talking_to_a_character_gets_its_greeting(keeper):
     assert outcome.ok
     assert outcome.text == "«Buongiorno», dice il custode."
     assert snapshot(state) == before
+
+
+def test_the_greeting_follows_the_game(keeper_world):
+    # The bear greeted "chi va là?" even after the trade.
+    keeper_world["characters"]["custode"]["greeting_variants"] = [
+        {"when": {"flag": "porta_aperta"}, "text": "«Ancora tu?», dice il custode."}
+    ]
+    engine, state = start(keeper_world)
+    talk = Action(verb="parla", target="custode")
+
+    before = engine.execute(state, talk).text
+    state.flags.add("porta_aperta")
+
+    assert before == "«Buongiorno», dice il custode."
+    assert engine.execute(state, talk).text == "«Ancora tu?», dice il custode."
 
 
 def test_asking_about_a_topic_gets_its_answer(keeper):

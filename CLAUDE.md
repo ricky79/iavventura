@@ -269,6 +269,13 @@ tests/
     l'hai.»). Scelto anche: «tieni, è per te» senza nominare
     l'oggetto non si capisce più (prima il modello indovinava, come indovinava a caso negli altri casi).
 
+- **Difetti di testo trovati giocando** (2026-09-28, branch `difetti-di-testo`): le risposte del
+  motore che si riferiscono all'oggetto si accordano col plurale («Ce le hai già.» per le more,
+  «Non si possono prendere.» per i cespugli: `_PLURAL` in `engine.py`); i personaggi hanno
+  `greeting_variants`, come le `variants` (l'orso dopo lo scambio non chiede più «chi va là?»);
+  il ceppo della cucina è un arredo. Un oggetto nuovo nel mondo fa ricominciare una volta le
+  partite salvate nel browser (`Engine.restore`).
+
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.
 - Hosting pubblico (es. PC di casa + Cloudflare Tunnel) — non prioritario.
