@@ -22,6 +22,12 @@ characters:
       «Ciao… scusa, ho un raffreddore tremendo. Mi si è spento il fuoco e non
       riesco più a volare fino a casa. Mi aiuti? Chiedimi del mio raffreddore e
       ti spiego cosa mi serve.»
+    greeting_variants:
+      - when: {flag: gola_guarita}
+        text: >
+          «Ciao!» Il draghetto ti viene incontro agitando la coda. «Grazie al
+          miele la gola non mi brucia più. Adesso mi manca solo uno starnuto bello
+          forte, per far ripartire il fuoco…»
     unknown: >
       Il draghetto piega la testa di lato: «Questo non lo so. Però so tante cose
       sul bosco, sul miele e sul mio raffreddore!»
@@ -74,6 +80,9 @@ characters:
         plural: true
         aliases: [mora, roveto]
         text: «Le more crescono nel roveto, a est di qui. Attenzione alle spine!»
+        variants:
+          - when: {flag: miele_dato}
+            text: «Le hai portate a Tobia, vero? Scommetto che le ha mangiate in un boccone!»
 
       solletico:
         name: solletico
@@ -99,6 +108,11 @@ characters:
           «La vecchia quercia è a nord della radura. Lassù c'è un nido, troppo
           alto per te… ma con qualcosa di lungo forse ci arrivi. Il ruscello
           porta sempre rami di tutte le misure.»
+        variants:
+          - when: {flag: piuma_presa}
+            text: >
+              «Il nido della vecchia quercia adesso è vuoto: la piuma l'hai presa
+              tu!»
 
       casa:
         name: casa
@@ -123,6 +137,11 @@ characters:
     description: >
       Un orso bruno e grosso, con la pancia rotonda e il muso sporco di
       briciole. Sta seduto davanti alla sua tana e brontola tra sé.
+    variants:
+      - when: {flag: miele_dato}
+        text: >
+          Un orso bruno e grosso, con la pancia rotonda e il muso ancora tutto
+          viola di more. Sta seduto davanti alla sua tana e sembra molto contento.
     location: tana
     greeting: >
       «Grrr… chi va là?» L'orso Tobia ti annusa da lontano, poi si siede per
@@ -155,6 +174,9 @@ characters:
         text: >
           «More! Ah, le more… Crescono nel roveto, ma io con queste zampe mi
           pungo sempre.»
+        variants:
+          - when: {flag: miele_dato}
+            text: «Le tue more erano squisite! Peccato che siano già finite.»
 
       draghetto:
         name: draghetto

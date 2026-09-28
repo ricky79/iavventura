@@ -201,6 +201,33 @@ def test_the_bear_remembers_the_trade(dragon):
     assert after == topic.variants[0].text
 
 
+@pytest.mark.parametrize(
+    ("room", "flag", "action", "stale"),
+    [
+        ("quercia", "piuma_presa", Action(verb="vai", direction="su"), "qualcosa di lungo"),
+        ("radura", "gola_guarita", Action(verb="parla", target="draghetto"), "Chiedimi del mio raffreddore"),
+        ("radura", "piuma_presa", Action(verb="chiedi", target="draghetto", topic="quercia"), "qualcosa di lungo"),
+        ("radura", "miele_dato", Action(verb="chiedi", target="draghetto", topic="more"), "roveto"),
+        ("tana", "miele_dato", Action(verb="esamina", target="orso"), "briciole"),
+        ("tana", "miele_dato", Action(verb="chiedi", target="orso", topic="more"), "mi pungo"),
+    ],
+    ids=["climbing the oak", "the dragon's greeting", "the oak", "the dragon on the berries", "the bear",
+         "the bear on the berries"],
+)  # fmt: skip
+def test_the_texts_follow_the_game(dragon, room, flag, action, stale):
+    # Found while playing: hints that still pointed at what was already done (the empty nest, the
+    # bush with no berries left, the cold the honey had cured).
+    engine, state = start(dragon)
+    state.current_room = room
+
+    before = engine.execute(state, action).text
+    state.flags.add(flag)
+    after = engine.execute(state, action).text
+
+    assert stale in before
+    assert stale not in after
+
+
 def test_the_bear_greets_differently_after_the_trade(dragon):
     # Found while playing: after the trade the bear still said «Grrr… chi va là?».
     engine, state = start(dragon)
