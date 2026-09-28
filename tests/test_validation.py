@@ -87,6 +87,12 @@ BROKEN_WORLDS = {
         lambda d: d["rooms"]["atrio"].update(variants=[{"when": {"has": "spada"}, "text": "Altro."}]),
         ["rooms.atrio.variants.0.when", "spada"],
     ),
+    "closed exit variant condition is checked": (
+        lambda d: d["rooms"]["atrio"]["exits"]["nord"].update(
+            otherwise_variants=[{"when": {"has": "spada"}, "text": "Altro."}]
+        ),
+        ["rooms.atrio.exits.nord.otherwise_variants.0.when", "spada"],
+    ),
     "item variant condition is checked": (
         lambda d: d["items"]["leva"].update(variants=[{"when": {"has": "spada"}, "text": "Altro."}]),
         ["items.leva.variants.0.when", "spada"],

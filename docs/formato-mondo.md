@@ -65,6 +65,7 @@ rooms:
         to: torre
         when: {flag: torre_aperta}              # facoltativo: senza, l'uscita è sempre libera
         otherwise: La porta è chiusa a chiave.  # mostrato se la condizione è falsa
+        otherwise_variants: []                  # facoltativo, come le variants: il testo che segue la partita
 ```
 
 Le uscite sono a senso unico: per tornare indietro serve l'uscita opposta nell'altra stanza.

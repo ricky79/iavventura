@@ -179,6 +179,8 @@ def _conditions(world: World) -> Iterator[tuple[str, Condition]]:
         for direction, exit_ in room.exits.items():
             if exit_.when is not None:
                 yield f"rooms.{room.id}.exits.{direction}.when", exit_.when
+            for index, variant in enumerate(exit_.otherwise_variants):
+                yield f"rooms.{room.id}.exits.{direction}.otherwise_variants.{index}.when", variant.when
         for index, variant in enumerate(room.variants):
             yield f"rooms.{room.id}.variants.{index}.when", variant.when
     for item in world.items.values():
