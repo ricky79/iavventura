@@ -213,6 +213,7 @@ class Exit(_Frozen):
     to: Id
     when: Condition | None = None
     otherwise: Text | None = None
+    otherwise_variants: tuple[TextVariant, ...] = ()  # the first that holds replaces otherwise
 
 
 class Room(_Frozen):

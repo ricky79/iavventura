@@ -200,7 +200,7 @@ class Engine:
         if exit_ is None:
             return Outcome(ok=False, text=NO_EXIT)
         if exit_.when is not None and not holds(exit_.when, state):
-            return Outcome(ok=False, text=exit_.otherwise or NO_EXIT)
+            return Outcome(ok=False, text=_first_variant(exit_.otherwise_variants, exit_.otherwise or NO_EXIT, state))
         first_visit = exit_.to not in state.visited
         state.current_room = exit_.to
         state.visited.add(exit_.to)

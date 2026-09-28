@@ -275,6 +275,12 @@ tests/
   `greeting_variants`, come le `variants` (l'orso dopo lo scambio non chiede più «chi va là?»);
   il ceppo della cucina è un arredo. Un oggetto nuovo nel mondo fa ricominciare una volta le
   partite salvate nel browser (`Engine.restore`).
+- **Testi che seguono la partita** (2026-09-28, branch `testi-e-progressi`): anche il testo di
+  un'uscita chiusa ha le sue varianti (`otherwise_variants`: salire sulla quercia col nido già
+  vuoto). Nel draghetto il saluto dopo il miele, la quercia e le more chieste al draghetto,
+  descrizione e more dell'orso dopo lo scambio; nella Rocca la cucina non promette più attrezzi
+  sul ceppo (gli oggetti presenti li elenca il motore). Regola per chi scrive: un indizio che
+  manda a fare qualcosa ha una variante per quando è fatto.
 
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.

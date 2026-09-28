@@ -75,6 +75,11 @@ rooms:
         otherwise: >
           Provi ad arrampicarti, ma i rami più bassi sono troppo in alto. Ti
           servirebbe qualcosa di lungo per arrivare al nido.
+        otherwise_variants:
+          - when: {flag: piuma_presa}
+            text: >
+              Provi ad arrampicarti, ma i rami più bassi sono troppo in alto. E
+              poi lassù il nido ormai è vuoto.
 
   # --- Stanze in cui non si entra mai: servono alle due uscite chiuse qui sopra. I nomi sono
   # quelli che un bambino scrive («vai a casa», «vai sull'albero»), e le descrizioni della radura

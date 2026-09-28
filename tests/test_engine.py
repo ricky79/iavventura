@@ -148,6 +148,22 @@ def test_closed_exit_without_otherwise_gives_the_generic_refusal(data):
     assert outcome.text == messages.NO_EXIT
 
 
+def test_the_text_of_a_closed_exit_follows_the_game(data):
+    # Up the oak, the hint pointed at the nest even when it was empty.
+    data["rooms"]["atrio"]["exits"]["nord"]["otherwise_variants"] = [
+        {"when": {"flag": "candela_accesa"}, "text": "La porta è chiusa, ma adesso ci vedi."}
+    ]
+    engine, state = start(data)
+    north = Action(verb="vai", direction="nord")
+
+    before = engine.execute(state, north).text
+    state.flags.add("candela_accesa")
+
+    assert before == "La porta è chiusa."
+    assert engine.execute(state, north).text == "La porta è chiusa, ma adesso ci vedi."
+    assert state.current_room == "atrio"
+
+
 def test_open_exit_moves_the_player_into_the_room(data):
     data["game"]["endings"] = [{"when": {"flag": "mai"}, "text": "Fine."}]
     engine, state = start(data)

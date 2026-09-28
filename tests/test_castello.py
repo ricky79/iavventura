@@ -235,3 +235,15 @@ def test_the_chopping_block_in_the_kitchen_can_be_examined(castle, line):
 
     assert game.turn(line) == castle.items["ceppo"].description
     assert game.turn("prendi il ceppo") == "Non si può prendere."
+
+
+def test_the_kitchen_promises_no_tools_once_the_hook_is_taken(castle):
+    # The kitchen said someone had left their tools on the block, even with the hook taken.
+    game = Game(Engine(castle))
+    game.state.current_room = "cucina"
+    game.turn("prendi il gancio")
+
+    kitchen = game.turn("guarda")
+
+    assert "gancio" not in kitchen
+    assert "attrezzi" not in kitchen
