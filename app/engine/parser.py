@@ -187,10 +187,20 @@ def is_named(thing: Named | Room, words: Sequence[str]) -> bool:
     """Whether the words name the thing: every significant word of its name or of an alias is there,
     at least nearly ("scuderie" for "Scuderia", "ciave" for "chiave"). To check the LLM's answers,
     not by the parser, which wants the exact words."""
-    return any(
-        all(any(_nearly(word, name_word) for word in words) for name_word in significant_words(name))
-        for name in (thing.name, *thing.aliases)
-    )
+    return bool(names_said(thing, words))
+
+
+def names_said(thing: Named | Room, words: Sequence[str]) -> list[tuple[str, ...]]:
+    """The names and aliases of the thing that the words say (see is_named), as significant words."""
+    names = dict.fromkeys(significant_words(name) for name in (thing.name, *thing.aliases))
+    return [name for name in names if all(any(_nearly(word, name_word) for word in words) for name_word in name)]
+
+
+def topics_named(character: Character, topics: Iterable[Topic], words: Sequence[str]) -> list[Topic]:
+    """The topics the words name; the character's own name is no topic ("pellegrino, cosa sai della
+    torre?" is about the tower)."""
+    words = [word for word in words if not is_named(character, [word])]
+    return [topic for topic in topics if is_named(topic, words)]
 
 
 def names_the_way(direction: Direction, words: Sequence[str], exits: Sequence[tuple[Direction, Room | None]]) -> bool:

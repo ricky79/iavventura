@@ -6,7 +6,7 @@ from app.engine.engine import NOBODY_HERE, NOT_HERE, Engine
 from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import World
 from app.engine.models import Action
-from app.game import ALL_RIGHT, HELP, NOBODY_TO_TALK_TO, NOT_A_GAME_ACTION, NOT_UNDERSTOOD, Game
+from app.game import ALL_RIGHT, ALREADY_HERE, HELP, NOBODY_TO_TALK_TO, NOT_A_GAME_ACTION, NOT_UNDERSTOOD, Game
 from app.llm.client import FakeLLMClient
 from app.llm.prompts import interpreter_system
 
@@ -526,3 +526,51 @@ def test_an_item_that_is_elsewhere_is_not_here(dragon, reply):
 
     assert say(game, "mangio una mora") == NOT_HERE
     assert game.state.turns == 0
+
+
+def test_going_where_the_player_already_is(dragon):
+    # "torno dal draghetto" in the glade: the game asked "Vuoi andare a est?".
+    game = Game(Engine(dragon), talking({"verbo": "vai", "bersaglio": "est", "con": "nessuno"}))
+
+    assert say(game, "torno dal draghetto") == ALREADY_HERE
+    assert game.pending is None
+
+
+def test_going_to_a_place_that_is_no_exit_is_not_understood(dragon):
+    # "vai a casa" at the oak: the game asked "Vuoi andare su?".
+    game = Game(Engine(dragon), talking({"verbo": "vai", "bersaglio": "su", "con": "nessuno"}))
+    game.state.current_room = "quercia"
+
+    assert say(game, "vai a casa") == NOT_UNDERSTOOD
+    assert game.pending is None
+
+
+def test_a_name_shared_with_something_here_is_not_elsewhere(castle):
+    # "corda" is the plain rope (out of play) and the grapple (carried).
+    game = Game(Engine(castle), talking({"verbo": "usa", "bersaglio": "portone", "con": "corda con gancio"}))
+    game.state.item_locations.update({"corda_con_gancio": "inventory", "corda": None, "gancio": None})
+
+    assert say(game, "aggancia la corda alla vera") == NOT_UNDERSTOOD
+
+
+@pytest.mark.parametrize(
+    ("room", "sentence", "character", "topic"),
+    [("radura", "mi dai il miele?", "draghetto", "miele"), ("tana", "mi dai il tuo miele?", "orso", "miele")],
+)
+def test_a_question_the_model_misses_is_asked_about_the_topic_it_names(dragon, room, sentence, character, topic):
+    # The model answered "dai le more": the kid was asking for the honey.
+    game = Game(Engine(dragon), talking({"verbo": "dai", "bersaglio": "more", "con": "nessuno"}))
+    game.state.current_room = room
+    game.state.item_locations["more"] = "inventory"
+
+    output = say(game, sentence)
+
+    assert output.endswith(dragon.characters[character].topics[topic].text)
+    assert output.startswith(f"(chiedi {'al draghetto' if character == 'draghetto' else "all'orso"} del miele)\n")
+    assert game.state.item_locations["more"] == "inventory"
+
+
+def test_only_a_question_is_asked_about_the_topic(dragon):
+    game = Game(Engine(dragon), talking({"verbo": "prendi", "bersaglio": "sasso", "con": "nessuno"}))
+
+    assert say(game, "mangio una mora") == NOT_HERE

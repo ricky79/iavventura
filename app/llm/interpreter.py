@@ -15,7 +15,7 @@ from collections.abc import Sequence
 from typing import Any, NamedTuple
 
 from app.engine.models import Action, Character, Command, Conversation, Direction, Item, Room, Topic, Verb
-from app.engine.parser import find_topic, is_named, names_the_way, significant_words, words_of
+from app.engine.parser import find_topic, is_named, names_the_way, significant_words, topics_named, words_of
 from app.llm.client import LLMClient, LLMError
 from app.llm.prompts import interpreter_system, interpreter_user
 
@@ -160,7 +160,13 @@ def _checked(
 ) -> Action | NotUnderstood:
     """The action, if the sentence asks for it; a question about a topic the sentence names."""
     if action.verb is Command.GO:
-        if MOVE_WORDS.intersection(words) or names_the_way(action.direction, words, exits):
+        if names_the_way(action.direction, words, exits):
+            return action
+        ways = [direction for direction, _ in exits if names_the_way(direction, words, exits)]
+        if len(ways) == 1:
+            # "attraverso il ponte": the model went east, the bridge is west.
+            return Action(verb=Command.GO, direction=ways[0])
+        if MOVE_WORDS.intersection(words):
             return action
         return NotUnderstood("la frase non chiede di spostarsi")
     if action.verb is Conversation.ASK:
@@ -182,11 +188,9 @@ def _checked(
 
 
 def _about_the_topic_named(action: Action, words: list[str], characters: Characters) -> Action:
-    """The topic the sentence names, if the model chose another; the character's own name is no topic
-    ("pellegrino, cosa sai della torre?")."""
+    """The topic the sentence names, if the model chose another."""
     character, topics = next((person, topics) for person, topics in characters if person.id == action.target)
-    words = [word for word in words if not is_named(character, [word])]
-    named = [topic.id for topic in topics if is_named(topic, words)]
+    named = [topic.id for topic in topics_named(character, topics, words)]
     if not named or action.topic in named:
         return action
     return Action(verb=Conversation.ASK, target=character.id, topic=named[0])

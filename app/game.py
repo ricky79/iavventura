@@ -15,8 +15,21 @@ import logging
 from collections.abc import Iterable
 
 from app.engine.engine import NOBODY_HERE, NOT_HERE, Engine
-from app.engine.models import INVENTORY, Action, Character, Conversation, Direction, GameState, Item, Room, Verb, World
-from app.engine.parser import Ambiguous, is_named, names_the_way, parse, words_of
+from app.engine.models import (
+    INVENTORY,
+    Action,
+    Character,
+    Command,
+    Conversation,
+    Direction,
+    GameState,
+    Item,
+    Room,
+    Topic,
+    Verb,
+    World,
+)
+from app.engine.parser import Ambiguous, is_named, names_said, names_the_way, parse, topics_named, words_of
 from app.engine.text import action_text, confirmation, render, which_one
 from app.llm.client import LLMClient
 from app.llm.interpreter import NotUnderstood, describe, interpret
@@ -24,6 +37,7 @@ from app.llm.interpreter import NotUnderstood, describe, interpret
 NOT_UNDERSTOOD = "Non ho capito."
 NOT_A_GAME_ACTION = "Non sembra un'azione del gioco. Scrivi «aiuto» per qualche esempio."
 NOBODY_TO_TALK_TO = "Qui non c'è nessuno con cui parlare."
+ALREADY_HERE = "Sei già qui."
 ALL_RIGHT = "Va bene."
 HELP = """Scrivi comandi semplici, per esempio:
   nord, sud, est, ovest, su, giù (oppure n, s, e, o)
@@ -110,11 +124,19 @@ class Game:
         here = {item.id for item in near} | {person.id for person, _ in characters}
         if isinstance(interpreted, NotUnderstood):
             self._log("llm", None, "altro" if interpreted.not_an_action else "non capito", interpreted.reason)
+            asked = self._question_about_a_topic(words, characters)
+            if asked is not None:
+                return f"({action_text(asked, self.world)})\n" + self._execute(asked, "llm")
             return self._not_understood(interpreted, words, here)
         if interpreted.verb is Conversation.TALK and self._greets_someone_else(interpreted.target, words, here):
             # "ciao orso" with only the dragon here: the model greets the dragon.
             self._log("llm", interpreted, "fallita", NOBODY_HERE)
             return NOBODY_HERE
+        if interpreted.verb is Command.GO and not names_the_way(interpreted.direction, words, exits):
+            instead = self._place_instead(words)
+            if instead is not None:
+                self._log("llm", interpreted, "fallita", instead)
+                return instead
         if not self._foreseen(interpreted, words, exits):
             self.pending = self._carried_first(interpreted)
             question = confirmation(self.pending, self.world)
@@ -136,13 +158,37 @@ class Game:
             return NOBODY_HERE
         return NOT_A_GAME_ACTION if result.not_an_action else NOT_UNDERSTOOD
 
+    def _question_about_a_topic(self, words: list[str], characters: list[tuple[Character, list[Topic]]]) -> Action | None:
+        """A question the model missed ("mi dai il miele?") that names a topic of the one here: it is
+        asked. Only a question: "mangio una mora" is no question about the berries."""
+        if not self._line.rstrip().endswith("?"):
+            return None
+        asked = [(person, named[0]) for person, topics in characters if (named := topics_named(person, topics, words))]
+        if len(asked) != 1:
+            return None
+        person, topic = asked[0]
+        return Action(verb=Conversation.ASK, target=person.id, topic=topic.id)
+
+    def _place_instead(self, words: list[str]) -> str | None:
+        """For a move the sentence doesn't name the way of: it names where the player already is
+        ("torno dal draghetto" in the glade), or a place no exit here leads to ("vai a casa" at the oak)."""
+        room = self.world.rooms[self.state.current_room]
+        if is_named(room, words):
+            return ALREADY_HERE
+        nearby = {room.id} | {exit_.to for exit_ in room.exits.values()}
+        if any(is_named(place, words) for place in self.world.rooms.values() if place.id not in nearby):
+            return NOT_UNDERSTOOD
+        return None
+
     def _greets_someone_else(self, character_id: str, words: list[str], here: set[str]) -> bool:
         return not is_named(self.world.characters[character_id], words) and self._names_one_elsewhere(
             self.world.characters.values(), words, here
         )
 
     def _names_one_elsewhere(self, things: Iterable[Item | Character], words: list[str], here: set[str]) -> bool:
-        return any(thing.id not in here and is_named(thing, words) for thing in things)
+        """A name shared with something here doesn't count: "corda" is also the grapple."""
+        said_here = {name for thing_id in here for name in names_said(self.world.thing(thing_id), words)}
+        return any(thing.id not in here and set(names_said(thing, words)) - said_here for thing in things)
 
     def _names_one_here(self, words: list[str], here: set[str]) -> bool:
         return any(is_named(self.world.thing(thing_id), words) for thing_id in here)

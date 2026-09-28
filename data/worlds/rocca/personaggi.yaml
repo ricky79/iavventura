@@ -23,7 +23,7 @@ characters:
       pellegrino:
         name: pellegrino
         gender: m
-        aliases: [viaggio, santuario]
+        aliases: [viaggio, santuario, nome]
         text: >
           «Io? Vado al santuario oltre il passo, come ogni autunno. Il mio nome
           non conta: stanotte siamo solo due persone al riparo.»

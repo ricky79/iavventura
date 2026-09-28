@@ -482,3 +482,14 @@ def test_a_move_the_sentence_does_not_ask_for_is_not_understood(in_reach, senten
 
     assert result == NotUnderstood("la frase non chiede di spostarsi")
     assert caplog.records[-1].getMessage() == "=== non capito: la frase non chiede di spostarsi"
+
+
+def test_a_move_goes_the_only_way_the_sentence_names(castle):
+    # "attraverso il ponte" at the brook: the model went east, the bridge is west.
+    den = castle.rooms["cucina"].model_copy(update={"name": "Tana", "aliases": ("orso", "ponte")})
+    reply = {"verbo": "vai", "bersaglio": "est", "con": "nessuno"}
+    exits = [(Direction.EAST, castle.rooms["cucina"]), (Direction.WEST, den)]
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), "attraverso il ponte", [], exits)
+
+    assert action == Action(verb="vai", direction="ovest")
