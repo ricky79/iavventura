@@ -4,6 +4,10 @@ The model answers with a JSON object whose values are constrained by a schema bu
 known verbs, the names of the items in reach or in sight and of the characters here, the topics
 they can be asked about, the directions. The answer is then checked here, and the engine still
 validates the action: the model never touches the game state.
+
+The model has to pick from lists, and with nothing fitting it picks anything ("mangio una mora"
+became "prendi il sasso"). So an item it chose must be named in the sentence, a move must be asked
+for, and a topic the sentence names wins over the one it chose.
 """
 
 import logging
@@ -11,7 +15,7 @@ from collections.abc import Sequence
 from typing import Any, NamedTuple
 
 from app.engine.models import Action, Character, Command, Conversation, Direction, Item, Room, Topic, Verb
-from app.engine.parser import find_topic, significant_words
+from app.engine.parser import DIRECTIONS, find_topic, is_named, significant_words, words_of
 from app.llm.client import LLMClient, LLMError
 from app.llm.prompts import interpreter_system, interpreter_user
 
@@ -20,6 +24,15 @@ log = logging.getLogger(__name__)
 NOT_AN_ACTION = "altro"
 NOTHING = "nessuno"
 MAX_TOKENS = 60  # the JSON answer is short: a low cap stops a model that rambles
+
+# Words that ask for a move even without a direction or a place: "torno indietro", "scappa".
+MOVE_WORDS = frozenset(
+    """
+    vai va vado andare andiamo torna torno tornare ritorna ritorno entra entro entrare esci esco uscire
+    sali salgo salire scendi scendo scendere corri corro scappa scappo raggiungi raggiungo cammina cammino
+    attraversa attraverso arrampica arrampico arrampicati arrampicarmi avvicinati spostati sposto
+    """.split()
+)
 
 _VERBS = [verb.value for verb in Verb]
 _CONVERSATION = [verb.value for verb in Conversation]
@@ -78,6 +91,8 @@ def interpret(
         )
         ids_by_name = {thing.name: thing.id for thing in [*in_reach, *(character for character, _ in characters)]}
         result = _to_action(reply, ids_by_name, characters)
+        if isinstance(result, Action):
+            result = _checked(result, words_of(sentence), in_reach, exits, characters)
     except LLMError:
         result = NotUnderstood("il modello non ha dato una risposta valida")
     if isinstance(result, NotUnderstood):
@@ -132,6 +147,55 @@ def _to_conversation(verb: str, target: str, tool: str, characters: Characters) 
         return Action(verb=Conversation.TALK, target=character.id)
     topic = find_topic(significant_words(tool), topics)
     return Action(verb=Conversation.ASK, target=character.id, topic=topic.id if topic else None)
+
+
+def _checked(
+    action: Action,
+    words: list[str],
+    in_reach: Sequence[Item],
+    exits: Sequence[tuple[Direction, Room | None]],
+    characters: Characters,
+) -> Action | NotUnderstood:
+    """The action, if the sentence asks for it; a question about a topic the sentence names."""
+    if action.verb is Command.GO:
+        if _asks_to_move(action.direction, words, exits):
+            return action
+        return NotUnderstood("la frase non chiede di spostarsi")
+    if action.verb is Conversation.ASK:
+        return _about_the_topic_named(action, words, characters)
+    if not isinstance(action.verb, Verb):
+        return action
+    things = {thing.id: thing for thing in [*in_reach, *(character for character, _ in characters)]}
+    ids = [thing_id for thing_id in (action.target, action.with_) if thing_id is not None]
+    if action.verb in (Verb.GIVE, Verb.USE):
+        # "gli do il miele", "ti faccio il solletico con la piuma": the character needs no name.
+        people = {character.id for character, _ in characters}
+        ids = [thing_id for thing_id in ids if thing_id not in people]
+        if not ids:
+            return NotUnderstood(f"'{action.verb}' senza un oggetto")
+    for thing_id in ids:
+        if not is_named(things[thing_id], words):
+            return NotUnderstood(f"la frase non nomina {things[thing_id].name!r}")
+    return action
+
+
+def _asks_to_move(direction: Direction, words: list[str], exits: Sequence[tuple[Direction, Room | None]]) -> bool:
+    """A direction (not a single letter: "e" is also "and"), a verb of motion, or the place the exit leads to."""
+    if any(len(word) > 1 and DIRECTIONS.get(word) == direction for word in words) or MOVE_WORDS.intersection(words):
+        return True
+    room = dict(exits).get(direction)
+    return room is not None and is_named(room, words)
+
+
+def _about_the_topic_named(action: Action, words: list[str], characters: Characters) -> Action:
+    """The topic the sentence names, if the model chose another; the character's own name is no topic
+    ("pellegrino, cosa sai della torre?")."""
+    character, topics = next((person, topics) for person, topics in characters if person.id == action.target)
+    words = [word for word in words if not is_named(character, [word])]
+    named = [topic.id for topic in topics if is_named(topic, words)]
+    if not named or action.topic in named:
+        return action
+    return Action(verb=Conversation.ASK, target=character.id, topic=named[0])
 
 
 def describe(action: Action) -> str:

@@ -180,6 +180,31 @@ def significant_words(text: str) -> tuple[str, ...]:
     return tuple(word for word in words_of(text) if word not in STOPWORDS)
 
 
+def is_named(thing: Named | Room, words: Sequence[str]) -> bool:
+    """Whether the words name the thing: every significant word of its name or of an alias is there,
+    at least nearly ("scuderie" for "Scuderia", "ciave" for "chiave"). To check the LLM's answers,
+    not by the parser, which wants the exact words."""
+    return any(
+        all(any(_nearly(word, name_word) for word in words) for name_word in significant_words(name))
+        for name in (thing.name, *getattr(thing, "aliases", ()))
+    )
+
+
+def _nearly(word: str, other: str) -> bool:
+    """The same word; between words of four letters another ending ("more", "mora"); with a longer one,
+    one letter more, less or different (a typo: "pozo", "ciave")."""
+    if word == other:
+        return True
+    shorter, longer = sorted((word, other), key=len)
+    if len(shorter) < 4 or len(longer) - len(shorter) > 1:
+        return False
+    if len(longer) == 4:
+        return word[:-1] == other[:-1]
+    if len(shorter) == len(longer):
+        return sum(a != b for a, b in zip(word, other)) == 1
+    return any(longer[:i] + longer[i + 1 :] == shorter for i in range(len(longer)))
+
+
 _Phrases = dict[tuple[str, ...], list[Named]]
 
 

@@ -3,7 +3,7 @@
 import pytest
 
 from app.engine.models import Action, Direction, World
-from app.engine.parser import Ambiguous, parse
+from app.engine.parser import Ambiguous, is_named, parse, words_of
 
 
 @pytest.fixture
@@ -315,3 +315,43 @@ def test_giving_without_naming_the_character_reaches_the_engine(keeper):
 @pytest.mark.parametrize("text", ["dai un'occhiata alla leva", "dai una spinta alla moneta"])
 def test_sayings_with_dai_are_left_to_the_llm(keeper, text):
     assert parse_giving(keeper, text) is None
+
+
+# --- Whether a sentence names a thing (to check the LLM's answers) ------------------------------
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "busso alla porta della torre",
+        "sfondo la porta a calci",
+        "provo la porta di ferro",
+        "afferra la ciave nel pozzo",  # a typo: one letter less
+        "prendo le chiavi",  # another ending
+    ],
+)
+def test_a_sentence_names_a_thing_by_its_name_or_an_alias_nearly(world, text):
+    door, key = world.items["porta"], world.items["chiave"]
+
+    assert is_named(door, words_of(text)) or is_named(key, words_of(text))
+
+
+@pytest.mark.parametrize(
+    ("text", "item_id"),
+    [
+        ("apri la torre", "porta"),  # every significant word of a name is needed: "porta della torre"
+        ("prendo il ferro", "chiave"),
+        ("cala la fine nel pozzo", "corda"),  # four letters: only the ending may change
+        ("prendi una scala", "pozzo"),
+    ],
+)
+def test_a_sentence_that_does_not_name_a_thing(world, text, item_id):
+    assert not is_named(world.items[item_id], words_of(text))
+
+
+def test_rooms_are_named_like_items(world_data):
+    world_data["rooms"]["atrio"]["name"] = "Scuderia"
+    room = World.model_validate(world_data).rooms["atrio"]
+
+    assert is_named(room, words_of("vai alle scuderie"))
+    assert not is_named(room, words_of("vai in cucina"))

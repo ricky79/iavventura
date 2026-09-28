@@ -65,24 +65,27 @@ def test_no_items_in_reach_and_no_exits(castle):
 
 
 @pytest.mark.parametrize(
-    ("reply", "expected"),
+    ("sentence", "reply", "expected"),
     [
-        ({"verbo": "usa", "bersaglio": "corda con gancio", "con": "pozzo"},
+        ("cala il rampino nel pozzo", {"verbo": "usa", "bersaglio": "corda con gancio", "con": "pozzo"},
          Action(verb="usa", target="corda_con_gancio", with_="pozzo")),
-        ({"verbo": "spingi", "bersaglio": "portone", "con": "nessuno"}, Action(verb="spingi", target="portone")),
-        ({"verbo": "lascia", "bersaglio": "corda con gancio", "con": "nessuno"},
+        ("dai una spinta al portone", {"verbo": "spingi", "bersaglio": "portone", "con": "nessuno"},
+         Action(verb="spingi", target="portone")),
+        ("metti giù il rampino", {"verbo": "lascia", "bersaglio": "corda con gancio", "con": "nessuno"},
          Action(verb="lascia", target="corda_con_gancio")),
-        ({"verbo": "prendi", "bersaglio": "corda con gancio", "con": "corda con gancio"},
+        ("raccogli la corda", {"verbo": "prendi", "bersaglio": "corda con gancio", "con": "corda con gancio"},
          Action(verb="prendi", target="corda_con_gancio")),
-        ({"verbo": "vai", "bersaglio": "nord", "con": "nessuno"}, Action(verb="vai", direction="nord")),
-        ({"verbo": "vai", "bersaglio": "giù", "con": "nessuno"}, Action(verb="vai", direction="giù")),
-        ({"verbo": "guarda", "bersaglio": "nessuno", "con": "nessuno"}, Action(verb="guarda")),
-        ({"verbo": "guarda", "bersaglio": "pozzo", "con": "nessuno"}, Action(verb="esamina", target="pozzo")),
-        ({"verbo": "inventario", "bersaglio": "nessuno", "con": "nessuno"}, Action(verb="inventario")),
+        ("torna a nord", {"verbo": "vai", "bersaglio": "nord", "con": "nessuno"}, Action(verb="vai", direction="nord")),
+        ("scendo di sotto", {"verbo": "vai", "bersaglio": "giù", "con": "nessuno"}, Action(verb="vai", direction="giù")),
+        ("guardati intorno", {"verbo": "guarda", "bersaglio": "nessuno", "con": "nessuno"}, Action(verb="guarda")),
+        ("guarda nel pozzo", {"verbo": "guarda", "bersaglio": "pozzo", "con": "nessuno"},
+         Action(verb="esamina", target="pozzo")),
+        ("cosa ho con me?", {"verbo": "inventario", "bersaglio": "nessuno", "con": "nessuno"},
+         Action(verb="inventario")),
     ],
 )  # fmt: skip
-def test_replies_become_actions_on_item_ids(in_reach, reply, expected):
-    assert interpret(FakeLLMClient(json_replies=[reply]), "frase", in_reach) == expected
+def test_replies_become_actions_on_item_ids(in_reach, sentence, reply, expected):
+    assert interpret(FakeLLMClient(json_replies=[reply]), sentence, in_reach) == expected
 
 
 def test_the_model_may_say_the_sentence_is_not_a_game_action(in_reach):
@@ -130,6 +133,8 @@ def test_a_broken_model_means_not_understood(in_reach):
          "=== azione: usa corda_con_gancio con pozzo"),
         ({"verbo": "spingi", "bersaglio": "portone", "con": "nessuno"}, "=== azione: spingi portone"),
         ({"verbo": "vai", "bersaglio": "nord", "con": "nessuno"}, "=== azione: vai nord"),
+        ({"verbo": "apri", "bersaglio": "porta della torre", "con": "nessuno"},
+         "=== non capito: la frase non nomina 'porta della torre'"),
         ({"verbo": "inventario", "bersaglio": "nessuno", "con": "nessuno"}, "=== azione: inventario"),
         ({"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"},
          "=== non capito: la frase non è un'azione di gioco"),
@@ -140,8 +145,10 @@ def test_a_broken_model_means_not_understood(in_reach):
     ],
 )  # fmt: skip
 def test_how_the_answer_was_understood_is_logged(in_reach, caplog, reply, logged):
+    sentence = "vai a nord e spingi il portone, poi cala il rampino nel pozzo"
+
     with caplog.at_level("INFO", logger="app.llm"):
-        interpret(FakeLLMClient(json_replies=[reply]), "frase", in_reach)
+        interpret(FakeLLMClient(json_replies=[reply]), sentence, in_reach)
 
     assert caplog.records[-1].getMessage() == logged
 
@@ -254,8 +261,9 @@ def test_the_model_is_told_about_the_characters_only_when_someone_is_here(keeper
 )  # fmt: skip
 def test_replies_about_characters_become_actions(keeper, reply, expected):
     items, characters = near_keeper(keeper)
+    sentence = "guardo il custode e gli do la moneta"
 
-    assert interpret(FakeLLMClient(json_replies=[reply]), "frase", items, (), characters) == expected
+    assert interpret(FakeLLMClient(json_replies=[reply]), sentence, items, (), characters) == expected
 
 
 @pytest.mark.parametrize(
@@ -355,4 +363,111 @@ def test_the_prompt_explains_giving():
 def test_giving_comes_back_with_both_names(castle, in_reach, reply, expected):
     characters = [(castle.characters["pellegrino"], [])]
 
-    assert interpret(FakeLLMClient(json_replies=[reply]), "frase", in_reach, (), characters) == expected
+    sentence = "offro il rampino al pellegrino"
+
+    assert interpret(FakeLLMClient(json_replies=[reply]), sentence, in_reach, (), characters) == expected
+
+
+# --- The answer is checked against the sentence (found while playing, 2026-09-28) ------------------
+
+
+@pytest.mark.parametrize(
+    ("sentence", "reply"),
+    [
+        # With nothing like it in the list, qwen2.5:3b picks any item: "prendi il sasso" for a blackberry.
+        ("prendi una scala", {"verbo": "prendi", "bersaglio": "portone", "con": "nessuno"}),
+        ("aggancia il rampino alla vera", {"verbo": "usa", "bersaglio": "porta della torre", "con": "corda con gancio"}),
+        ("bevo un po' d'acqua dal pozzo", {"verbo": "usa", "bersaglio": "pozzo", "con": "corda con gancio"}),
+        ("a cosa serve il pozzo?", {"verbo": "usa", "bersaglio": "corda con gancio", "con": "pozzo"}),
+    ],
+    ids=["target", "target with a tool", "tool", "a question on one of the two"],
+)
+def test_an_item_the_sentence_does_not_name_is_not_understood(in_reach, sentence, reply):
+    result = interpret(FakeLLMClient(json_replies=[reply]), sentence, in_reach)
+
+    assert isinstance(result, NotUnderstood)
+    assert not result.not_an_action
+
+
+def test_an_item_may_be_named_nearly(in_reach):
+    reply = {"verbo": "usa", "bersaglio": "pozzo", "con": "corda con gancio"}
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), "cala le corde nel pozo", in_reach)
+
+    assert action == Action(verb="usa", target="pozzo", with_="corda_con_gancio")
+
+
+@pytest.mark.parametrize(
+    ("sentence", "reply", "expected"),
+    [
+        ("tieni, è tua", {"verbo": "dai", "bersaglio": "moneta", "con": "custode"}, None),
+        ("gli do la moneta", {"verbo": "dai", "bersaglio": "moneta", "con": "custode"},
+         Action(verb="dai", target="moneta", with_="custode")),
+        ("ti passo il soldo", {"verbo": "usa", "bersaglio": "custode", "con": "moneta"},
+         Action(verb="usa", target="custode", with_="moneta")),
+        ("aiuta il custode", {"verbo": "usa", "bersaglio": "custode", "con": "nessuno"}, None),
+        ("fagli un regalo", {"verbo": "dai", "bersaglio": "custode", "con": "nessuno"}, None),
+        ("apro la porta", {"verbo": "apri", "bersaglio": "custode", "con": "nessuno"}, None),
+        ("osservo il guardiano", {"verbo": "esamina", "bersaglio": "custode", "con": "nessuno"},
+         Action(verb="esamina", target="custode")),
+    ],
+    ids=["an item not named", "the character by a pronoun", "the character by a pronoun, with usa",
+         "a character alone with usa", "a character alone with dai", "a character not named",
+         "a character named by an alias"],
+)  # fmt: skip
+def test_a_character_here_needs_no_name_only_to_give_something(keeper, sentence, reply, expected):
+    items, characters = near_keeper(keeper)
+
+    result = interpret(FakeLLMClient(json_replies=[reply]), sentence, items, (), characters)
+
+    if expected is None:
+        assert isinstance(result, NotUnderstood)
+    else:
+        assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("sentence", "reply", "topic"),
+    [
+        ("chi era il castellano?", {"verbo": "chiedi", "bersaglio": "pellegrino", "con": "torre"}, "rocca"),
+        ("pellegrino, cosa sai della torre?", {"verbo": "chiedi", "bersaglio": "pellegrino", "con": "nessuno"},
+         "torre"),
+        ("vecchio, parlami del pozzo e della chiave",
+         {"verbo": "chiedi", "bersaglio": "pellegrino", "con": "chiave"}, "chiave"),
+        ("come si esce da qui?", {"verbo": "chiedi", "bersaglio": "pellegrino", "con": "portone"}, "portone"),
+    ],
+    ids=["a topic named by an alias", "the character's own name is no topic", "the model's among those named",
+         "nothing named: the model's"],
+)  # fmt: skip
+def test_a_topic_named_in_the_sentence_wins(castle, sentence, reply, topic):
+    pilgrim = castle.characters["pellegrino"]
+    characters = [(pilgrim, list(pilgrim.topics.values()))]
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), sentence, [], (), characters)
+
+    assert action == Action(verb="chiedi", target="pellegrino", topic=topic)
+
+
+@pytest.mark.parametrize(
+    "sentence",
+    ["torno indietro", "a nord!", "verso la torre", "salgo le scale", "scappa"],
+)
+def test_a_move_needs_a_direction_a_known_place_or_a_verb_of_motion(castle, in_reach, sentence):
+    reply = {"verbo": "vai", "bersaglio": "nord", "con": "nessuno"}
+    exits = [(Direction.NORTH, castle.rooms["torre"])]
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), sentence, in_reach, exits)
+
+    assert action == Action(verb="vai", direction="nord")
+
+
+@pytest.mark.parametrize("sentence", ["attento alle spine", "busso alla porta", "vuoi delle more?"])
+def test_a_move_the_sentence_does_not_ask_for_is_not_understood(in_reach, sentence, caplog):
+    # qwen2.5:3b answered "vai" to all of them, and the game asked "Vuoi andare a est?".
+    reply = {"verbo": "vai", "bersaglio": "nord", "con": "nessuno"}
+
+    with caplog.at_level("INFO", logger="app.llm"):
+        result = interpret(FakeLLMClient(json_replies=[reply]), sentence, in_reach, [(Direction.NORTH, None)])
+
+    assert result == NotUnderstood("la frase non chiede di spostarsi")
+    assert caplog.records[-1].getMessage() == "=== non capito: la frase non chiede di spostarsi"

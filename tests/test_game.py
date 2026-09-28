@@ -140,19 +140,31 @@ def test_an_interpreted_sentence_is_shown_before_the_answer(castle):
 # --- An interpreted action nothing in the world foresees: ask first --------------------------------
 
 
+# The model understood the sentence, but nothing in the world foresees it.
+THROW = "lancio il rampino contro il portone"
+
+
 def misunderstood_grapple(castle: World) -> Game:
-    """The bug found while playing: the model aims the grapple at the door instead of the well."""
+    """The model aims the grapple at the door: "usa il portone con la corda con gancio"."""
     llm = FakeLLMClient(json_replies=[{"verbo": "usa", "bersaglio": "portone", "con": "corda con gancio"}])
     game = Game(Engine(castle), llm)
     game.state.item_locations["corda_con_gancio"] = "inventory"
     return game
 
 
+def test_the_grapple_aimed_at_a_door_the_sentence_does_not_name_is_not_understood(castle):
+    # The bug found while playing: the game asked "Vuoi usare la corda con gancio con il portone?".
+    game = misunderstood_grapple(castle)
+
+    assert say(game, "usa il rampino per recuperare la chiave dal pozzo") == NOT_UNDERSTOOD
+    assert game.pending is None
+
+
 def test_an_unexpected_interpreted_action_is_asked_before_doing_it(castle):
     game = misunderstood_grapple(castle)
     before = game.state.model_copy(deep=True)
 
-    output = say(game, "usa il rampino per recuperare la chiave dal pozzo")
+    output = say(game, THROW)
 
     # The carried item comes first: "usare la corda con gancio con il portone".
     assert output == "Vuoi usare la corda con gancio con il portone?"
@@ -163,7 +175,7 @@ def test_an_unexpected_interpreted_action_is_asked_before_doing_it(castle):
 @pytest.mark.parametrize("answer", ["sì", "si", "Sì, certo", "ok"])
 def test_yes_does_the_action_asked_about(castle, answer):
     game = misunderstood_grapple(castle)
-    say(game, "usa il rampino per recuperare la chiave dal pozzo")
+    say(game, THROW)
 
     output = say(game, answer)
 
@@ -175,7 +187,7 @@ def test_yes_does_the_action_asked_about(castle, answer):
 @pytest.mark.parametrize("answer", ["no", "No, grazie"])
 def test_no_drops_the_action_asked_about(castle, answer):
     game = misunderstood_grapple(castle)
-    say(game, "usa il rampino per recuperare la chiave dal pozzo")
+    say(game, THROW)
 
     output = say(game, answer)
 
@@ -186,7 +198,7 @@ def test_no_drops_the_action_asked_about(castle, answer):
 
 def test_any_other_line_after_the_question_is_a_new_command(castle):
     game = misunderstood_grapple(castle)
-    say(game, "usa il rampino per recuperare la chiave dal pozzo")
+    say(game, THROW)
 
     output = say(game, "usa il rampino con il pozzo")
 
@@ -196,7 +208,7 @@ def test_any_other_line_after_the_question_is_a_new_command(castle):
 
 def test_s_and_n_after_the_question_are_still_directions(castle):
     game = misunderstood_grapple(castle)
-    say(game, "usa il rampino per recuperare la chiave dal pozzo")
+    say(game, THROW)
 
     assert say(game, "n") == "La porta della torre è chiusa a chiave."
     assert game.pending is None
@@ -383,7 +395,7 @@ def test_a_failed_action_is_logged_with_the_answer(castle, caplog):
 
 
 def test_a_question_before_an_unexpected_action_is_logged(castle, caplog):
-    [entry] = logged(caplog, misunderstood_grapple(castle), "usa il rampino per recuperare la chiave dal pozzo")
+    [entry] = logged(caplog, misunderstood_grapple(castle), THROW)
 
     assert entry["da"] == "llm"
     assert entry["azione"] == "usa corda_con_gancio con portone"
