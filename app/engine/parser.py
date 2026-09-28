@@ -33,11 +33,14 @@ DIRECTIONS = {
     "o": Direction.WEST,
     "su": Direction.UP,
     "sali": Direction.UP,
+    "salgo": Direction.UP,
+    "arrampicati": Direction.UP,
     "giu": Direction.DOWN,
     "scendi": Direction.DOWN,
+    "scendo": Direction.DOWN,
 }
 
-GO_WORDS = frozenset({"vai", "va", "cammina"})
+GO_WORDS = frozenset({"vai", "va", "vado", "cammina", "torna", "torno", "ritorna", "ritorno", "entra", "entro"})
 LOOK_WORDS = frozenset({"guarda", "g", "descrivi"})  # with an item they mean "esamina"
 INVENTORY_WORDS = frozenset({"inventario", "inv", "i"})
 TALK_WORDS = frozenset({"parla", "saluta"})
@@ -107,7 +110,7 @@ def parse(
         if len(rest) == 1 and rest[0] in DIRECTIONS:
             return Action(verb=Command.GO, direction=DIRECTIONS[rest[0]])
         for direction, room in exits:
-            if room is not None and significant_words(room.name) == tuple(rest):
+            if room is not None and tuple(rest) in {significant_words(name) for name in (room.name, *room.aliases)}:
                 return Action(verb=Command.GO, direction=direction)
         return None
     if first in INVENTORY_WORDS:
@@ -186,8 +189,17 @@ def is_named(thing: Named | Room, words: Sequence[str]) -> bool:
     not by the parser, which wants the exact words."""
     return any(
         all(any(_nearly(word, name_word) for word in words) for name_word in significant_words(name))
-        for name in (thing.name, *getattr(thing, "aliases", ()))
+        for name in (thing.name, *thing.aliases)
     )
+
+
+def names_the_way(direction: Direction, words: Sequence[str], exits: Sequence[tuple[Direction, Room | None]]) -> bool:
+    """Whether a free sentence names the way out: the direction (not by a single letter: "e" is also
+    "and"), or the known room it leads to, by its name or an alias, at least nearly."""
+    if any(len(word) > 1 and DIRECTIONS.get(word) == direction for word in words):
+        return True
+    room = dict(exits).get(direction)
+    return room is not None and is_named(room, words)
 
 
 def _nearly(word: str, other: str) -> bool:

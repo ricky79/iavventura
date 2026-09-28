@@ -48,12 +48,22 @@ def test_the_model_gets_a_fixed_system_prompt_then_items_exits_and_sentence(cast
     (first_system, first_user), (second_system, second_user) = fake.calls
     assert first_system == second_system  # the fixed part comes first, so Ollama can cache it
     assert first_user == (
-        "Oggetti: pozzo; porta della torre (porta, porta di ferro); portone; "
+        "Oggetti: pozzo (vera); porta della torre (porta, porta di ferro); portone; "
         "corda con gancio (corda, fune, gancio, uncino, rampino)\n"
-        "Uscite: nord (Torre), est (Scuderia), ovest (Cucina)\n"
+        "Uscite: nord (Torre: scala, scale), est (Scuderia: scuderie, stalla, pellegrino), ovest (Cucina)\n"
         "Frase: cala il rampino nel pozzo"
     )
-    assert second_user == "Oggetti: pozzo\nUscite: nord, ovest (Cucina)\nFrase: saluta"
+    assert second_user == "Oggetti: pozzo (vera)\nUscite: nord, ovest (Cucina)\nFrase: saluta"
+
+
+def test_the_model_is_told_the_other_names_of_the_places_the_exits_lead_to(castle):
+    # "vado dall'orso" at the brook went east: the model didn't know the bear lives in the den.
+    den = castle.rooms["cucina"].model_copy(update={"name": "Tana", "aliases": ("orso", "grotta")})
+    fake = FakeLLMClient(json_replies=[{"verbo": "altro"}])
+
+    interpret(fake, "vado dall'orso", [], [(Direction.EAST, castle.rooms["cucina"]), (Direction.WEST, den)])
+
+    assert fake.calls[0][1].split("\n")[1] == "Uscite: est (Cucina), ovest (Tana: orso, grotta)"
 
 
 def test_no_items_in_reach_and_no_exits(castle):
@@ -178,7 +188,7 @@ def test_the_grapple_sentence_becomes_fishing_in_the_well(castle, in_reach):
     action = interpret(fake, "usa il rampino per recuperare la chiave dal pozzo", near)
 
     assert action == Action(verb="usa", target="pozzo", with_="corda_con_gancio")
-    assert fake.calls[0][1].startswith("Oggetti: pozzo; porta della torre (porta, porta di ferro); portone; ")
+    assert fake.calls[0][1].startswith("Oggetti: pozzo (vera); porta della torre (porta, porta di ferro); portone; ")
     assert "; chiave di ferro (chiave)\n" in fake.calls[0][1]
 
 
@@ -376,7 +386,8 @@ def test_giving_comes_back_with_both_names(castle, in_reach, reply, expected):
     [
         # With nothing like it in the list, qwen2.5:3b picks any item: "prendi il sasso" for a blackberry.
         ("prendi una scala", {"verbo": "prendi", "bersaglio": "portone", "con": "nessuno"}),
-        ("aggancia il rampino alla vera", {"verbo": "usa", "bersaglio": "porta della torre", "con": "corda con gancio"}),
+        ("aggancia il rampino alla vera",
+         {"verbo": "usa", "bersaglio": "porta della torre", "con": "corda con gancio"}),
         ("bevo un po' d'acqua dal pozzo", {"verbo": "usa", "bersaglio": "pozzo", "con": "corda con gancio"}),
         ("a cosa serve il pozzo?", {"verbo": "usa", "bersaglio": "corda con gancio", "con": "pozzo"}),
     ],

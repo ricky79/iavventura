@@ -15,7 +15,7 @@ from collections.abc import Sequence
 from typing import Any, NamedTuple
 
 from app.engine.models import Action, Character, Command, Conversation, Direction, Item, Room, Topic, Verb
-from app.engine.parser import DIRECTIONS, find_topic, is_named, significant_words, words_of
+from app.engine.parser import find_topic, is_named, names_the_way, significant_words, words_of
 from app.llm.client import LLMClient, LLMError
 from app.llm.prompts import interpreter_system, interpreter_user
 
@@ -160,7 +160,7 @@ def _checked(
 ) -> Action | NotUnderstood:
     """The action, if the sentence asks for it; a question about a topic the sentence names."""
     if action.verb is Command.GO:
-        if _asks_to_move(action.direction, words, exits):
+        if MOVE_WORDS.intersection(words) or names_the_way(action.direction, words, exits):
             return action
         return NotUnderstood("la frase non chiede di spostarsi")
     if action.verb is Conversation.ASK:
@@ -179,14 +179,6 @@ def _checked(
         if not is_named(things[thing_id], words):
             return NotUnderstood(f"la frase non nomina {things[thing_id].name!r}")
     return action
-
-
-def _asks_to_move(direction: Direction, words: list[str], exits: Sequence[tuple[Direction, Room | None]]) -> bool:
-    """A direction (not a single letter: "e" is also "and"), a verb of motion, or the place the exit leads to."""
-    if any(len(word) > 1 and DIRECTIONS.get(word) == direction for word in words) or MOVE_WORDS.intersection(words):
-        return True
-    room = dict(exits).get(direction)
-    return room is not None and is_named(room, words)
 
 
 def _about_the_topic_named(action: Action, words: list[str], characters: Characters) -> Action:

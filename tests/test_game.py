@@ -247,7 +247,11 @@ def test_going_to_a_named_room_needs_no_llm(castle):
 
 @pytest.mark.parametrize(
     ("sentence", "direction"),
-    [("torna verso ovest", "ovest"), ("torno di corsa nella cucina", "ovest"), ("scendo giù per le scale", "giù")],
+    [
+        ("torno di corsa verso ovest", "ovest"),
+        ("torno di corsa nella cucina", "ovest"),
+        ("scendo giù per le scale", "giù"),
+    ],
 )
 def test_an_interpreted_move_that_names_the_way_is_done(castle, sentence, direction):
     llm = FakeLLMClient(json_replies=[{"verbo": "vai", "bersaglio": direction, "con": "nessuno"}])
@@ -271,13 +275,37 @@ def test_an_interpreted_move_that_names_neither_direction_nor_room_is_asked(cast
     assert game.pending == Action(verb="vai", direction="ovest")
 
 
+def going_east(world: World) -> Game:
+    return Game(Engine(world), FakeLLMClient(json_replies=[{"verbo": "vai", "bersaglio": "est", "con": "nessuno"}]))
+
+
+def test_an_interpreted_move_to_a_room_named_nearly_is_done(castle):
+    # Found while playing: "vai alle scuderie" was asked about, three times (now the parser knows
+    # "scuderie"). A typo is fine too.
+    output = say(going_east(castle), "corri alla scudria")
+
+    assert output.startswith("(vai a est)\nScuderia\n")
+
+
+def test_an_interpreted_move_to_a_room_named_by_an_alias_is_done(castle):
+    output = say(going_east(castle), "corro di nuovo dal pellegrino")
+
+    assert output.startswith("(vai a est)\nScuderia\n")
+
+
+def test_a_single_letter_is_no_direction_in_a_free_sentence(castle):
+    # "e" is also "and": the move is asked about.
+    assert say(going_east(castle), "prendi fiato e scappa") == "Vuoi andare a est?"
+
+
 def test_the_llm_is_told_where_the_exits_lead(castle):
     llm = FakeLLMClient(json_replies=[{"verbo": "vai", "bersaglio": "est", "con": "nessuno"}])
     game = Game(Engine(castle), llm)
 
     output = say(game, "torno di corsa nella scuderia")
 
-    assert "\nUscite: nord (Torre), est (Scuderia), ovest (Cucina)\n" in llm.calls[0][1]
+    exits = "Uscite: nord (Torre: scala, scale), est (Scuderia: scuderie, stalla, pellegrino), ovest (Cucina)"
+    assert f"\n{exits}\n" in llm.calls[0][1]
     assert output.startswith("(vai a est)\nScuderia\n")
 
 

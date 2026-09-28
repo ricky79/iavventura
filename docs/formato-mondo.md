@@ -54,6 +54,7 @@ la frase del rampino.
 rooms:
   cortile:
     name: Cortile
+    aliases: [pozzo]         # facoltativo: altri nomi del luogo, anche chi o cosa ci si trova
     description: Testo della stanza. Cita gli arredi, non gli oggetti trasportabili.
     variants:                # facoltativo: la prima valida sostituisce description
       - when: {flag: torre_aperta}
@@ -74,6 +75,13 @@ la nomina (tutte le parole del nome, esclusi articoli e preposizioni: "Sala del 
 sia "sala" sia "trono"). Le stanze mai viste e mai nominate restano sconosciute, così un nome
 indovinato non rivela dove si trovano. Consiglio per chi scrive: nelle descrizioni nomina le
 stanze vicine con il loro nome ("A ovest una porta bassa dà sulla cucina").
+
+Gli `aliases` di una stanza valgono come il nome, sempre solo per una stanza conosciuta: con
+`aliases: [orso, grotta]` sulla tana, "vado dall'orso" porta alla tana se è una delle uscite.
+Servono per chi o cosa si trova nel luogo ("torna dal drago", "torna al pozzo") e per i nomi che
+il giocatore usa davvero ("scuderie", "stalla"). Anche l'interprete li riceve, nelle uscite:
+"ovest (Tana: orso, grotta)". Lo stesso alias può stare su più stanze: il ponte che unisce il
+ruscello e la tana è un alias di tutte e due, così "attraverso il ponte" va dall'altra parte.
 
 ## `items`
 
@@ -124,6 +132,12 @@ nel pozzo" confronta le parole "corda gancio pozzo". Il parser sceglie:
 - se due oggetti a portata rispondono alle stesse parole, chiede "Quale intendi: …?";
 - un oggetto non a portata arriva al motore, che risponde "Non vedi niente del genere qui."
   (senza chiedere quale, per non svelare oggetti che il giocatore non ha ancora visto).
+
+**E l'interprete.** Anche per le frasi libere un oggetto vale solo se la frase lo nomina, con il
+nome o un alias (tollerando un'altra desinenza e un errore di battitura: "chiavi", "ciave"): il
+modello sceglie da un elenco, e senza niente di adatto sceglie a caso. Quindi negli alias vanno le
+parole che il giocatore usa davvero ("vera" per il pozzo): una frase che nomina l'oggetto con una
+parola che non c'è riceve "Non ho capito.", e finisce in `logs/comandi.jsonl`.
 
 ## `rules`
 

@@ -84,9 +84,14 @@ def interpreter_user(
             f"Personaggi: {_names(character for character, _ in characters)}",
             f"Argomenti: {_names(topics) or 'nessuno'}",
         ]
-    ways = ", ".join(f"{direction} ({room.name})" if room else direction for direction, room in exits)
+    ways = ", ".join(f"{direction} ({_place(room)})" if room else direction for direction, room in exits)
     lines += [f"Uscite: {ways or 'nessuna'}", f"Frase: {sentence}"]
     return "\n".join(lines)
+
+
+def _place(room: Room) -> str:
+    """"Tana: orso, grotta": the room with its other names."""
+    return f"{room.name}: {', '.join(room.aliases)}" if room.aliases else room.name
 
 
 def _names(things: Iterable[Item | Character | Topic]) -> str:

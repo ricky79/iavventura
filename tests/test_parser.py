@@ -202,6 +202,36 @@ def test_every_significant_word_of_the_room_name_is_needed(world_data):
     assert parse("vai nella cella", world, [], exits) is None
 
 
+@pytest.mark.parametrize("text", ["vai dal prigioniero", "torna alla prigione", "vado in prigione"])
+def test_going_to_a_known_room_by_an_alias(world_data, text):
+    # "vado dall'orso" at the brook went east: the model didn't know the bear lives in the den.
+    world_data["rooms"]["cella"]["aliases"] = ["prigione", "prigioniero"]
+    world = World.model_validate(world_data)
+
+    assert parse(text, world, [], exits_to(world, ("ovest", "cella"))) == Action(verb="vai", direction="ovest")
+
+
+@pytest.mark.parametrize(
+    ("text", "direction"),
+    [
+        ("torna a sud", "sud"),
+        ("torno verso est", "est"),
+        ("ritorna a nord", "nord"),
+        ("ritorno giù", "giù"),
+        ("vado a ovest", "ovest"),
+        ("entra nella cella", "ovest"),
+        ("entro in cella", "ovest"),
+        ("salgo", "su"),
+        ("scendo", "giù"),
+        ("arrampicati", "su"),
+    ],
+)
+def test_more_words_for_going(world, text, direction):
+    exits = exits_to(world, ("ovest", "cella"))
+
+    assert parse(text, world, [], exits) == Action(verb="vai", direction=direction)
+
+
 # --- Talking to characters -----------------------------------------------------------------------
 
 

@@ -9,6 +9,7 @@ import pytest
 from app.engine.engine import Engine
 from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import Action, FlagSet, GameState, Give, Place, PlayerIn, Remove, Rule, SetFlag, World
+from app.game import Game
 
 
 @pytest.fixture(scope="module")
@@ -199,3 +200,28 @@ def test_the_key_can_also_be_taken_with_the_grapple_once_seen(castle):
     assert unseen.text == "Non vedi niente del genere qui."
     assert fished.text == castle.rules["pesca_chiave"].text
     assert state.item_locations["chiave_torre"] == "inventory"
+
+
+@pytest.mark.parametrize(
+    ("room", "line", "expected_room"),
+    [
+        # Found while playing: "vai alle scuderie" and "torna al pozzo" were asked about.
+        ("cortile", "vai alle scuderie", "scuderia"),
+        ("cortile", "vai dal pellegrino", "scuderia"),
+        ("scuderia", "torna al pozzo", "cortile"),
+        ("cucina", "torno al pozzo", "cortile"),
+    ],
+)
+def test_places_can_be_named_by_who_or_what_is_there(castle, room, line, expected_room):
+    game = Game(Engine(castle))
+    game.state.current_room = room
+    game.state.visited.update({"cortile", "scuderia"})
+
+    game.turn(line)
+
+    assert game.state.current_room == expected_room
+
+
+def test_the_rim_of_the_well_is_the_well(castle):
+    # "aggancia la corda alla vera di pietra" went to the door of the tower.
+    assert Game(Engine(castle)).turn("esamina la vera") == castle.items["pozzo"].description

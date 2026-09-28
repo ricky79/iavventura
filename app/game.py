@@ -16,7 +16,7 @@ from collections.abc import Iterable
 
 from app.engine.engine import NOBODY_HERE, NOT_HERE, Engine
 from app.engine.models import INVENTORY, Action, Character, Conversation, Direction, GameState, Item, Room, Verb, World
-from app.engine.parser import DIRECTIONS, Ambiguous, is_named, parse, significant_words, words_of
+from app.engine.parser import Ambiguous, is_named, names_the_way, parse, words_of
 from app.engine.text import action_text, confirmation, render, which_one
 from app.llm.client import LLMClient
 from app.llm.interpreter import NotUnderstood, describe, interpret
@@ -153,10 +153,7 @@ class Game:
         ("vado in cantina") the model may pick a door at random."""
         if not self.engine.expects(action):
             return False
-        if action.direction is None or any(DIRECTIONS.get(word) == action.direction for word in words):
-            return True
-        room = dict(exits).get(action.direction)
-        return room is not None and set(significant_words(room.name)) <= set(words)
+        return action.direction is None or names_the_way(action.direction, words, exits)
 
     def _execute(self, action: Action, source: str) -> str:
         outcome = self.engine.execute(self.state, action)

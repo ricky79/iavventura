@@ -6,6 +6,7 @@ items:
   pozzo:
     name: pozzo
     gender: m
+    aliases: [vera]  # il bordo di pietra
     description: >
       Un pozzo asciutto, profondo tre o quattro volte la tua altezza.
       Sporgendoti vedi luccicare qualcosa sul fondo: una grossa chiave ad

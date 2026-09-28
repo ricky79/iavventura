@@ -272,6 +272,12 @@ def test_the_jar_is_already_open_and_not_for_the_player(dragon):
         ("radura", "vai alla quercia", "quercia"),
         ("ruscello", "vai nella tana", "tana"),
         ("ruscello", "vai alla tana", "tana"),
+        # Found while playing: who or what is there names the place too.
+        ("quercia", "torna dal drago", "radura"),
+        ("ruscello", "torno dal draghetto", "radura"),
+        ("ruscello", "vado dall'orso", "tana"),
+        ("radura", "vado alle more", "roveto"),
+        ("radura", "vai al ponte", "ruscello"),
     ],
 )
 def test_places_can_be_named_the_way_a_kid_says_them(dragon, room, line, expected_room):
@@ -285,7 +291,11 @@ def test_places_can_be_named_the_way_a_kid_says_them(dragon, room, line, expecte
 
 @pytest.mark.parametrize(
     ("room", "line", "direction"),
-    [("radura", "vai a casa", Direction.SOUTH), ("quercia", "vai sull'albero", Direction.UP)],
+    [
+        ("radura", "vai a casa", Direction.SOUTH),
+        ("quercia", "vai sull'albero", Direction.UP),
+        ("quercia", "vai sulla quercia", Direction.UP),
+    ],
 )
 def test_the_closed_ways_answer_even_when_named(dragon, room, line, direction):
     game = Game(Engine(dragon))
