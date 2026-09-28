@@ -321,6 +321,9 @@ PLAYED = [
     (DRAGON, "ruscello", (), (), (), "ciao orso", says(NOBODY_HERE)),
     (DRAGON, "quercia", (), (), (), "mi arrampico sulla quercia", says(CLIMB)),
     (DRAGON, "radura", (), (), (), "vado a prendere le more", lambda a, g: g.state.current_room == "roveto" or a == NOT_HERE),
+    # From the kid's game: the den is past the brook, so west is asked about, never another way.
+    (DRAGON, "radura", (), (), (), "vai dall orso",
+     lambda a, g: g.state.current_room in ("radura", "ruscello") and g.pending in (None, Action(verb="vai", direction="ovest"))),
 ]  # fmt: skip
 
 

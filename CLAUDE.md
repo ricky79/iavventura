@@ -239,8 +239,10 @@ tests/
     genere qui.» (nomina un oggetto che non è qui, se il nome non indica anche una cosa presente:
     «corda» è anche il rampino), «Non vedi nessuno del genere qui.» («ciao orso» dove l'orso non
     c'è, anche se il modello saluta il draghetto), «Qui non c'è nessuno con cui parlare.», «Sei già
-    qui.» («torno dal draghetto» nella radura), «Non ho capito.» per un luogo che non è tra le
-    uscite («vai a casa» dalla quercia). Una domanda non capita («…?», o che comincia con perché,
+    qui.» («torno dal draghetto» nella radura), «Non ho capito.» per un luogo più lontano se la
+    direzione scelta non è il primo passo verso di lui («vai a casa» dalla quercia, se il modello
+    dice su); se lo è, resta la conferma («vai dall'orso» dalla radura: «Vuoi andare a ovest?»,
+    la tana è oltre il ruscello). Una domanda non capita («…?», o che comincia con perché,
     cosa, come…) che nomina un argomento del personaggio presente diventa quella domanda («mi dai
     il miele?»); un saluto che nomina un argomento anche («chi sei?», con l'alias «chi sei»).
   - **Alias delle stanze** (`rooms.X.aliases`), anche chi o cosa ci si trova: il parser capisce

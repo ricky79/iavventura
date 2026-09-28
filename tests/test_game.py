@@ -625,3 +625,11 @@ def test_an_item_elsewhere_comes_before_nobody_to_talk_to(castle):
     game = Game(Engine(castle), talking({"verbo": "parla", "bersaglio": "nessuno", "con": "nessuno"}))
 
     assert say(game, "ma non c'è la chiave nel pozzo") == NOT_HERE
+
+
+def test_going_to_a_place_farther_on_is_asked_when_the_way_leads_there(dragon):
+    # "vai dall orso" in the glade: the den is past the brook, and west is the way.
+    game = Game(Engine(dragon), talking({"verbo": "vai", "bersaglio": "ovest", "con": "nessuno"}))
+
+    assert say(game, "vai dall orso") == "Vuoi andare a ovest?"
+    assert game.pending == Action(verb="vai", direction="ovest")

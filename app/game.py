@@ -139,7 +139,7 @@ class Game:
             character = [(person, topics) for person, topics in characters if person.id == interpreted.target]
             interpreted = self._question_about_a_topic(words, character) or interpreted
         if interpreted.verb is Command.GO and not names_the_way(interpreted.direction, words, exits):
-            instead = self._place_instead(words)
+            instead = self._place_instead(interpreted.direction, words)
             if instead is not None:
                 self._log("llm", interpreted, "fallita", instead)
                 return instead
@@ -179,16 +179,31 @@ class Game:
         person, topic = asked[0]
         return Action(verb=Conversation.ASK, target=person.id, topic=topic.id)
 
-    def _place_instead(self, words: list[str]) -> str | None:
+    def _place_instead(self, direction: Direction, words: list[str]) -> str | None:
         """For a move the sentence doesn't name the way of: it names where the player already is
-        ("torno dal draghetto" in the glade), or a place no exit here leads to ("vai a casa" at the oak)."""
+        ("torno dal draghetto" in the glade), or a place farther on that the direction doesn't lead
+        to ("vai a casa" at the oak, and the model says up). Toward it, the move is asked about as
+        usual ("vai dall'orso" in the glade: west, past the brook)."""
         room = self.world.rooms[self.state.current_room]
         if is_named(room, words):
             return ALREADY_HERE
         nearby = {room.id} | {exit_.to for exit_ in room.exits.values()}
-        if any(is_named(place, words) for place in self.world.rooms.values() if place.id not in nearby):
+        farther = [place.id for place in self.world.rooms.values() if place.id not in nearby and is_named(place, words)]
+        if any(self._first_step_to(place_id) != direction for place_id in farther):
             return NOT_UNDERSTOOD
         return None
+
+    def _first_step_to(self, room_id: str) -> Direction | None:
+        """The first exit on a shortest way from the current room to another (closed exits too)."""
+        start = self.state.current_room
+        first: dict[str, Direction | None] = {start: None}
+        queue = [start]
+        for current in queue:
+            for direction, exit_ in self.world.rooms[current].exits.items():
+                if exit_.to not in first:
+                    first[exit_.to] = direction if current == start else first[current]
+                    queue.append(exit_.to)
+        return first.get(room_id)
 
     def _greets_someone_else(self, character_id: str, words: list[str], here: set[str]) -> bool:
         return not is_named(self.world.characters[character_id], words) and self._names_one_elsewhere(
