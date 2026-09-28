@@ -46,6 +46,16 @@ items:
     location: cucina
     scenery: true
 
+  ceppo:
+    name: ceppo
+    gender: m
+    aliases: [ceppo di legno]
+    description: >
+      Un grosso ceppo di legno, scavato al centro da anni di colpi di mannaia.
+      Troppo pesante da spostare.
+    location: cucina
+    scenery: true
+
   gancio:
     name: gancio da macellaio
     gender: m

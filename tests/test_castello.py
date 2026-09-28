@@ -225,3 +225,13 @@ def test_places_can_be_named_by_who_or_what_is_there(castle, room, line, expecte
 def test_the_rim_of_the_well_is_the_well(castle):
     # "aggancia la corda alla vera di pietra" went to the door of the tower.
     assert Game(Engine(castle)).turn("esamina la vera") == castle.items["pozzo"].description
+
+
+@pytest.mark.parametrize("line", ["esamina il ceppo", "guarda il ceppo di legno"])
+def test_the_chopping_block_in_the_kitchen_can_be_examined(castle, line):
+    # Found while playing: the kitchen tells of a chopping block, and "esamina il ceppo" found nothing.
+    game = Game(Engine(castle))
+    game.state.current_room = "cucina"
+
+    assert game.turn(line) == castle.items["ceppo"].description
+    assert game.turn("prendi il ceppo") == "Non si può prendere."
