@@ -221,6 +221,7 @@ characters:
     variants: []                 # come per le stanze
     location: scuderia           # una stanza: i personaggi non si spostano
     greeting: Risposta a "parla con il pellegrino".
+    greeting_variants: []        # facoltativo, come le variants: il saluto che segue la partita
     unknown: Risposta a una domanda su qualcosa che non conosce.
     refuses: Risposta a "dai X al pellegrino" se nessuna regola lo prevede (facoltativo).
     topics:
@@ -240,6 +241,8 @@ characters:
   ("pellegrino, cosa sai della torre?") passano all'LLM, che sceglie solo il personaggio e uno degli
   argomenti che conosce: **le risposte sono sempre i testi scritti qui**.
 - La descrizione della stanza elenca i personaggi presenti: "Qui c'è un pellegrino."
+- `greeting_variants`: la prima con la condizione vera sostituisce `greeting`, così il saluto
+  segue la partita (l'orso, dopo lo scambio, non chiede più "chi va là?").
 - Un argomento si riconosce dal nome o da un alias. Un alias può ripetere il nome di un oggetto
   ("chiave di ferro"): se l'LLM sceglie l'oggetto per una domanda, la risposta è quella dell'argomento.
 - Nelle frasi libere un argomento nominato vince su quello scelto dall'LLM, e una domanda che il

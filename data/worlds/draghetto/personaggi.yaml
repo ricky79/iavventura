@@ -128,6 +128,11 @@ characters:
       «Grrr… chi va là?» L'orso Tobia ti annusa da lontano, poi si siede per
       terra con un tonfo. «Ah, niente paura. Se hai qualcosa di buono da
       mangiare, siamo amici.»
+    greeting_variants:
+      - when: {flag: miele_dato}
+        text: >
+          «Ah, sei tu!» L'orso Tobia si lecca il muso, ancora tutto viola di
+          more. «Squisite, quelle more. Se ne trovi ancora, sai dove abito.»
     unknown: "L'orso si gratta la pancia: «Mah. Io penso solo a mangiare.»"
     refuses: "L'orso annusa e sbuffa: «Non è una cosa da mangiare.»"
     topics:

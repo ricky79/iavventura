@@ -298,6 +298,7 @@ class Character(_Frozen):
     variants: tuple[TextVariant, ...] = ()
     location: Id  # a room: characters don't move
     greeting: Text  # "parla con X"
+    greeting_variants: tuple[TextVariant, ...] = ()  # the first that holds replaces the greeting
     unknown: Text  # the answer about anything else
     refuses: Text | None = None  # "dai X" that no rule wants; without it, the engine's own answer
     topics: dict[Id, Topic] = {}

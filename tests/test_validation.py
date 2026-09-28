@@ -211,6 +211,10 @@ BROKEN_KEEPERS = {
         lambda d: topic(d, "leva")["variants"][0].update(when={"has": "spada"}),
         ["characters.custode.topics.leva.variants.0.when", "spada"],
     ),
+    "greeting variant is checked": (
+        lambda d: keeper(d).update(greeting_variants=[{"when": {"flag": "amici"}, "text": "«Ciao, amico.»"}]),
+        ["characters.custode.greeting_variants.0.when", "amici"],
+    ),
     "character variant is checked": (
         lambda d: keeper(d)["variants"][0].update(when={"flag": "allarme"}),
         ["characters.custode.variants.0.when", "allarme"],

@@ -213,7 +213,7 @@ class Engine:
             return Outcome(ok=False, text=NOBODY_HERE)
         character, topics = here
         if action.verb is Conversation.TALK:
-            return Outcome(ok=True, text=character.greeting)
+            return Outcome(ok=True, text=_first_variant(character.greeting_variants, character.greeting, state))
         topic = next((topic for topic in topics if topic.id == action.topic), None)
         if topic is None:
             return Outcome(ok=False, text=character.unknown)

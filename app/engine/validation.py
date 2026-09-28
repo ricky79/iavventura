@@ -193,6 +193,8 @@ def _conditions(world: World) -> Iterator[tuple[str, Condition]]:
         path = f"characters.{character.id}"
         for index, variant in enumerate(character.variants):
             yield f"{path}.variants.{index}.when", variant.when
+        for index, variant in enumerate(character.greeting_variants):
+            yield f"{path}.greeting_variants.{index}.when", variant.when
         for topic in character.topics.values():
             if topic.when is not None:
                 yield f"{path}.topics.{topic.id}.when", topic.when

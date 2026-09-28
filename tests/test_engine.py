@@ -841,6 +841,21 @@ def test_talking_to_a_character_gets_its_greeting(keeper):
     assert snapshot(state) == before
 
 
+def test_the_greeting_follows_the_game(keeper_world):
+    # The bear greeted "chi va là?" even after the trade.
+    keeper_world["characters"]["custode"]["greeting_variants"] = [
+        {"when": {"flag": "porta_aperta"}, "text": "«Ancora tu?», dice il custode."}
+    ]
+    engine, state = start(keeper_world)
+    talk = Action(verb="parla", target="custode")
+
+    before = engine.execute(state, talk).text
+    state.flags.add("porta_aperta")
+
+    assert before == "«Buongiorno», dice il custode."
+    assert engine.execute(state, talk).text == "«Ancora tu?», dice il custode."
+
+
 def test_asking_about_a_topic_gets_its_answer(keeper):
     engine, state = keeper
 
