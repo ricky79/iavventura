@@ -111,7 +111,7 @@ def interpret(
             max_tokens=MAX_TOKENS,
             temperature=0,
         )
-        ids_by_name = {thing.name: thing.id for thing in [*in_reach, *(character for character, _ in characters)]}
+        ids_by_name = _ids_by_name([*in_reach, *(character for character, _ in characters)])
         result = _to_action(reply, ids_by_name, characters)
         if isinstance(result, Action):
             result = _checked(result, words_of(sentence), in_reach, exits, characters)
@@ -122,6 +122,20 @@ def interpret(
     else:
         log.info("=== azione: %s", describe(result))
     return result
+
+
+def _ids_by_name(things: Sequence[Item | Character]) -> dict[str, str]:
+    """Names, and the other names only one of the things has: the model sometimes answers with an
+    alias ("grappa" for "bottiglia di grappa"), though the schema lists the names."""
+    ids = {thing.name: thing.id for thing in things}
+    owners: dict[str, set[str]] = {}
+    for thing in things:
+        for alias in thing.aliases:
+            owners.setdefault(alias, set()).add(thing.id)
+    for alias, owner in owners.items():
+        if alias not in ids and len(owner) == 1:
+            ids[alias] = next(iter(owner))
+    return ids
 
 
 def _to_action(reply: dict[str, Any], ids_by_name: dict[str, str], characters: Characters) -> Action | NotUnderstood:
@@ -197,6 +211,7 @@ def _checked(
         thrown = next((item.id for item in in_reach if item.id != action.target and is_named(item, words)), None)
         if thrown is not None:
             action = Action(verb=Verb.USE, target=action.target, with_=thrown)
+    action = _as_the_sentence_names(action, words, in_reach)
     things = {thing.id: thing for thing in [*in_reach, *(character for character, _ in characters)]}
     ids = [thing_id for thing_id in (action.target, action.with_) if thing_id is not None]
     if action.verb in (Verb.GIVE, Verb.USE):
@@ -209,6 +224,25 @@ def _checked(
         if not is_named(things[thing_id], words):
             return NotUnderstood(f"la frase non nomina {things[thing_id].name!r}")
     return action
+
+
+def _as_the_sentence_names(action: Action, words: list[str], in_reach: Sequence[Item]) -> Action:
+    """The model picks from lists, and for a part it can't place it picks anything: an item the
+    sentence names takes its place. Reading and examining have no tool, so a tool the sentence names
+    is what is read ("leggo il biglietto della contessa"); a tool it doesn't name gives way to the
+    only other item it names ("infilo il medaglione nell'incavo"). Characters are left as they are."""
+    items = {item.id for item in in_reach}
+    named = {item.id for item in in_reach if is_named(item, words)}
+    target, tool = action.target, action.with_
+    if action.verb in (Verb.READ, Verb.EXAMINE) and tool is not None:
+        if target in items and target not in named and tool in named:
+            target = tool
+        tool = None
+    elif tool in items and tool not in named and len(others := named - {target}) == 1:
+        tool = others.pop()
+    if (target, tool) == (action.target, action.with_):
+        return action
+    return Action(verb=action.verb, target=target, with_=tool)
 
 
 def _checked_move(

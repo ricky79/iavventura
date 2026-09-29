@@ -244,9 +244,13 @@ class Game:
         return action
 
     def _names_one_elsewhere(self, things: Iterable[Item | Character], words: list[str], here: set[str]) -> bool:
-        """A name shared with something here doesn't count: "corda" is also the grapple."""
-        said_here = {name for thing_id in here for name in names_said(self.world.thing(thing_id), words)}
-        return any(thing.id not in here and set(names_said(thing, words)) - said_here for thing in things)
+        """A name within one said of something here doesn't count: "corda" is also the grapple, and
+        "biglietto" is in "biglietto della contessa"."""
+        words_here = {word for thing_id in here for name in names_said(self.world.thing(thing_id), words) for word in name}
+        return any(
+            thing.id not in here and any(not set(name) <= words_here for name in names_said(thing, words))
+            for thing in things
+        )
 
     def _names_one_here(self, words: list[str], here: set[str]) -> bool:
         return any(is_named(self.world.thing(thing_id), words) for thing_id in here)

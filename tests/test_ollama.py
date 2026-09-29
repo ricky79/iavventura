@@ -405,3 +405,59 @@ def test_sentences_found_while_playing(llm, world, room, carried, flags, seen, s
     print(f"\n  {time.perf_counter() - start:4.1f}s  {sentence!r} -> {answer.splitlines()[0]!r}")
 
     assert check(answer, game)
+
+
+# --- La Stella di Valdimora, atto 1 ------------------------------------------------------------------
+
+VALDIMORA = load_world(WORLDS_DIR / "valdimora")
+VALDIMORA_RULE = {rule_id: rule.text for rule_id, rule in VALDIMORA.rules.items()}
+ETTORE = VALDIMORA.characters["ettore"]
+
+VALDIMORA_CASES = [
+    # (room, carried, flags, sentence, check on (answer, game))
+    ("atrio", (), (), "leggo l'annuncio funebre", says(VALDIMORA_RULE["leggi_annuncio"])),
+    ("rimessa", (), (), "apro la mia valigia", lambda a, g: g.state.item_locations["fotografia"] == "inventory"),
+    ("rimessa", (), (), "prendo l'olio", lambda a, g: g.state.item_locations["oliatore"] == "inventory"),
+    ("stanza_maggiordomo", (), (), "mostro la lettera al maggiordomo",
+     lambda a, g: g.state.item_locations["busta"] == "inventory"),
+    # The model may take it for asking about the letter: Ettore then asks to see it, a fair hint.
+    ("stanza_maggiordomo", (), (), "faccio vedere la lettera a Ettore",
+     lambda a, g: g.state.item_locations["busta"] == "inventory" or ETTORE.topics["lettera"].text in a),
+    ("stanza_maggiordomo", ("busta",), ("busta_data",), "leggo il biglietto della contessa",
+     says(VALDIMORA_RULE["leggi_busta"])),
+    ("cortile", (), ("busta_letta",), "guardo bene sotto la meridiana",
+     says(VALDIMORA.items["meridiana"].variants[1].text)),
+    ("cortile", ("oliatore",), ("busta_letta",), "metto un po' d'olio sulla meridiana",
+     lambda a, g: "meridiana_oliata" in g.state.flags),
+    ("cortile", (), ("busta_letta", "meridiana_oliata"), "infilo il medaglione nell'incavo",
+     lambda a, g: g.state.item_locations["biglietto_livia"] == "inventory"),
+    ("stanza_maggiordomo", (), ("busta_data",), "chiedo a Ettore di mettere una buona parola con Livia",
+     lambda a, g: "ettore_garantisce" in g.state.flags),
+    ("ufficio_governante", ("biglietto_livia",), ("ettore_garantisce",), "consegno il biglietto a Livia",
+     lambda a, g: g.state.item_locations["chiave_scalone"] == "inventory"),
+    ("atrio", ("chiave_scalone",), (), "salgo lo scalone",
+     says(VALDIMORA.rooms["atrio"].exits["su"].otherwise)),
+    ("stanza_maggiordomo", (), ("busta_data",), "gli chiedo di mia madre",
+     says(ETTORE.topics["clara"].text)),
+    ("biliardo", ("grappa",), (), "offro la grappa al dottore", lambda a, g: "ferri_addormentato" in g.state.flags),
+    ("biliardo", (), ("ferri_addormentato",), "frugo nella borsa del dottore",
+     lambda a, g: g.state.item_locations["chiavetta"] == "inventory" or "nessuno ti impedirebbe" in a),
+    ("dispensa", ("chiavetta",), (), "apro l'armadietto dei medicinali con la chiavetta",
+     lambda a, g: g.state.item_locations["registro"] == "inventory"),
+    # «chi sei?» to Agnese: her greeting or her answer to what she doesn't know; no action may start.
+    ("cappella", (), (), "chi sei?", says(VALDIMORA.characters["agnese"].greeting,
+                                          VALDIMORA.characters["agnese"].unknown)),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(
+    ("room", "carried", "flags", "sentence", "check"),
+    [pytest.param(*case, id=f"{case[0]}: {case[3]}") for case in VALDIMORA_CASES],
+)
+def test_valdimora_free_sentences(llm, room, carried, flags, sentence, check):
+    game = playing(llm, VALDIMORA, room, carried, flags, ())
+
+    answer = game.turn(sentence)
+    print(f"\n  {sentence!r} -> {answer.splitlines()[0]!r}")
+
+    assert check(answer, game)

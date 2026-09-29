@@ -579,6 +579,16 @@ def test_a_name_shared_with_something_here_is_not_elsewhere(castle):
     assert say(game, "aggancia la corda alla vera") == NOT_UNDERSTOOD
 
 
+def test_a_name_within_one_said_of_something_here_is_not_elsewhere():
+    # Valdimora: «biglietto» is the sealed note (elsewhere), but also part of «biglietto della
+    # contessa», the envelope carried: the game answered «Non vedi niente del genere qui.».
+    valdimora = load_world(WORLDS_DIR / "valdimora")
+    game = Game(Engine(valdimora), talking({"verbo": "leggi", "bersaglio": "medaglione", "con": "nessuno"}))
+    game.state.item_locations["busta"] = "inventory"
+
+    assert say(game, "leggo il biglietto della contessa") == NOT_UNDERSTOOD
+
+
 @pytest.mark.parametrize(
     ("room", "sentence", "character", "topic"),
     [("radura", "mi dai il miele?", "draghetto", "miele"), ("tana", "mi dai il tuo miele?", "orso", "miele")],
