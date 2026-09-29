@@ -226,6 +226,8 @@ def test_the_player_who_jumps_into_the_well_dies(castle, flags):
     assert answer == f"{castle.rules['salto_nel_pozzo'].text}\n\n{death.text}"
     assert game.finished
     assert game.turn("guarda") == "La partita è finita."
+    assert game.state.lost
+    assert game.resumable is None  # the castle has no acts: a new game, as before
 
 
 @pytest.mark.parametrize(

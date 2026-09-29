@@ -38,10 +38,14 @@ game:
     Oggetti: …
   intro: Testo mostrato all'inizio.
   start_room: cortile
+  acts:                    # facoltativo: le parti del gioco, in ordine (vedi «Atti»)
+    - name: secondo atto
+      when: {flag: atto_due}
   endings:                 # almeno uno; vale il primo la cui condizione è vera
     - when: {player_in: torre}
       text: Testo finale.
     - when: {flag: caduto_nel_pozzo}   # anche una morte è un finale
+      death: true                      # facoltativo: è una morte (vedi «Pericoli»)
       text: … Sei morto.
 ```
 
@@ -51,11 +55,20 @@ sbaglia giocando, e ogni modifica va verificata su tutto `tests/test_ollama.py`.
 la frase del rampino.
 
 **Pericoli.** Un finale non deve per forza essere una vittoria: una regola che attiva un flag e un
-finale con quel flag fanno morire il giocatore, e la partita finisce come per la vittoria (nel web
-si ricomincia con «Nuova partita», nel terminale il gioco chiede «Vuoi giocare ancora?»). Nella
-Rocca la regola `salto_nel_pozzo` (`verb: salta`) attiva `caduto_nel_pozzo`. Il testo della regola
-racconta cosa succede, quello del finale lo chiude. Un pericolo va annunciato prima, in una
-descrizione: il pozzo è «profondo tre o quattro volte la tua altezza».
+finale con quel flag e `death: true` fanno morire il giocatore, e la partita finisce (nel web si
+ricomincia con «Nuova partita», nel terminale il gioco chiede «Vuoi giocare ancora?»; se il mondo
+ha degli atti, prima si può riprendere dall'inizio dell'ultimo). Si può morire anche entrando in
+una stanza: `when: {all: [{player_in: sottotetto}, {not: {flag: asse_posata}}]}`. Nella Rocca la
+regola `salto_nel_pozzo` (`verb: salta`) attiva `caduto_nel_pozzo`. Il testo della regola racconta
+cosa succede, quello del finale lo chiude. Un pericolo va annunciato prima, in una descrizione: il
+pozzo è «profondo tre o quattro volte la tua altezza».
+
+**Atti.** In un'avventura lunga, `acts` divide il gioco in parti. Quando la condizione di un atto
+diventa vera per la prima volta (di solito il flag della regola che apre il piano nuovo), il gioco
+mette da parte lo stato. Dopo una morte si riprende da lì: nel web scrivendo «riprendi», nel
+terminale rispondendo sì alla domanda. Senza atti, dopo una morte si ricomincia da capo. `name` si
+legge dopo «dall'inizio del»: «secondo atto». Gli atti cominciano in ordine: il secondo solo dopo il
+primo.
 
 ## `rooms`
 
@@ -159,6 +172,7 @@ rules:
     trigger: {verb: usa, target: pozzo, with: corda_con_gancio}
     when: {not: {flag: chiave_pescata}}         # facoltativo
     otherwise: Nel pozzo non c'è più niente.    # facoltativo: se when è falso
+    otherwise_variants: []                      # facoltativo, come le variants: il testo che segue la partita
     effects:
       - give: chiave_torre
       - set_flag: chiave_pescata
@@ -187,8 +201,8 @@ rules:
 - `target` e `with` valgono in qualunque ordine: "usa corda con gancio" = "usa gancio con corda";
 - una regola senza `with` scatta solo per azioni senza strumento, e viceversa;
 - vale la prima regola che corrisponde, nell'ordine dei file. Se il suo `when` è falso si mostra
-  `otherwise` (oppure "Non succede niente.") e lo stato non cambia: le regole successive non
-  vengono provate;
+  `otherwise` (o la prima delle sue `otherwise_variants` la cui condizione vale; altrimenti "Non
+  succede niente.") e lo stato non cambia: le regole successive non vengono provate;
 - **"usa X con Y"** è il verbo generico dei giocatori: se nessuna regola `usa` corrisponde, vale
   la prima regola di qualunque verbo sugli stessi due oggetti. Così "usa la chiave con la porta"
   fa scattare `apri: porta_torre con chiave_torre` senza scrivere una regola doppia;
@@ -233,7 +247,10 @@ characters:
     aliases: [viandante, vecchio]
     description: Testo mostrato quando lo si esamina.
     variants: []                 # come per le stanze
-    location: scuderia           # una stanza: i personaggi non si spostano
+    location: scuderia           # una stanza: dove sta quando nessuno spostamento vale
+    moves:                       # facoltativo: dove si trova quando una condizione vale
+      - when: {flag: atto_due}
+        room: biblioteca
     greeting: Risposta a "parla con il pellegrino".
     greeting_variants: []        # facoltativo, come le variants: il saluto che segue la partita
     unknown: Risposta a una domanda su qualcosa che non conosce.
@@ -271,6 +288,10 @@ characters:
   volta, basta un `when` su un flag. Un personaggio che dà solo indizi non ne ha.
 - I personaggi si possono esaminare; "prendi" risponde "Non si può prendere.", gli altri verbi non
   fanno niente.
+- **Spostamenti**: `moves` dice dove si trova il personaggio mentre una condizione vale; vale il
+  primo spostamento vero, altrimenti `location`. Si sposta solo così, con i flag: non si muove da
+  solo col passare del tempo. Descrizione della stanza, dialoghi, `dai` e interprete seguono la sua
+  posizione.
 - **Dare**: `dai X a Y` (anche porgi, offri, regala, consegna, "ecco X"). Si dà solo ciò che si
   porta con sé, a un personaggio presente; "dai X" senza nome va all'unico personaggio presente
   ("A chi?" se sono di più). Una regola `verb: dai` decide cosa succede; senza regola il personaggio
@@ -280,7 +301,7 @@ characters:
 
 ## Condizioni
 
-Usate in `when` di uscite, varianti, regole, argomenti dei personaggi e finali. Ogni condizione ha **una sola chiave**.
+Usate in `when` di uscite, varianti, regole, argomenti e spostamenti dei personaggi, atti e finali. Ogni condizione ha **una sola chiave**.
 
 | Condizione | Vera quando |
 |---|---|
@@ -326,7 +347,8 @@ Tutti gli errori vengono raccolti e mostrati insieme, ciascuno con il percorso
 
 `GameState` (in `models.py`) contiene tutto ciò che cambia durante la partita: stanza corrente,
 posizione di ogni oggetto, flag attivi, stanze visitate, oggetti lontani già visti, turni, fine
-partita.
+partita; se la partita è persa (una morte), quanti atti sono cominciati e lo stato all'inizio
+dell'ultimo.
 `GameState.new(world)` crea lo stato iniziale, che si salva e rilegge in JSON.
 Il mondo invece è immutabile.
 

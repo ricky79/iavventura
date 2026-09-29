@@ -14,6 +14,10 @@ def test_minimal_world_has_no_problems(world_data):
     assert problems_for(world_data) == []
 
 
+def test_a_world_in_acts_with_a_death_has_no_problems(acts_world):
+    assert problems_for(acts_world) == []
+
+
 def add_room(world_data: dict, room_id: str, exits: dict) -> None:
     world_data["rooms"][room_id] = {"name": "Stanza", "description": "Una stanza.", "exits": exits}
 
@@ -138,6 +142,16 @@ BROKEN_WORLDS = {
         lambda d: d["rooms"]["cella"].update(aliases=["su"]),
         ["rooms.cella.aliases.0", "'su'"],
     ),
+    "rule otherwise variant is checked": (
+        lambda d: d["rules"]["tira_leva"].update(
+            otherwise_variants=[{"when": {"flag": "allarme"}, "text": "Suona un allarme."}]
+        ),
+        ["rules.tira_leva.otherwise_variants.0.when", "allarme"],
+    ),
+    "act on a flag never set": (
+        lambda d: d["game"].update(acts=[{"name": "secondo atto", "when": {"flag": "allarme"}}]),
+        ["game.acts.0.when", "allarme"],
+    ),
 }
 
 
@@ -246,6 +260,14 @@ BROKEN_KEEPERS = {
             usa_custode={"trigger": {"verb": "usa", "target": "moneta", "with": "custode"}, "text": "No."}
         ),
         ["rules.usa_custode.trigger.0.with", "custode"],
+    ),
+    "move to an unknown room": (
+        lambda d: keeper(d).update(moves=[{"when": {"flag": "porta_aperta"}, "room": "cantina"}]),
+        ["characters.custode.moves.0.room", "cantina"],
+    ),
+    "move on a flag never set": (
+        lambda d: keeper(d).update(moves=[{"when": {"flag": "allarme"}, "room": "cella"}]),
+        ["characters.custode.moves.0.when", "allarme"],
     ),
 }
 

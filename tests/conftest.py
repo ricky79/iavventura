@@ -101,3 +101,16 @@ def keeper_world(world_data) -> dict:
         }
     }
     return world_data
+
+
+@pytest.fixture
+def acts_world(world_data) -> dict:
+    """The test world in two acts: pulling the lever begins the second; jumping on the lever kills."""
+    world_data["game"]["acts"] = [{"name": "secondo atto", "when": {"flag": "porta_aperta"}}]
+    world_data["game"]["endings"].insert(0, {"when": {"flag": "caduta"}, "death": True, "text": "Sei morta."})
+    world_data["rules"]["salta_leva"] = {
+        "trigger": {"verb": "salta", "target": "leva"},
+        "effects": [{"set_flag": "caduta"}],
+        "text": "Salti sulla leva e scivoli.",
+    }
+    return world_data

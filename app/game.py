@@ -14,7 +14,7 @@ logger "app.commands", which the front ends write to logs/comandi.jsonl (app/con
 import logging
 from collections.abc import Iterable
 
-from app.engine.engine import NOBODY_HERE, NOT_HERE, Engine
+from app.engine.engine import GAME_OVER, NOBODY_HERE, NOT_HERE, Engine
 from app.engine.models import (
     INVENTORY,
     Action,
@@ -39,6 +39,7 @@ NOT_A_GAME_ACTION = "Non sembra un'azione del gioco. Scrivi «aiuto» per qualch
 NOBODY_TO_TALK_TO = "Qui non c'è nessuno con cui parlare."
 ALREADY_HERE = "Sei già qui."
 ALL_RIGHT = "Va bene."
+RESUME_WORD = "riprendi"  # after a death: the game again from the beginning of the last act
 HELP = """Scrivi comandi semplici, per esempio:
   nord, sud, est, ovest, su, giù (oppure n, s, e, o)
   guarda, inventario (oppure i)
@@ -88,6 +89,17 @@ class Game:
     def finished(self) -> bool:
         return self.state.finished
 
+    @property
+    def resumable(self) -> str | None:
+        """After a death, the act the game can go on from ("secondo atto"); otherwise None."""
+        return self.engine.resumable(self.state)
+
+    def resume(self) -> str:
+        """The game again from the beginning of the last act, after a death."""
+        self.state, outcome = self.engine.resume(self.state)
+        self.pending = None
+        return render(outcome, self.world)
+
     def opening(self) -> str:
         """Intro and first room; only a new game has one."""
         if self._opening is None:
@@ -99,6 +111,11 @@ class Game:
         words = words_of(line)
         if not words:
             return ""
+        if self.finished:
+            # Nothing to do and nothing for the LLM to interpret, but going on after a death.
+            if words == [RESUME_WORD] and self.resumable is not None:
+                return self.resume()
+            return GAME_OVER
         self._line, self._room = line, self.state.current_room
         pending, self.pending = self.pending, None
         if pending is not None:

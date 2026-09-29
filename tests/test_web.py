@@ -172,6 +172,32 @@ def test_a_finished_game_stays_finished(client):
 
     assert reply["text"] == "La partita è finita."
     assert reply["finished"] is True
+    assert reply["resumable"] is None
+
+
+@pytest.fixture
+def two_acts(acts_world) -> TestClient:
+    return TestClient(create_app({"prova": Engine(World.model_validate(acts_world))}, llm=None))
+
+
+def test_after_a_death_the_game_goes_on_from_the_last_act(two_acts):
+    state = new_game(two_acts, "prova")["state"]
+    state = turn(two_acts, "tira la leva", state, "prova")["state"]
+
+    dead = turn(two_acts, "salta sulla leva", state, "prova")
+    again = turn(two_acts, "riprendi", dead["state"], "prova")
+
+    assert (dead["finished"], dead["resumable"]) == (True, "secondo atto")
+    assert again["text"].startswith("Riprendi dall'inizio del secondo atto.")
+    assert (again["finished"], again["resumable"]) == (False, None)
+    assert again["state"]["checkpoint"]["flags"] == ["porta_aperta"]
+
+
+def test_the_page_offers_to_go_on_after_a_death(client):
+    page = client.get("/").text
+
+    assert "reply.resumable" in page
+    assert "Scrivi «riprendi» per ricominciare dall'inizio del" in page
 
 
 def test_overlong_lines_are_rejected(client):

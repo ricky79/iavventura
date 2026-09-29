@@ -70,6 +70,8 @@ class TurnReply(BaseModel):
     restarted: bool = False
     # The action the game is asking about: the browser sends it back with the next line.
     pending: Action | None = None
+    # After a death: the act the game can go on from with «riprendi» ("secondo atto").
+    resumable: str | None = None
 
 
 def create_app(engines: dict[str, Engine], llm: LLMClient | None) -> FastAPI:
@@ -112,7 +114,12 @@ def create_app(engines: dict[str, Engine], llm: LLMClient | None) -> FastAPI:
         game = Game(engine, llm, state=state, pending=pending_action(request.pending), adventure=request.adventure)
         text = game.turn(request.line)
         return TurnReply(
-            text=text, state=game.state, room=room_of(game), finished=game.finished, pending=game.pending
+            text=text,
+            state=game.state,
+            room=room_of(game),
+            finished=game.finished,
+            pending=game.pending,
+            resumable=game.resumable,
         )
 
     def engine_of(adventure: str) -> Engine:

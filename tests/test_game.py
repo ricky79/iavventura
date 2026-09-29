@@ -740,3 +740,54 @@ def test_the_log_says_what_the_game_answered_instead(dragon, caplog, sentence, r
 
     assert entry["esito"] == "non capito"
     assert entry["dettaglio"] == f"la frase non nomina 'sasso'; risposta: {answer}"
+
+
+# --- After a death: «riprendi» -------------------------------------------------------------------
+
+
+@pytest.fixture
+def two_acts(acts_world) -> Game:
+    """The test world in two acts; the LLM would answer "not understood" to anything."""
+    return Game(Engine(World.model_validate(acts_world)), FakeLLMClient())
+
+
+def test_after_a_death_riprendi_goes_on_from_the_last_act(two_acts):
+    say(two_acts, "tira la leva")
+    death = say(two_acts, "salta sulla leva")
+
+    act = two_acts.resumable
+    output = say(two_acts, "riprendi")
+
+    assert death.endswith("Sei morta.")
+    assert act == "secondo atto"
+    assert output.startswith("Riprendi dall'inizio del secondo atto.\n\nAtrio\n")
+    assert not two_acts.finished
+    assert say(two_acts, "nord").endswith("Fine.")
+
+
+def test_one_can_die_and_go_on_again(two_acts):
+    say(two_acts, "tira la leva")
+    for _ in range(2):
+        say(two_acts, "salta sulla leva")
+        assert say(two_acts, "riprendi").startswith("Riprendi dall'inizio del secondo atto.")
+
+    assert not two_acts.finished
+
+
+def test_a_finished_game_answers_without_the_llm(two_acts):
+    say(two_acts, "salta sulla leva")  # dead before any act began: nothing to go on from
+
+    assert say(two_acts, "riprendi") == "La partita è finita."
+    assert say(two_acts, "provo a scappare dalla finestra") == "La partita è finita."
+    assert two_acts.llm.calls == []
+
+
+def test_riprendi_means_nothing_while_playing_or_after_winning(two_acts):
+    playing = say(two_acts, "riprendi")
+    say(two_acts, "tira la leva")
+    say(two_acts, "nord")
+    won = say(two_acts, "riprendi")
+
+    assert playing == NOT_UNDERSTOOD  # the fake LLM understands nothing
+    assert won == "La partita è finita."
+    assert two_acts.state.current_room == "cella"

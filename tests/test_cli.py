@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.cli import GOODBYE, PLAY_AGAIN, WHICH_ADVENTURE, choose, menu, pick, run, session
+from app.cli import GOODBYE, PLAY_AGAIN, RESUME, WHICH_ADVENTURE, choose, menu, pick, run, session
 from app.engine.engine import Engine
 from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import World
@@ -186,3 +186,43 @@ def test_quitting_does_not_ask_to_play_again(worlds):
 
     assert PLAY_AGAIN not in output
     assert output[-1] == GOODBYE
+
+
+# --- After a death -----------------------------------------------------------------------------------
+
+GO_ON = RESUME.format(act="secondo atto")
+
+
+def test_after_a_death_the_terminal_offers_to_go_on_from_the_last_act(acts_world):
+    output = play_session(
+        {"prova": World.model_validate(acts_world)}, "1", "tira la leva", "salta sulla leva", "sì", "nord", "no"
+    )
+
+    after_the_question = output[output.index(GO_ON) + 1]
+    assert after_the_question.startswith("Riprendi dall'inizio del secondo atto.")
+    assert output[-3].endswith("Fine.")
+    assert output[-2:] == [PLAY_AGAIN, GOODBYE]
+
+
+def test_not_going_on_after_a_death_asks_whether_to_play_again(acts_world):
+    output = play_session(
+        {"prova": World.model_validate(acts_world)}, "1", "tira la leva", "salta sulla leva", "no", "no"
+    )
+
+    assert output[-3:] == [GO_ON, PLAY_AGAIN, GOODBYE]
+
+
+def test_a_death_before_any_act_only_asks_whether_to_play_again(acts_world):
+    output = play_session({"prova": World.model_validate(acts_world)}, "1", "salta sulla leva", "no")
+
+    assert GO_ON not in output
+    assert output[-2:] == [PLAY_AGAIN, GOODBYE]
+
+
+def test_riprendi_is_a_yes_to_the_terminal_question(acts_world):
+    # «Vuoi riprendere…?» → «riprendi»: counted as no, it ended the game and lost it (found by the review).
+    output = play_session(
+        {"prova": World.model_validate(acts_world)}, "1", "tira la leva", "salta sulla leva", "riprendi", "nord", "no"
+    )
+
+    assert output[output.index(GO_ON) + 1].startswith("Riprendi dall'inizio del secondo atto.")

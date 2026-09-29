@@ -252,6 +252,118 @@ def test_nothing_can_be_done_once_the_game_is_over(data):
     assert state.turns == 0
 
 
+# --- Acts, deaths and going on from the last act ------------------------------------------------
+
+
+def test_an_ending_may_be_a_death(acts_world):
+    engine, state = start(acts_world)
+
+    outcome = engine.execute(state, Action(verb="salta", target="leva"))
+
+    assert outcome.ending == "Sei morta."
+    assert state.finished and state.lost
+
+
+def test_winning_is_no_death(acts_world):
+    engine, state = start(acts_world)
+    engine.execute(state, Action(verb="tira", target="leva"))
+
+    engine.execute(state, Action(verb="vai", direction="nord"))
+
+    assert state.finished and not state.lost
+
+
+def test_an_act_begins_when_its_condition_first_holds_and_keeps_the_state(acts_world):
+    engine, state = start(acts_world)
+
+    engine.execute(state, Action(verb="guarda"))
+    before = (state.act, state.checkpoint)
+    engine.execute(state, Action(verb="tira", target="leva"))
+
+    assert before == (0, None)
+    assert state.act == 1
+    assert state.checkpoint.flags == {"porta_aperta"}
+    assert state.checkpoint.item_locations["chiave"] == "inventory"
+    assert state.checkpoint.turns == 2
+    assert state.checkpoint.checkpoint is None
+
+
+def test_an_act_begins_only_once(acts_world):
+    engine, state = start(acts_world)
+    engine.execute(state, Action(verb="tira", target="leva"))
+    kept = state.checkpoint.model_copy(deep=True)
+
+    engine.execute(state, Action(verb="lascia", target="moneta"))
+
+    assert state.checkpoint == kept
+    assert state.checkpoint.item_locations["moneta"] == "inventory"
+
+
+def test_an_act_that_holds_from_the_start_begins_with_the_game(acts_world):
+    acts_world["game"]["acts"].insert(0, {"name": "primo atto", "when": {"player_in": "atrio"}})
+    engine, state = start(acts_world)
+
+    assert state.act == 1
+    assert state.checkpoint.turns == 0
+
+
+def test_after_a_death_the_game_goes_on_from_the_beginning_of_the_last_act(acts_world):
+    engine, state = start(acts_world)
+    engine.execute(state, Action(verb="tira", target="leva"))
+    engine.execute(state, Action(verb="lascia", target="moneta"))
+    engine.execute(state, Action(verb="salta", target="leva"))
+
+    act = engine.resumable(state)
+    resumed, outcome = engine.resume(state)
+
+    assert act == "secondo atto"
+    assert outcome.text == "Riprendi dall'inizio del secondo atto."
+    assert outcome.room.id == "atrio"
+    assert not resumed.finished and not resumed.lost
+    assert resumed.item_locations["moneta"] == "inventory"  # as it was when the act began
+    assert resumed.checkpoint == state.checkpoint  # so it can go on from there again
+
+
+def test_a_death_before_any_act_cannot_go_on(acts_world):
+    engine, state = start(acts_world)
+    engine.execute(state, Action(verb="salta", target="leva"))
+
+    assert engine.resumable(state) is None
+    with pytest.raises(ValueError):
+        engine.resume(state)
+
+
+def test_an_act_does_not_begin_on_the_turn_the_player_dies(acts_world):
+    # Entering the cell with the coin kills. Had the second act begun on that turn, its kept state
+    # would be dead already, and «riprendi» would kill again (found by the review).
+    acts_world["game"]["acts"] = [
+        {"name": "primo atto", "when": {"player_in": "atrio"}},
+        {"name": "secondo atto", "when": {"player_in": "cella"}},
+    ]
+    acts_world["game"]["endings"].insert(
+        0, {"when": {"all": [{"player_in": "cella"}, {"has": "moneta"}]}, "death": True, "text": "Il pavimento cede."}
+    )
+    engine, state = start(acts_world)
+    engine.execute(state, Action(verb="tira", target="leva"))
+    engine.execute(state, Action(verb="vai", direction="nord"))
+
+    act = engine.resumable(state)
+    resumed, _ = engine.resume(state)
+    engine.execute(resumed, Action(verb="guarda"))
+
+    assert act == "primo atto"
+    assert resumed.current_room == "atrio"
+    assert not resumed.finished
+
+
+def test_a_game_won_does_not_go_on(acts_world):
+    engine, state = start(acts_world)
+    engine.execute(state, Action(verb="tira", target="leva"))
+    engine.execute(state, Action(verb="vai", direction="nord"))
+
+    assert engine.resumable(state) is None
+
+
 # --- Reach ----------------------------------------------------------------------------
 
 
@@ -430,6 +542,22 @@ def test_rule_whose_condition_fails_without_otherwise_gives_the_generic_answer(d
     outcome = engine.execute(state, Action(verb="tira", target="leva"))
 
     assert outcome.text == messages.NOTHING_HAPPENS
+
+
+def test_the_text_of_a_rule_whose_condition_fails_follows_the_game(data):
+    # The medallion in the sundial: "it doesn't turn, it's rusty" / "the compartment is empty".
+    data["rules"]["tira_leva"]["otherwise_variants"] = [
+        {"when": {"has": "chiave"}, "text": "La leva non si muove più, e la chiave l'hai già presa."}
+    ]
+    engine, state = start(data)
+    engine.execute(state, Action(verb="tira", target="leva"))
+
+    with_the_key = engine.execute(state, Action(verb="tira", target="leva"))
+    engine.execute(state, Action(verb="lascia", target="chiave"))
+    without = engine.execute(state, Action(verb="tira", target="leva"))
+
+    assert with_the_key.text == "La leva non si muove più, e la chiave l'hai già presa."
+    assert without.text == "La leva non si muove più."
 
 
 def test_rule_without_effects_is_just_an_answer(data):
@@ -847,6 +975,39 @@ def test_the_room_shows_the_characters_in_it(keeper):
 
     assert look.room.characters == ("custode",)
     assert elsewhere.room.characters == ()
+
+
+def test_a_character_moves_while_a_condition_holds(keeper_world):
+    # Agnese follows the player from floor to floor: `moves`, the first that holds wins.
+    keeper_world["characters"]["custode"]["moves"] = [
+        {"when": {"has": "chiave"}, "room": "atrio"},
+        {"when": {"flag": "porta_aperta"}, "room": "cella"},
+    ]
+    engine, state = start(keeper_world)
+    custode = engine.world.characters["custode"]
+
+    at_first = engine.character_room(custode, state)
+    state.flags.add("porta_aperta")
+    with_the_flag = engine.character_room(custode, state)
+    state.item_locations["chiave"] = "inventory"
+    with_the_key_too = engine.character_room(custode, state)
+
+    assert (at_first, with_the_flag, with_the_key_too) == ("atrio", "cella", "atrio")
+
+
+def test_a_character_that_moved_away_is_not_here(keeper_world):
+    keeper_world["characters"]["custode"]["moves"] = [{"when": {"flag": "porta_aperta"}, "room": "cella"}]
+    engine, state = start(keeper_world)
+    engine.execute(state, Action(verb="tira", target="leva"))
+
+    talk = engine.execute(state, Action(verb="parla", target="custode"))
+    give = engine.execute(state, Action(verb="dai", target="moneta", with_="custode"))
+    state.current_room = "cella"
+    look = engine.execute(state, Action(verb="guarda"))
+
+    assert (talk.text, give.text) == (messages.NOBODY_HERE, messages.NOBODY_HERE)
+    assert look.room.characters == ("custode",)
+    assert [character.id for character, _ in engine.characters_here(state)] == ["custode"]
 
 
 def test_characters_here_come_with_the_topics_the_player_can_ask_about(keeper):

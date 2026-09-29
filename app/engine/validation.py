@@ -77,6 +77,8 @@ def find_problems(world: World) -> list[str]:
 
     for character in world.characters.values():
         check_room(f"characters.{character.id}.location", character.location)
+        for index, move in enumerate(character.moves):
+            check_room(f"characters.{character.id}.moves.{index}.room", move.room)
         if character.id in world.items:
             report(f"characters.{character.id}", f"id '{character.id}' is already used by an item")
 
@@ -191,12 +193,16 @@ def _conditions(world: World) -> Iterator[tuple[str, Condition]]:
     for rule in world.rules.values():
         if rule.when is not None:
             yield f"rules.{rule.id}.when", rule.when
+        for index, variant in enumerate(rule.otherwise_variants):
+            yield f"rules.{rule.id}.otherwise_variants.{index}.when", variant.when
     for character in world.characters.values():
         path = f"characters.{character.id}"
         for index, variant in enumerate(character.variants):
             yield f"{path}.variants.{index}.when", variant.when
         for index, variant in enumerate(character.greeting_variants):
             yield f"{path}.greeting_variants.{index}.when", variant.when
+        for index, move in enumerate(character.moves):
+            yield f"{path}.moves.{index}.when", move.when
         for topic in character.topics.values():
             if topic.when is not None:
                 yield f"{path}.topics.{topic.id}.when", topic.when
@@ -204,6 +210,8 @@ def _conditions(world: World) -> Iterator[tuple[str, Condition]]:
                 yield f"{path}.topics.{topic.id}.variants.{index}.when", variant.when
     for index, ending in enumerate(world.game.endings):
         yield f"game.endings.{index}.when", ending.when
+    for index, act in enumerate(world.game.acts):
+        yield f"game.acts.{index}.when", act.when
 
 
 def _atoms(condition: Condition) -> Iterator[Condition]:

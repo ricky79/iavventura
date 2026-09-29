@@ -303,6 +303,17 @@ tests/
     («salgo», «scendo») torna uno spostamento;
   - «chiedo al vecchio come si esce da qui» perdeva l'argomento (3 volte su 3; col prompt di prima
     3 su 3 giuste): l'argomento `portone` del pellegrino ha gli alias `esce` e `uscire`.
+- **Motore per Valdimora** (2026-09-29, branch `feature/inizia_l_Avventura`; spec in
+  `docs/superpowers/specs/2026-09-29-valdimora-design.md`, piano in
+  `docs/superpowers/plans/2026-09-29-motore-valdimora.md`): tre aggiunte, nessuna al prompt.
+  - Personaggi che si spostano con le condizioni (`moves`, `Engine.character_room`).
+  - Atti (`game.acts`) e morti (`death: true` nei finali): quando comincia un atto il motore tiene
+    da parte lo stato (`GameState.checkpoint`, con `act` e `lost`), e dopo una morte si riprende da
+    lì (`Engine.resumable`/`resume`). Nel web con «riprendi» (campo `resumable` nella risposta di
+    `/api/turn`, avviso scritto dalla pagina), nel terminale con «Vuoi riprendere dall'inizio del
+    secondo atto? (s/n)». Una partita finita non chiama più l'LLM. Il pozzo della Rocca è una
+    morte, ma senza atti si ricomincia da capo.
+  - Le regole hanno anche `otherwise_variants`, come le uscite.
 
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.

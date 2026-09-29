@@ -266,7 +266,7 @@
   let save = blank();
 
   function blank() {
-    return { state: null, room: "", finished: false, lines: [], pending: null };
+    return { state: null, room: "", finished: false, resumable: null, lines: [], pending: null };
   }
 
   // localStorage may throw (private browsing, storage disabled or full): the game goes on without it.
@@ -281,7 +281,12 @@
 
   function inProgress(id) {
     const saved = load(id);
-    return saved !== null && !saved.finished;
+    return saved !== null && !over(saved);
+  }
+
+  // Over for good: finished, and not after a death the game can go on from («riprendi»).
+  function over(saved) {
+    return saved.finished && !saved.resumable;
   }
 
   function store() {
@@ -338,8 +343,8 @@
   // so «Avventure» and «Nuova partita» wait for it (a turn with the LLM takes seconds).
   function setBusy(busy) {
     $("to-menu").disabled = $("new-game").disabled = busy;
-    input.disabled = busy || save.finished;
-    input.placeholder = save.finished ? "La partita è finita." : "";
+    input.disabled = busy || over(save);
+    input.placeholder = over(save) ? "La partita è finita." : save.resumable ? "riprendi" : "";
   }
 
   // GET without a body, POST with one; a failed answer throws an error with its HTTP status.
@@ -420,13 +425,13 @@
     return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().match(/[a-z0-9]+/g) ?? [];
   }
 
-  // A game in progress goes on; a finished one, or none, starts anew.
+  // A game in progress goes on (also after a death, with «riprendi»); a finished one, or none, starts anew.
   function choose(adventure) {
     current = adventure;
     intro.hidden = menu.hidden = true;
     setTitle(adventure.title);
     const saved = load(adventure.id);
-    if (saved && !saved.finished) resume(saved);
+    if (saved && !over(saved)) resume(saved);
     else newGame();
   }
 
@@ -493,9 +498,14 @@
       save.state = reply.state;
       save.room = reply.room;
       save.finished = reply.finished;
+      save.resumable = reply.resumable ?? null;
       save.pending = reply.pending ?? null;
       say("story", reply.text);
-      if (reply.finished) say("notice", "[Fine. Per giocare ancora scegli «Nuova partita» o «Avventure».]");
+      if (reply.resumable) {
+        say("notice", `[Scrivi «riprendi» per ricominciare dall'inizio del ${reply.resumable}, oppure scegli «Nuova partita».]`);
+      } else if (reply.finished) {
+        say("notice", "[Fine. Per giocare ancora scegli «Nuova partita» o «Avventure».]");
+      }
       store();
       setBusy(false);
     } catch (error) {

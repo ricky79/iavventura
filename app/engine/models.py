@@ -269,6 +269,7 @@ class Rule(_Frozen):
     triggers: Annotated[tuple[Trigger, ...], BeforeValidator(_one_means_a_list)] = Field(alias="trigger", min_length=1)
     when: Condition | None = None
     otherwise: Text | None = None
+    otherwise_variants: tuple[TextVariant, ...] = ()  # the first that holds replaces otherwise
     effects: tuple[Effect, ...] = ()
     text: Text
 
@@ -288,6 +289,13 @@ class Topic(_Frozen):
     effects: tuple[Effect, ...] = ()
 
 
+class Move(_Frozen):
+    """Where a character is while a condition holds: Agnese on the floor the player has just opened."""
+
+    when: Condition
+    room: Id
+
+
 class Character(_Frozen):
     """Someone the player can talk to: it greets, and answers about its topics with fixed texts."""
 
@@ -298,7 +306,8 @@ class Character(_Frozen):
     aliases: tuple[Text, ...] = ()
     description: Text
     variants: tuple[TextVariant, ...] = ()
-    location: Id  # a room: characters don't move
+    location: Id  # a room: where the character is while none of its moves holds
+    moves: tuple[Move, ...] = ()  # the first whose condition holds says where the character is now
     greeting: Text  # "parla con X"
     greeting_variants: tuple[TextVariant, ...] = ()  # the first that holds replaces the greeting
     unknown: Text  # the answer about anything else
@@ -316,6 +325,15 @@ class Character(_Frozen):
 class Ending(_Frozen):
     when: Condition
     text: Text
+    death: bool = False  # the player dies: the game can go on from the beginning of the last act
+
+
+class Act(_Frozen):
+    """A part of the game (a floor of Valdimora). When its condition first holds the state is kept:
+    after a death the game goes on from there."""
+
+    name: Text  # read after "dall'inizio del": "secondo atto"
+    when: Condition
 
 
 class GameInfo(_Frozen):
@@ -326,6 +344,7 @@ class GameInfo(_Frozen):
     examples: Text | None = None
     intro: Text
     start_room: Id
+    acts: tuple[Act, ...] = ()  # in order: each begins after the one before
     endings: tuple[Ending, ...]
 
     @field_validator("endings")
@@ -386,6 +405,12 @@ class GameState(BaseModel):
     seen: set[Id] = Field(default_factory=set)
     turns: int = 0
     finished: bool = False
+    # The game ended with a death (Ending.death): it can go on from the last act begun, if any.
+    lost: bool = False
+    # How many acts of the world have begun (GameInfo.acts), and the state when the last one began,
+    # without its own checkpoint: after a death the game goes on from there.
+    act: int = 0
+    checkpoint: "GameState | None" = None
 
     @classmethod
     def new(cls, world: World) -> "GameState":

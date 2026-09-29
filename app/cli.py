@@ -17,12 +17,13 @@ from app.engine.engine import Engine
 from app.engine.loader import load_adventures
 from app.engine.models import World
 from app.engine.parser import words_of
-from app.game import Game
+from app.game import RESUME_WORD, Game
 
 CONFIRM_QUIT = "Vuoi davvero terminare la partita? (s/n)"
 GOODBYE = "Alla prossima!"
 GO_ON = "Allora continuiamo."
 PLAY_AGAIN = "\nVuoi giocare ancora? (s/n)"  # a blank line after the ending
+RESUME = "\nVuoi riprendere dall'inizio del {act}? (s/n)"  # after a death, when an act has begun
 CHOOSE = "Scegli la tua avventura:"
 WHICH_ADVENTURE = "Scrivi il numero dell'avventura."
 
@@ -71,17 +72,24 @@ def session(
     read_line: Callable[[], str],
     write: Callable[[str], None],
 ) -> None:
-    """Menu and game, again and again: a game that ends (won or lost) asks whether to play another.
-    Quitting, or the input running out, ends the session."""
+    """Menu and game, again and again. After a death the game may go on from the beginning of the
+    last act; a game that ends (won or lost) asks whether to play another. Quitting, or the input
+    running out, ends the session."""
     try:
         while True:
             game = new_game(choose(worlds, read_line, write))
             run(game, read_line, write)
+            while game.resumable is not None:
+                write(RESUME.format(act=game.resumable))
+                answer = read_line()
+                if not (_yes(answer) or words_of(answer)[:1] == [RESUME_WORD]):  # «riprendi» is a yes too
+                    break
+                write(game.resume())
+                keep_playing(game, read_line, write)
             if not game.finished:
                 return
             write(PLAY_AGAIN)
-            answer = words_of(read_line())
-            if not (answer and answer[0] in _YES_WORDS):
+            if not _yes(read_line()):
                 write(GOODBYE)
                 return
     except EOFError:
@@ -89,16 +97,20 @@ def session(
 
 
 def run(game: Game, read_line: Callable[[], str], write: Callable[[str], None]) -> None:
-    """Plays until the game ends, the player quits, or the input runs out (EOFError)."""
+    """Opens a new game and plays until it ends, the player quits, or the input runs out (EOFError)."""
     write(game.opening())
+    keep_playing(game, read_line, write)
+
+
+def keep_playing(game: Game, read_line: Callable[[], str], write: Callable[[str], None]) -> None:
+    """Plays until the game ends, the player quits, or the input runs out (EOFError)."""
     try:
         while not game.finished:
             line = read_line()
             words = words_of(line)
             if len(words) == 1 and words[0] in _QUIT_WORDS:
                 write(CONFIRM_QUIT)
-                answer = words_of(read_line())
-                if answer and answer[0] in _YES_WORDS:
+                if _yes(read_line()):
                     write(GOODBYE)
                     return
                 write(GO_ON)
@@ -108,6 +120,11 @@ def run(game: Game, read_line: Callable[[], str], write: Callable[[str], None]) 
                 write(answer)
     except EOFError:
         return
+
+
+def _yes(line: str) -> bool:
+    answer = words_of(line)
+    return bool(answer) and answer[0] in _YES_WORDS
 
 
 def main() -> None:
