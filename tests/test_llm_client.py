@@ -176,3 +176,51 @@ def test_an_unreachable_server_is_logged(caplog):
         ollama(handler).complete_json("s", "Frase: salta", SCHEMA, max_tokens=60)
 
     assert "connection refused" in caplog.records[-1].getMessage()
+
+
+# --- The full log (LLM_LOG_FULL=1: the logger at DEBUG) ---------------------------------------------
+
+
+def logged_json(caplog, title: str) -> dict:
+    """The JSON logged under `title`, indented by four spaces like the system prompt."""
+    [message] = [record.getMessage() for record in caplog.records if record.getMessage().startswith(title)]
+    first, *lines = message.splitlines()
+    assert first == title
+    assert all(line.startswith("    ") for line in lines)
+    return json.loads("\n".join(lines))
+
+
+def test_the_full_log_shows_the_request_exactly_as_sent_to_ollama(caplog):
+    sent = []
+    body = {"message": {"role": "assistant", "content": '{"verbo": "vai"}'}, "done": True}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        sent.append(json.loads(request.content))
+        return httpx.Response(200, json=body)
+
+    with caplog.at_level("DEBUG", logger="app.llm"):
+        ollama(handler).complete_json("Sei l'interprete.\nVerbi:", "Frase: vai giù", SCHEMA, max_tokens=60)
+
+    assert logged_json(caplog, "richiesta a Ollama:") == sent[0]
+    assert "vai giù" in caplog.text  # readable: accents as they are, not escaped
+
+
+def test_the_full_log_shows_the_whole_reply_of_ollama(caplog):
+    client = answering('{"verbo": "usa"}', total_duration=5_500_000_000, load_duration=12_000_000, eval_count=21)
+
+    with caplog.at_level("DEBUG", logger="app.llm"):
+        client.complete_json("s", "u", SCHEMA, max_tokens=60)
+
+    reply = logged_json(caplog, "risposta di Ollama:")
+    assert reply["total_duration"] == 5_500_000_000
+    assert reply["load_duration"] == 12_000_000
+    assert reply["message"]["content"] == '{"verbo": "usa"}'
+
+
+def test_the_usual_log_leaves_out_the_request_and_the_whole_reply(caplog):
+    with caplog.at_level("INFO", logger="app.llm"):
+        answering('{"verbo": "usa"}', total_duration=1).complete_json("s", "u", SCHEMA, max_tokens=60)
+
+    assert "richiesta a Ollama" not in caplog.text
+    assert "risposta di Ollama" not in caplog.text
+    assert "num_ctx" not in caplog.text

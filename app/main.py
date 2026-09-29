@@ -136,7 +136,7 @@ def create_app(engines: dict[str, Engine], llm: LLMClient | None) -> FastAPI:
 def create_app_from_env() -> FastAPI:
     """The real app: settings from the environment, LLM log in logs/llm-web.log."""
     settings = Settings.from_env(default_llm_log=LOGS_DIR / "llm-web.log")
-    start_llm_log(settings.llm_log)
+    start_llm_log(settings.llm_log, full=settings.llm_log_full)
     start_command_log(settings.command_log, origin="web")
     engines = {adventure_id: Engine(world) for adventure_id, world in load_adventures().items()}
     return create_app(engines, make_client(settings))

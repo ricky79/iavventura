@@ -12,7 +12,8 @@ from typing import Any, Protocol
 
 import httpx
 
-# What goes to the model and what comes back; app/cli.py writes it to logs/llm.log.
+# What goes to the model and what comes back; the front ends write it to logs/ (app/config.py). At DEBUG
+# (LLM_LOG_FULL=1) also the whole request and reply.
 log = logging.getLogger(__name__)
 
 
@@ -58,10 +59,12 @@ class OllamaClient:
             "options": {"temperature": temperature, "num_predict": max_tokens, "num_ctx": self.NUM_CTX},
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
         }
+        _log_json("richiesta a Ollama:", payload)
         started = time.perf_counter()
         body: dict[str, Any] = {}
         try:
             body = self._chat(payload)
+            _log_json("risposta di Ollama:", body)
             reply = _json_object(body)
         except LLMError as exc:
             log.warning("%s  errore: %s\n%s", self.model, exc, _exchange(user, _content(body)))
@@ -115,6 +118,14 @@ def _json_object(body: dict[str, Any]) -> dict[str, Any]:
 def _content(body: dict[str, Any]) -> str | None:
     message = body.get("message")
     return message.get("content") if isinstance(message, dict) else None
+
+
+def _log_json(title: str, data: dict[str, Any]) -> None:
+    """The whole request or reply, only in the full log (LLM_LOG_FULL=1, the logger at DEBUG):
+    indented like body.json, so a request can be sent again as it is."""
+    if log.isEnabledFor(logging.DEBUG):
+        text = json.dumps(data, ensure_ascii=False, indent=2)
+        log.debug("%s\n%s", title, "\n".join(f"    {line}" for line in text.splitlines()))
 
 
 def _counters(body: dict[str, Any]) -> str:

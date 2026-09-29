@@ -134,10 +134,14 @@ Configurazione, con variabili d'ambiente:
 | `OLLAMA_URL` | `http://127.0.0.1:11434` | dove risponde Ollama (meglio `127.0.0.1` di `localhost`: su Windows `localhost` rallenta ogni connessione di circa 2 s) |
 | `LLM_MODEL` | `qwen2.5:3b` | il modello da usare |
 | `LLM_LOG` | `logs/llm.log` (terminale), `logs/llm-web.log` (browser) | file dove finisce ciò che viene passato al modello e ciò che torna; `off` per non scriverlo |
+| `LLM_LOG_FULL` | `0` | `1` per scrivere nel log anche la richiesta intera mandata a Ollama (schema e opzioni compresi) e la sua risposta intera |
 
 Il log dell'LLM riporta, per ogni frase libera, gli oggetti e la frase inviati (`>>>`), la
 risposta del modello (`<<<`), i tempi e i token, e com'è stata tradotta in azione (`===`). Il
-prompt di sistema compare una volta sola, all'inizio.
+prompt di sistema compare una volta sola, all'inizio. Con `LLM_LOG_FULL=1` ogni chiamata ha
+anche la richiesta esatta (si può rimandare a Ollama così com'è, per esempio con
+`curl http://127.0.0.1:11434/api/chat --data-binary @richiesta.json`) e la risposta intera, con i
+tempi di Ollama (`load_duration`, `prompt_eval_duration`, `eval_duration`, in nanosecondi).
 
 ## Sviluppo
 
