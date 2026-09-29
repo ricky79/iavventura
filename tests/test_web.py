@@ -285,4 +285,4 @@ def test_the_dragon_adventure_can_be_finished_through_http():
 
     assert reply["finished"] is True
     assert reply["text"].endswith("Che avventura!")
-    assert [a["id"] for a in client.get("/api/adventures").json()] == ["rocca", "draghetto"]
+    assert [a["id"] for a in client.get("/api/adventures").json()] == ["rocca", "draghetto", "valdimora"]

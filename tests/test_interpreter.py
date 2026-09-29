@@ -243,6 +243,74 @@ def test_climbing_is_no_jump(castle, in_reach, sentence, direction):
     assert action == Action(verb="vai", direction=direction)
 
 
+# --- What the sentence names wins over what the model picked (found playing Valdimora) --------------
+
+
+@pytest.fixture(scope="module")
+def valdimora() -> World:
+    return load_world(WORLDS_DIR / "valdimora")
+
+
+def valdimora_items(world: World, *item_ids: str) -> list[Item]:
+    return [world.items[item_id] for item_id in item_ids]
+
+
+def test_reading_has_no_tool_so_the_one_named_is_read(valdimora):
+    # «leggo il biglietto della contessa»: the model read the letter, with the envelope as a tool.
+    reply = {"verbo": "leggi", "bersaglio": "lettera della contessa", "con": "busta della contessa"}
+    in_reach = valdimora_items(valdimora, "lettera", "medaglione", "busta")
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), "leggo il biglietto della contessa", in_reach)
+
+    assert action == Action(verb="leggi", target="busta")
+
+
+def test_the_only_other_item_named_is_only_a_guess_for_the_tool(valdimora):
+    # «infilo il medaglione nell'incavo»: the model picked the letter as the tool; «incavo» is the
+    # sundial. A guess, not an action: the game asks first (a question may name things too).
+    reply = {"verbo": "usa", "bersaglio": "medaglione", "con": "lettera della contessa"}
+    in_reach = valdimora_items(valdimora, "lettera", "medaglione", "meridiana")
+
+    result = interpret(FakeLLMClient(json_replies=[reply]), "infilo il medaglione nell'incavo", in_reach)
+
+    assert isinstance(result, NotUnderstood)
+    assert result.guess == Action(verb="usa", target="medaglione", with_="meridiana")
+
+
+def test_with_two_other_items_named_the_tool_is_not_guessed(valdimora):
+    reply = {"verbo": "usa", "bersaglio": "medaglione", "con": "lettera della contessa"}
+    in_reach = valdimora_items(valdimora, "lettera", "medaglione", "meridiana", "oliatore")
+
+    result = interpret(FakeLLMClient(json_replies=[reply]), "infilo il medaglione nell'incavo con l'olio", in_reach)
+
+    assert isinstance(result, NotUnderstood)
+    assert result.guess is None
+
+
+@pytest.mark.parametrize(
+    ("sentence", "expected"),
+    [("frugo nella borsa del dottore", Action(verb="esamina", target="borsa")), ("cosa ho con me?", Action(verb="inventario"))],
+    ids=["an item named: examining it", "no item named: the inventory"],
+)  # fmt: skip
+def test_the_inventory_of_an_item_the_sentence_names_is_examining_it(valdimora, sentence, expected):
+    # «frugo nella borsa del dottore»: the model answered «inventario», with the bag as its target.
+    reply = {"verbo": "inventario", "bersaglio": "borsa del dottore", "con": "nessuno"}
+    in_reach = valdimora_items(valdimora, "lettera", "medaglione", "borsa")
+
+    assert interpret(FakeLLMClient(json_replies=[reply]), sentence, in_reach) == expected
+
+
+def test_an_item_the_model_calls_by_another_name_is_found(valdimora):
+    # «offro la grappa al dottore»: the model answered «grappa», an alias, not «bottiglia di grappa».
+    reply = {"verbo": "dai", "bersaglio": "dottor Ferri", "con": "grappa"}
+    in_reach = valdimora_items(valdimora, "lettera", "medaglione", "grappa")
+    characters = [(valdimora.characters["ferri"], [])]
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), "offro la grappa al dottore", in_reach, (), characters)
+
+    assert action == Action(verb="dai", target="ferri", with_="grappa")
+
+
 def test_nobody_can_be_jumped_into(keeper):
     items, characters = near_keeper(keeper)
     fake = FakeLLMClient(json_replies=[{"verbo": "salta", "bersaglio": "custode", "con": "nessuno"}])

@@ -73,6 +73,13 @@ class Gender(StrEnum):
     FEMININE = "f"
 
 
+class Article(StrEnum):
+    """How a name takes its article, when not like a common noun (il gancio, un gancio)."""
+
+    DEFINITE = "definite"  # always the definite article: "il dottor Ferri", never "un dottor Ferri"
+    NONE = "none"  # no article: a first name, "Ettore", "a Ettore", "di Livia"
+
+
 class _Frozen(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, validate_by_name=True, validate_by_alias=True)
 
@@ -239,6 +246,7 @@ class Item(_Frozen):
     name: Text
     gender: Gender
     plural: bool = False
+    article: Article | None = None  # a proper name or a title (Article); without it, like a common noun
     aliases: tuple[Text, ...] = ()
     description: Text
     # A room id, INVENTORY, or None when the item enters play only through an effect.
@@ -281,6 +289,7 @@ class Topic(_Frozen):
     name: Text
     gender: Gender
     plural: bool = False
+    article: Article | None = None  # a proper name or a title (Article); without it, like a common noun
     aliases: tuple[Text, ...] = ()
     # While false the character doesn't know the topic: it answers `unknown`, and the LLM isn't told.
     when: Condition | None = None
@@ -303,6 +312,7 @@ class Character(_Frozen):
     name: Text
     gender: Gender
     plural: bool = False
+    article: Article | None = None  # a proper name or a title (Article); without it, like a common noun
     aliases: tuple[Text, ...] = ()
     description: Text
     variants: tuple[TextVariant, ...] = ()

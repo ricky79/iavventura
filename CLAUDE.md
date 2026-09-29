@@ -314,6 +314,34 @@ tests/
     secondo atto? (s/n)». Una partita finita non chiama più l'LLM. Il pozzo della Rocca è una
     morte, ma senza atti si ricomincia da capo.
   - Le regole hanno anche `otherwise_variants`, come le uscite.
+- **Valdimora, atto 1** (2026-09-29, branch `feature/valdimora-atto-1`; piano in
+  `docs/superpowers/plans/2026-09-29-valdimora-atto-1.md`): il pianterreno in `data/worlds/valdimora/`
+  (`gioco.yaml`, `pianterreno.yaml`, `personaggi.yaml`), nel menu con un finale provvisorio sul flag
+  `atto_due` (aprendo la porta dello scalone). La Loggia dello scalone è provvisoria. Oggetti degli
+  atti futuri già piantati (forbici, tanica, fiammiferi, rosaio, porta della cantina).
+  - Nomi propri: campo `article` su oggetti, personaggi e argomenti (`none`: «Ettore», «a Ettore»,
+    «Qui c'è Agnese»; `definite`: «il dottor Ferri», mai «un dottor Ferri»). «ad» tra le parole che
+    il parser ignora («dai il medaglione ad Agnese»).
+  - Col modello vero, 17 frasi libere del pianterreno: 13 al primo giro. Le altre hanno mostrato
+    difetti generali, corretti nel codice (il prompt non cambia): un alias che appartiene a un solo
+    oggetto vale come il suo nome («grappa» per «bottiglia di grappa»: il modello a volte risponde
+    con l'alias); leggere ed esaminare non hanno strumento, quindi l'oggetto nominato che il modello
+    ha messo come strumento è quello letto («leggo il biglietto della contessa»); «inventario» con un
+    oggetto nominato come bersaglio è un esame («frugo nella borsa del dottore»); un nome contenuto
+    in quello di una cosa presente non vale come «altrove» («biglietto» in «biglietto della
+    contessa»). E uno strumento che la frase non nomina, quando la frase nomina un solo altro
+    oggetto, diventa un'**ipotesi** (`NotUnderstood.guess`): il gioco chiede «Vuoi usare il
+    medaglione con la meridiana?» e la fa solo dopo un sì, perché anche una domanda nomina le cose
+    («cosa c'è scritto sul biglietto, Livia?» dava la chiave dello scalone). «mostro/faccio vedere la
+    lettera a Ettore» diventa una domanda sulla lettera, e Ettore chiede di vederla.
+  - Parser: un nome non scavalca «con» (anche «col», «coi») se non lo contiene: «usa la chiave con la
+    credenza» erano la sola «chiave della credenza»; «corda con gancio» della Rocca lo scavalca.
+  - Dopo la revisione finale: la meridiana si apre solo dopo aver letto la busta (prima si saltava
+    Ettore e la rivelazione); chi ha già la chiave si sente dire «usala», una chiave sbagliata «non
+    entra»; il dottore addormentato non parla da sveglio; tutto ciò che le descrizioni nominano si
+    esamina. Tolto un alias pericoloso: «leggio», che la tolleranza ai refusi faceva nominare da
+    «leggo». Nella spec, gli indizi piantati nel primo atto da pagare dopo (il campanello col filo
+    tagliato, la luce sotto il tetto, le lenzuola «A. V.»).
 
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.
@@ -366,8 +394,9 @@ ollama pull qwen2.5:3b
     (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
     sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
     invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
-    `tests/test_ollama.py` (oggi 83 su 89, ~680 s: i 37 casi di prima e gli 8 dei pericoli tutti,
-    e 38 delle 44 frasi trovate giocando; le altre 6 sono limiti noti).
+    `tests/test_ollama.py` (oggi 100 su 106, ~950 s: i 37 casi di prima, gli 8 dei pericoli e i 17
+    del primo atto di Valdimora tutti, e 38 delle 44 frasi trovate giocando; le altre 6 sono limiti
+    noti).
   - Il modello non è del tutto deterministico: con lo stesso prompt e `temperature: 0`, 2 o 3 frasi
     su 70 cambiano risposta da un giro all'altro (la cache di Ollama?). Un caso che passa una volta
     sola non dimostra niente.

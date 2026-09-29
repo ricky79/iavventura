@@ -546,6 +546,22 @@ la prima variante valida sostituisce `otherwise`. Serve a quasi tutti i meccanis
   accanto. Esempi nel prompt solo in `game.examples` di Valdimora e solo se servono, verificati su
   tutto `tests/test_ollama.py`.
 
+## Indizi piantati nel primo atto, da pagare dopo
+
+Scrivendo il pianterreno sono nati tre dettagli che la storia deve spiegare negli atti successivi:
+
+- **Il campanello della contessa ha il filo tagliato** (stanza del maggiordomo): la notte del 14
+  ottobre la contessa non poteva chiamare nessuno. Chi l'ha tagliato? (atto 2 o 4: Agnese).
+- **Una luce trema per un momento sotto il tetto, poi si spegne** (cortile, le finestre): qualcuno
+  fruga in soffitta mentre tutti sono di sotto (atto 3: Agnese che cerca la Stella, o Corrado).
+- **Le lenzuola ricamate «A. V.»** (lavanderia): le iniziali della contessa, Adelaide di Valdimora;
+  sullo sfondo della «A.» del registro, che il giocatore attribuirà a lei finché non vedrà la
+  calligrafia di Agnese (atto 3).
+
+E uno degli indizi previsti si è precisato: sul quadro delle chiavi di Livia mancano la chiave
+dello «Scalone» (la tiene lei) e quella della «Cantina», che la contessa ha nascosto nella casa
+delle bambole (atto 3).
+
 ## Fuori ambito
 
 - Verbi nuovi (accendi, suona, mostra, accusa…): le azioni passano per `usa`, `dai`, `chiedi`.
