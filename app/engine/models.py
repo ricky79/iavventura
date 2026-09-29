@@ -325,6 +325,15 @@ class Character(_Frozen):
 class Ending(_Frozen):
     when: Condition
     text: Text
+    death: bool = False  # the player dies: the game can go on from the beginning of the last act
+
+
+class Act(_Frozen):
+    """A part of the game (a floor of Valdimora). When its condition first holds the state is kept:
+    after a death the game goes on from there."""
+
+    name: Text  # read after "dall'inizio del": "secondo atto"
+    when: Condition
 
 
 class GameInfo(_Frozen):
@@ -335,6 +344,7 @@ class GameInfo(_Frozen):
     examples: Text | None = None
     intro: Text
     start_room: Id
+    acts: tuple[Act, ...] = ()  # in order: each begins after the one before
     endings: tuple[Ending, ...]
 
     @field_validator("endings")
@@ -395,6 +405,12 @@ class GameState(BaseModel):
     seen: set[Id] = Field(default_factory=set)
     turns: int = 0
     finished: bool = False
+    # The game ended with a death (Ending.death): it can go on from the last act begun, if any.
+    lost: bool = False
+    # How many acts of the world have begun (GameInfo.acts), and the state when the last one began,
+    # without its own checkpoint: after a death the game goes on from there.
+    act: int = 0
+    checkpoint: "GameState | None" = None
 
     @classmethod
     def new(cls, world: World) -> "GameState":

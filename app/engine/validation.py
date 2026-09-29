@@ -210,6 +210,8 @@ def _conditions(world: World) -> Iterator[tuple[str, Condition]]:
                 yield f"{path}.topics.{topic.id}.variants.{index}.when", variant.when
     for index, ending in enumerate(world.game.endings):
         yield f"game.endings.{index}.when", ending.when
+    for index, act in enumerate(world.game.acts):
+        yield f"game.acts.{index}.when", act.when
 
 
 def _atoms(condition: Condition) -> Iterator[Condition]:

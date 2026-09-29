@@ -3,7 +3,7 @@ import json
 import pytest
 
 from app.engine.engine import Engine, StateError
-from app.engine.models import GameState, World
+from app.engine.models import Action, GameState, World
 
 
 def test_new_game_starts_from_the_world(world_data):
@@ -97,3 +97,57 @@ def test_a_state_saved_before_seen_existed_is_restored(world_data):
     state = Engine(World.model_validate(world_data)).restore(data)
 
     assert state.seen == set()
+
+
+# --- Acts: the state kept when an act began travels with the saved state -------------------------
+
+
+def acts_saved(acts_world) -> dict:
+    """A saved state after the second act began: it carries its checkpoint."""
+    engine = Engine(World.model_validate(acts_world))
+    state, _ = engine.new_game()
+    engine.execute(state, Action(verb="tira", target="leva"))
+    return json.loads(state.model_dump_json())
+
+
+def test_a_state_with_a_checkpoint_is_restored(acts_world):
+    data = acts_saved(acts_world)
+
+    state = Engine(World.model_validate(acts_world)).restore(data)
+
+    assert state.act == 1
+    assert state.checkpoint.flags == {"porta_aperta"}
+
+
+def test_a_checkpoint_that_does_not_fit_the_world_is_refused(acts_world):
+    data = acts_saved(acts_world)
+    data["checkpoint"]["current_room"] = "cantina"
+
+    with pytest.raises(StateError, match="checkpoint.*cantina"):
+        Engine(World.model_validate(acts_world)).restore(data)
+
+
+def test_a_checkpoint_inside_a_checkpoint_is_refused(acts_world):
+    data = acts_saved(acts_world)
+    data["checkpoint"]["checkpoint"] = dict(data["checkpoint"])
+
+    with pytest.raises(StateError, match="checkpoint"):
+        Engine(World.model_validate(acts_world)).restore(data)
+
+
+def test_a_state_past_the_acts_of_the_world_is_refused(acts_world, world_data):
+    data = acts_saved(acts_world)
+    del world_data["game"]["acts"]  # the world lost its acts after the game was saved
+
+    with pytest.raises(StateError, match="act"):
+        Engine(World.model_validate(world_data)).restore(data)
+
+
+def test_a_state_saved_before_acts_existed_is_restored(world_data):
+    data = saved(world_data)
+    for field in ("lost", "act", "checkpoint"):
+        data.pop(field, None)
+
+    state = Engine(World.model_validate(world_data)).restore(data)
+
+    assert (state.lost, state.act, state.checkpoint) == (False, 0, None)

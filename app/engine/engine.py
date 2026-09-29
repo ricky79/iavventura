@@ -45,6 +45,7 @@ from app.engine.parser import significant_words, words_of
 # Engine messages. They never name the item, so they need no article; a few agree with a plural
 # item (_PLURAL below).
 GAME_OVER = "La partita è finita."
+RESUMED = "Riprendi dall'inizio del {act}."
 NO_EXIT = "Non puoi andare da quella parte."
 NOT_HERE = "Non vedi niente del genere qui."
 NOBODY_HERE = "Non vedi nessuno del genere qui."
@@ -93,17 +94,29 @@ class Engine:
 
     def new_game(self) -> tuple[GameState, Outcome]:
         state = GameState.new(self.world)
+        self._begin_acts(state)
         return state, Outcome(ok=True, text=self.world.game.intro, room=self._room_view(state, first_visit=True))
 
     def restore(self, data: Any) -> GameState:
-        """A state saved elsewhere (the browser keeps it), checked against this world.
+        """A state saved elsewhere (the browser keeps it), checked against this world, together with
+        the state kept at the beginning of the last act.
 
-        Texts may have changed since it was saved; rooms and items must still be the same.
+        Texts may have changed since it was saved; rooms, items and acts must still be the same.
         """
         try:
             state = GameState.model_validate(data)
         except ValidationError as exc:
             raise StateError(f"not a game state: {exc}") from None
+        problems = self._state_problems(state)
+        if state.checkpoint is not None:
+            problems += [f"checkpoint: {problem}" for problem in self._state_problems(state.checkpoint)]
+            if state.checkpoint.checkpoint is not None:
+                problems.append("checkpoint: it has a checkpoint of its own")
+        if problems:
+            raise StateError("; ".join(problems))
+        return state
+
+    def _state_problems(self, state: GameState) -> list[str]:
         rooms, items = self.world.rooms, self.world.items
         problems = []
         if state.current_room not in rooms:
@@ -116,9 +129,9 @@ class Engine:
                 problems.append(f"item '{item_id}' in unknown room '{location}'")
         problems += [f"unknown visited room '{room_id}'" for room_id in sorted(state.visited) if room_id not in rooms]
         problems += [f"unknown seen item '{item_id}'" for item_id in sorted(state.seen) if item_id not in items]
-        if problems:
-            raise StateError("; ".join(problems))
-        return state
+        if state.act > len(self.world.game.acts):
+            problems.append(f"act {state.act}, but the world has {len(self.world.game.acts)} acts")
+        return problems
 
     def in_reach(self, state: GameState) -> list[Item]:
         """Items the player can act on: those in the current room (scenery included) and those carried."""
@@ -174,16 +187,43 @@ class Engine:
         return action.with_ is None and action.verb in (Verb.EXAMINE, Verb.TAKE, Verb.DROP)
 
     def execute(self, state: GameState, action: Action) -> Outcome:
-        """Applies the action to `state` and tells what happened; the first ending that holds closes the game."""
+        """Applies the action to `state` and tells what happened. An act whose condition now holds
+        begins (its state is kept), then the first ending that holds closes the game."""
         if state.finished:
             return Outcome(ok=False, text=GAME_OVER)
         outcome = self._perform(state, action)
         state.turns += 1
+        self._begin_acts(state)
         ending = next((ending for ending in self.world.game.endings if holds(ending.when, state)), None)
         if ending is not None:
             state.finished = True
+            state.lost = ending.death
             outcome = outcome.model_copy(update={"ending": ending.text})
         return outcome
+
+    def resumable(self, state: GameState) -> str | None:
+        """The act a game lost by a death can go on from ("secondo atto"), or None."""
+        if not state.lost or state.checkpoint is None:
+            return None
+        return self.world.game.acts[state.checkpoint.act - 1].name
+
+    def resume(self, state: GameState) -> tuple[GameState, Outcome]:
+        """After a death, the game again as it was when the last act began. It keeps that act's
+        checkpoint, so it can go on from there again."""
+        act = self.resumable(state)
+        if act is None:
+            raise ValueError("only a game lost after an act began can go on")
+        kept = state.checkpoint
+        resumed = kept.model_copy(deep=True, update={"checkpoint": kept.model_copy(deep=True)})
+        return resumed, Outcome(ok=True, text=RESUMED.format(act=act), room=self._room_view(resumed, first_visit=False))
+
+    def _begin_acts(self, state: GameState) -> None:
+        """The acts whose condition now holds begin, in order; the state is kept, to go on from here
+        after a death."""
+        acts = self.world.game.acts
+        while state.act < len(acts) and holds(acts[state.act].when, state):
+            state.act += 1
+            state.checkpoint = state.model_copy(deep=True, update={"checkpoint": None})
 
     def _perform(self, state: GameState, action: Action) -> Outcome:
         match action.verb:

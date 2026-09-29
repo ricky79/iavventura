@@ -252,6 +252,95 @@ def test_nothing_can_be_done_once_the_game_is_over(data):
     assert state.turns == 0
 
 
+# --- Acts, deaths and going on from the last act ------------------------------------------------
+
+
+def test_an_ending_may_be_a_death(acts_world):
+    engine, state = start(acts_world)
+
+    outcome = engine.execute(state, Action(verb="salta", target="leva"))
+
+    assert outcome.ending == "Sei morta."
+    assert state.finished and state.lost
+
+
+def test_winning_is_no_death(acts_world):
+    engine, state = start(acts_world)
+    engine.execute(state, Action(verb="tira", target="leva"))
+
+    engine.execute(state, Action(verb="vai", direction="nord"))
+
+    assert state.finished and not state.lost
+
+
+def test_an_act_begins_when_its_condition_first_holds_and_keeps_the_state(acts_world):
+    engine, state = start(acts_world)
+
+    engine.execute(state, Action(verb="guarda"))
+    before = (state.act, state.checkpoint)
+    engine.execute(state, Action(verb="tira", target="leva"))
+
+    assert before == (0, None)
+    assert state.act == 1
+    assert state.checkpoint.flags == {"porta_aperta"}
+    assert state.checkpoint.item_locations["chiave"] == "inventory"
+    assert state.checkpoint.turns == 2
+    assert state.checkpoint.checkpoint is None
+
+
+def test_an_act_begins_only_once(acts_world):
+    engine, state = start(acts_world)
+    engine.execute(state, Action(verb="tira", target="leva"))
+    kept = state.checkpoint.model_copy(deep=True)
+
+    engine.execute(state, Action(verb="lascia", target="moneta"))
+
+    assert state.checkpoint == kept
+    assert state.checkpoint.item_locations["moneta"] == "inventory"
+
+
+def test_an_act_that_holds_from_the_start_begins_with_the_game(acts_world):
+    acts_world["game"]["acts"].insert(0, {"name": "primo atto", "when": {"player_in": "atrio"}})
+    engine, state = start(acts_world)
+
+    assert state.act == 1
+    assert state.checkpoint.turns == 0
+
+
+def test_after_a_death_the_game_goes_on_from_the_beginning_of_the_last_act(acts_world):
+    engine, state = start(acts_world)
+    engine.execute(state, Action(verb="tira", target="leva"))
+    engine.execute(state, Action(verb="lascia", target="moneta"))
+    engine.execute(state, Action(verb="salta", target="leva"))
+
+    act = engine.resumable(state)
+    resumed, outcome = engine.resume(state)
+
+    assert act == "secondo atto"
+    assert outcome.text == "Riprendi dall'inizio del secondo atto."
+    assert outcome.room.id == "atrio"
+    assert not resumed.finished and not resumed.lost
+    assert resumed.item_locations["moneta"] == "inventory"  # as it was when the act began
+    assert resumed.checkpoint == state.checkpoint  # so it can go on from there again
+
+
+def test_a_death_before_any_act_cannot_go_on(acts_world):
+    engine, state = start(acts_world)
+    engine.execute(state, Action(verb="salta", target="leva"))
+
+    assert engine.resumable(state) is None
+    with pytest.raises(ValueError):
+        engine.resume(state)
+
+
+def test_a_game_won_does_not_go_on(acts_world):
+    engine, state = start(acts_world)
+    engine.execute(state, Action(verb="tira", target="leva"))
+    engine.execute(state, Action(verb="vai", direction="nord"))
+
+    assert engine.resumable(state) is None
+
+
 # --- Reach ----------------------------------------------------------------------------
 
 
