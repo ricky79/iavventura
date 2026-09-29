@@ -48,7 +48,7 @@ characters:
       portone:
         name: portone
         gender: m
-        aliases: [uscita]
+        aliases: [uscita, esce, uscire]  # «come si esce?», «come faccio a uscire?»
         text: >
           «Si richiude da solo, e da questa parte non ha maniglia: l'hanno fatto
           per tenere fuori i nemici, non per lasciare uscire gli ospiti. L'unica

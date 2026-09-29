@@ -25,3 +25,8 @@ game:
         cima. Dalla finestra, oltre la bufera che si sta placando, vedi le luci
         del villaggio a valle. Una porticina dà sui camminamenti delle mura, e
         da lì una scala di pietra scende fino al sentiero. Sei libero.
+    - when: {flag: caduto_nel_pozzo}
+      text: >
+        Il colpo ti toglie il respiro. Il cerchio di cielo lassù si fa sempre
+        più piccolo, poi scompare. La bufera continua a soffiare sul cortile
+        vuoto. Sei morto.

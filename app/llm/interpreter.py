@@ -18,6 +18,7 @@ from app.engine.models import Action, Character, Command, Conversation, Directio
 from app.engine.parser import (
     DIRECTIONS,
     GO_WORDS,
+    ITEM_VERBS,
     find_topic,
     is_named,
     names_said,
@@ -41,6 +42,15 @@ MOVE_WORDS = GO_WORDS | frozenset(
     """
     andare andiamo tornare entrare esci esco uscire salire scendere corri corro scappa scappo raggiungi
     raggiungo cammino attraversa attraverso arrampica arrampico arrampicarmi avvicinati spostati sposto
+    """.split()
+)
+
+# Words that ask for a jump: without one, the game asks before an interpreted jump, which may kill
+# ("entro nel pozzo"). Those of the parser, and more.
+JUMP_WORDS = frozenset(word for word, verb in ITEM_VERBS.items() if verb is Verb.JUMP) | frozenset(
+    """
+    saltare saltarci saltiamo tuffo tuffarmi tuffarsi tuffarti tuffiamoci butto buttarmi buttarsi buttarti
+    buttiamoci getto gettarmi gettarsi lancio lanciarmi lanciarsi
     """.split()
 )
 
@@ -136,8 +146,9 @@ def _to_action(reply: dict[str, Any], ids_by_name: dict[str, str], characters: C
     if target not in ids_by_name:
         return NotUnderstood(f"bersaglio non a portata {target!r}")
     with_ = ids_by_name.get(tool) if tool != target else None
-    if verb == Verb.DROP and with_ is not None:
-        # "butta il rampino nel pozzo": dropping one thing into another is using them together
+    if verb in (Verb.DROP, Verb.JUMP) and with_ is not None:
+        # "butta il rampino nel pozzo": dropping one thing into another, or jumping with it, is using
+        # them together
         verb = Verb.USE
     return Action(verb=verb, target=ids_by_name[target], with_=with_)
 
@@ -175,6 +186,17 @@ def _checked(
         return _about_the_topic_named(action, words, characters)
     if not isinstance(action.verb, Verb):
         return action
+    if action.verb is Verb.JUMP:
+        if action.target in {character.id for character, _ in characters}:
+            return NotUnderstood("'salta' su un personaggio")
+        said = _directions_said(words)
+        if said and not JUMP_WORDS.intersection(words):
+            # "salgo sul sasso": the model heard a jump in "salgo", and climbing is a move
+            return _checked_move(Action(verb=Command.GO, direction=min(said)), words, exits)
+        # Jumping may kill: with another item named ("lancio il rampino nel pozzo") it's throwing that.
+        thrown = next((item.id for item in in_reach if item.id != action.target and is_named(item, words)), None)
+        if thrown is not None:
+            action = Action(verb=Verb.USE, target=action.target, with_=thrown)
     things = {thing.id: thing for thing in [*in_reach, *(character for character, _ in characters)]}
     ids = [thing_id for thing_id in (action.target, action.with_) if thing_id is not None]
     if action.verb in (Verb.GIVE, Verb.USE):
@@ -195,7 +217,7 @@ def _checked_move(
     """A move needs a verb of motion, a direction or a place named by its own name: not only what is
     there ("mangio una mora" doesn't go to the brambles). Then the way the sentence names wins over the
     model's: its direction ("salgo sul sasso": up), or the only exit it names ("attraverso il ponte")."""
-    said = {DIRECTIONS[word] for word in words if len(word) > 1 and word in DIRECTIONS}  # "e" is also "and"
+    said = _directions_said(words)
     places = [room for _, room in exits if room is not None and significant_words(room.name) in names_said(room, words)]
     if not (said or places or MOVE_WORDS.intersection(words)):
         return NotUnderstood("la frase non chiede di spostarsi")
@@ -205,6 +227,12 @@ def _checked_move(
         return Action(verb=Command.GO, direction=said.pop())
     ways = [direction for direction, _ in exits if names_the_way(direction, words, exits)]
     return Action(verb=Command.GO, direction=ways[0]) if len(ways) == 1 else action
+
+
+def _directions_said(words: list[str]) -> set[Direction]:
+    """The directions the words say, also by a verb ("salgo": up); not by a single letter, since "e"
+    is also "and"."""
+    return {DIRECTIONS[word] for word in words if len(word) > 1 and word in DIRECTIONS}
 
 
 def _about_the_topic_named(action: Action, words: list[str], characters: Characters) -> Action:

@@ -41,12 +41,21 @@ game:
   endings:                 # almeno uno; vale il primo la cui condizione è vera
     - when: {player_in: torre}
       text: Testo finale.
+    - when: {flag: caduto_nel_pozzo}   # anche una morte è un finale
+      text: … Sei morto.
 ```
 
 `examples` sono esempi per l'interprete, scritti come nel prompt (`app/llm/prompts.py`): righe
 `Oggetti:`, `Uscite:`, `Frase:` e la risposta JSON. Si mettono solo per una frase che il modello
 sbaglia giocando, e ogni modifica va verificata su tutto `tests/test_ollama.py`. Nella Rocca c'è
 la frase del rampino.
+
+**Pericoli.** Un finale non deve per forza essere una vittoria: una regola che attiva un flag e un
+finale con quel flag fanno morire il giocatore, e la partita finisce come per la vittoria (nel web
+si ricomincia con «Nuova partita», nel terminale il gioco chiede «Vuoi giocare ancora?»). Nella
+Rocca la regola `salto_nel_pozzo` (`verb: salta`) attiva `caduto_nel_pozzo`. Il testo della regola
+racconta cosa succede, quello del finale lo chiude. Un pericolo va annunciato prima, in una
+descrizione: il pozzo è «profondo tre o quattro volte la tua altezza».
 
 ## `rooms`
 
@@ -156,7 +165,8 @@ rules:
     text: Testo dell'esito.
 ```
 
-- `verb`: uno fra esamina, prendi, lascia, usa, apri, chiudi, spingi, tira, leggi, dai.
+- `verb`: uno fra esamina, prendi, lascia, usa, apri, chiudi, spingi, tira, leggi, dai, salta
+  (saltare dentro qualcosa: `trigger: {verb: salta, target: pozzo}`).
 - `target` e `with` sono id di oggetti; `with` è facoltativo. Con `dai`, invece, `target` è
   l'oggetto e `with` il personaggio che lo riceve, obbligatorio:
   `trigger: {verb: dai, target: miele, with: draghetto}`.
@@ -195,7 +205,7 @@ rules:
 | prendi | mette l'oggetto nell'inventario; rifiuta gli arredi e gli oggetti che hai già |
 | lascia | posa l'oggetto nella stanza; rifiuta gli oggetti che non hai |
 | apri, chiudi, leggi | "Non si può aprire." / "Non si può chiudere." / "Non c'è niente da leggere." |
-| usa, spingi, tira | "Non succede niente." |
+| usa, spingi, tira, salta | "Non succede niente." |
 | dai | il personaggio risponde `refuses`, o "Non sa che farsene."; l'oggetto resta al giocatore |
 
 I messaggi del motore non nominano mai l'oggetto, così non servono articolo e genere.
@@ -205,8 +215,11 @@ nessuna regola reagisce (tranne esamina, prendi e lascia senza strumento, che fa
 sole), il gioco non la esegue subito ma chiede conferma: "Vuoi usare la corda con gancio con il
 portone?". Il modello potrebbe aver frainteso. Lo stesso per uno spostamento interpretato verso
 una direzione che la frase non nomina, né con la direzione né con la stanza in cui porta ("vado
-in cantina" → "Vuoi andare a ovest?"). Le azioni scritte con i comandi semplici si eseguono
-senza domande. Per chi scrive: le azioni che i giocatori tenteranno davvero meritano una
+in cantina" → "Vuoi andare a ovest?"). E per un salto, che può uccidere, se la frase non ha una
+parola da salto (salta, tuffo, mi butto…): "entro nel pozzo" → "Vuoi saltare nel pozzo?"; se
+invece nomina un altro oggetto, è un lancio ("lancio il rampino nel pozzo" diventa "usa").
+Le azioni scritte con i comandi semplici si eseguono senza domande ("salta nel pozzo",
+"buttati nel pozzo"). Per chi scrive: le azioni che i giocatori tenteranno davvero meritano una
 regola, anche solo un indizio.
 
 ## `characters`

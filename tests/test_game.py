@@ -223,6 +223,30 @@ def test_what_the_player_typed_is_done_without_asking(castle):
     assert game.pending is None
 
 
+# Jumping into the well kills: the model alone must not decide it.
+JUMP = {"verbo": "salta", "bersaglio": "pozzo", "con": "nessuno"}
+
+
+@pytest.mark.parametrize("sentence", ["mi butto nel pozzo", "voglio saltarci dentro, nel pozzo"])
+def test_an_interpreted_jump_the_sentence_asks_for_is_done(castle, sentence):
+    game = Game(Engine(castle), FakeLLMClient(json_replies=[JUMP]))
+
+    output = say(game, sentence)
+
+    assert output.startswith(f"(salta nel pozzo)\n{castle.rules['salto_nel_pozzo'].text}")
+    assert game.finished
+
+
+@pytest.mark.parametrize("sentence", ["entro nel pozzo", "mi calo nel pozzo"])
+def test_an_interpreted_jump_without_a_word_for_jumping_is_asked(castle, sentence):
+    game = Game(Engine(castle), FakeLLMClient(json_replies=[JUMP]))
+
+    assert say(game, sentence) == "Vuoi saltare nel pozzo?"
+    assert not game.finished
+    say(game, "sì")
+    assert game.finished
+
+
 def test_a_game_can_go_on_with_the_question_still_open(castle):
     engine = Engine(castle)
     state, _ = engine.new_game()
@@ -593,6 +617,18 @@ def test_talking_about_a_topic_is_asking_about_it(castle, sentence, topic):
     output = say(game, sentence)
 
     assert output == f"(chiedi al pellegrino del pellegrino)\n{castle.characters['pellegrino'].topics[topic].text}"
+
+
+@pytest.mark.parametrize(
+    "sentence", ["chiedo al vecchio come si esce da qui", "come faccio a uscire?", "come si fa a usire"]
+)
+def test_asking_how_to_get_out_is_asking_about_the_door(castle, sentence):
+    # With "salta" in the prompt the model lost the topic: "come si esce" names it by itself.
+    game = in_the_stable(castle, talking({"verbo": "chiedi", "bersaglio": "pellegrino", "con": "nessuno"}))
+
+    output = say(game, sentence)
+
+    assert output == f"(chiedi al pellegrino del portone)\n{castle.characters['pellegrino'].topics['portone'].text}"
 
 
 def test_greeting_the_character_by_name_is_still_greeting(castle):

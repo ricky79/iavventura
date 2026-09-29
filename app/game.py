@@ -32,7 +32,7 @@ from app.engine.models import (
 from app.engine.parser import Ambiguous, is_named, names_said, names_the_way, parse, topics_named, words_of
 from app.engine.text import action_text, confirmation, render, which_one
 from app.llm.client import LLMClient
-from app.llm.interpreter import NotUnderstood, describe, interpret
+from app.llm.interpreter import JUMP_WORDS, NotUnderstood, describe, interpret
 
 NOT_UNDERSTOOD = "Non ho capito."
 NOT_A_GAME_ACTION = "Non sembra un'azione del gioco. Scrivi «aiuto» per qualche esempio."
@@ -237,8 +237,11 @@ class Game:
     def _foreseen(self, action: Action, words: list[str], exits: list[tuple[Direction, Room | None]]) -> bool:
         """Whether the world foresees an interpreted action (Engine.expects). A move must also name
         its way, by direction or by the room it leads to: for a place that isn't among the exits
-        ("vado in cantina") the model may pick a door at random."""
+        ("vado in cantina") the model may pick a door at random. A jump, which may kill, must be
+        asked for with a word for jumping ("entro nel pozzo" isn't)."""
         if not self.engine.expects(action):
+            return False
+        if action.verb is Verb.JUMP and not JUMP_WORDS.intersection(words):
             return False
         return action.direction is None or names_the_way(action.direction, words, exits)
 
