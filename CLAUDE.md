@@ -322,15 +322,26 @@ tests/
   - Nomi propri: campo `article` su oggetti, personaggi e argomenti (`none`: «Ettore», «a Ettore»,
     «Qui c'è Agnese»; `definite`: «il dottor Ferri», mai «un dottor Ferri»). «ad» tra le parole che
     il parser ignora («dai il medaglione ad Agnese»).
-  - Col modello vero, 17 frasi libere del pianterreno: 13 al primo giro. Le altre hanno mostrato tre
+  - Col modello vero, 17 frasi libere del pianterreno: 13 al primo giro. Le altre hanno mostrato
     difetti generali, corretti nel codice (il prompt non cambia): un alias che appartiene a un solo
     oggetto vale come il suo nome («grappa» per «bottiglia di grappa»: il modello a volte risponde
-    con l'alias); ciò che la frase nomina vince su una scelta a caso del modello
-    (`interpreter._as_the_sentence_names`: leggere ed esaminare non hanno strumento, e uno strumento
-    non nominato lascia il posto all'unico altro oggetto nominato, «infilo il medaglione
-    nell'incavo»); un nome contenuto in quello di una cosa presente non vale come «altrove»
-    («biglietto» in «biglietto della contessa»). Dopo: 17 su 17 per due giri; «faccio vedere la
+    con l'alias); leggere ed esaminare non hanno strumento, quindi l'oggetto nominato che il modello
+    ha messo come strumento è quello letto («leggo il biglietto della contessa»); «inventario» con un
+    oggetto nominato come bersaglio è un esame («frugo nella borsa del dottore»); un nome contenuto
+    in quello di una cosa presente non vale come «altrove» («biglietto» in «biglietto della
+    contessa»). E uno strumento che la frase non nomina, quando la frase nomina un solo altro
+    oggetto, diventa un'**ipotesi** (`NotUnderstood.guess`): il gioco chiede «Vuoi usare il
+    medaglione con la meridiana?» e la fa solo dopo un sì, perché anche una domanda nomina le cose
+    («cosa c'è scritto sul biglietto, Livia?» dava la chiave dello scalone). «mostro/faccio vedere la
     lettera a Ettore» diventa una domanda sulla lettera, e Ettore chiede di vederla.
+  - Parser: un nome non scavalca «con» (anche «col», «coi») se non lo contiene: «usa la chiave con la
+    credenza» erano la sola «chiave della credenza»; «corda con gancio» della Rocca lo scavalca.
+  - Dopo la revisione finale: la meridiana si apre solo dopo aver letto la busta (prima si saltava
+    Ettore e la rivelazione); chi ha già la chiave si sente dire «usala», una chiave sbagliata «non
+    entra»; il dottore addormentato non parla da sveglio; tutto ciò che le descrizioni nominano si
+    esamina. Tolto un alias pericoloso: «leggio», che la tolleranza ai refusi faceva nominare da
+    «leggo». Nella spec, gli indizi piantati nel primo atto da pagare dopo (il campanello col filo
+    tagliato, la luce sotto il tetto, le lenzuola «A. V.»).
 
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.

@@ -418,8 +418,9 @@ VALDIMORA_CASES = [
     ("atrio", (), (), "leggo l'annuncio funebre", says(VALDIMORA_RULE["leggi_annuncio"])),
     ("rimessa", (), (), "apro la mia valigia", lambda a, g: g.state.item_locations["fotografia"] == "inventory"),
     ("rimessa", (), (), "prendo l'olio", lambda a, g: g.state.item_locations["oliatore"] == "inventory"),
+    # As below: taken for asking about the letter, Ettore asks to see it, a fair hint.
     ("stanza_maggiordomo", (), (), "mostro la lettera al maggiordomo",
-     lambda a, g: g.state.item_locations["busta"] == "inventory"),
+     lambda a, g: g.state.item_locations["busta"] == "inventory" or ETTORE.topics["lettera"].text in a),
     # The model may take it for asking about the letter: Ettore then asks to see it, a fair hint.
     ("stanza_maggiordomo", (), (), "faccio vedere la lettera a Ettore",
      lambda a, g: g.state.item_locations["busta"] == "inventory" or ETTORE.topics["lettera"].text in a),
@@ -429,8 +430,10 @@ VALDIMORA_CASES = [
      says(VALDIMORA.items["meridiana"].variants[1].text)),
     ("cortile", ("oliatore",), ("busta_letta",), "metto un po' d'olio sulla meridiana",
      lambda a, g: "meridiana_oliata" in g.state.flags),
+    # Done, or asked first when the model picked another tool and «incavo» is only a guess.
     ("cortile", (), ("busta_letta", "meridiana_oliata"), "infilo il medaglione nell'incavo",
-     lambda a, g: g.state.item_locations["biglietto_livia"] == "inventory"),
+     lambda a, g: g.state.item_locations["biglietto_livia"] == "inventory"
+     or g.pending == Action(verb="usa", target="medaglione", with_="meridiana")),
     ("stanza_maggiordomo", (), ("busta_data",), "chiedo a Ettore di mettere una buona parola con Livia",
      lambda a, g: "ettore_garantisce" in g.state.flags),
     ("ufficio_governante", ("biglietto_livia",), ("ettore_garantisce",), "consegno il biglietto a Livia",

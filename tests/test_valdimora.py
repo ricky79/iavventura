@@ -10,7 +10,7 @@ import pytest
 
 from app.engine.engine import Engine
 from app.engine.loader import WORLDS_DIR, load_world
-from app.engine.models import Give, Remove, World
+from app.engine.models import Action, Give, Remove, World
 from app.game import Game
 
 
@@ -83,7 +83,7 @@ def test_ettore_and_livia_are_called_by_their_names(valdimora):
 def test_things_done_in_the_wrong_order_give_a_hint(valdimora):
     game = new_game(valdimora)
     play(game, "sud", "prendi l'oliatore", "nord", "ovest", "nord", "nord", "dai la lettera a Ettore",
-         "sud", "est")  # fmt: skip
+         "leggi la busta", "sud", "est")  # fmt: skip
 
     rusty = game.turn("usa il medaglione con la meridiana")
     play(game, "usa l'oliatore con la meridiana", "usa il medaglione con la meridiana")
@@ -263,3 +263,110 @@ def test_the_mourning_notice_tells_the_countess_is_dead(valdimora):
 
     assert "14 ottobre 1927" in notice
     assert "frana" in door
+
+
+# --- Found by the final review --------------------------------------------------------------------
+
+
+def test_the_sundial_waits_for_the_countess_riddle(valdimora):
+    # Oil and medallion opened the sundial before meeting Ettore: the letter, the riddle and the act's
+    # revelation were skipped, and the oil went «nell'incavo» before anyone had seen it.
+    game = new_game(valdimora)
+
+    oil, medallion = play(game, "sud", "prendi l'oliatore", "nord", "nord",
+                          "usa l'oliatore con la meridiana", "usa il medaglione con la meridiana")[-2:]  # fmt: skip
+
+    assert "incavo" not in oil and "incavo" not in medallion
+    assert "meridiana_oliata" not in game.state.flags
+    assert game.state.item_locations["biglietto_livia"] is None
+
+
+def test_the_sleeping_doctor_neither_refuses_nor_answers_awake(valdimora):
+    game = new_game(valdimora)
+    game.state.current_room = "biliardo"
+    game.state.flags.add("ferri_addormentato")
+
+    refused = game.turn("dai la lettera al dottore")
+    unknown = game.engine.execute(game.state, Action(verb="chiedi", target="ferri")).text
+
+    assert refused == "Il dottore non ne vuole sapere."
+    assert unknown == "Dal dottore, su questo, non cavi niente."
+
+
+@pytest.mark.parametrize(
+    ("room", "key", "line", "answer"),
+    [
+        ("atrio", "chiave_scalone", "apri la porta dello scalone", "Hai la chiave dello scalone: usala."),
+        ("sala_da_pranzo", "chiave_credenza", "apri la credenza", "Hai la chiave della credenza: usala."),
+        ("dispensa", "chiavetta", "apri l'armadietto", "Hai la chiavetta dell'armadietto: usala."),
+    ],
+    ids=["staircase", "sideboard", "medicine cabinet"],
+)
+def test_holding_the_key_the_hint_says_to_use_it(valdimora, room, key, line, answer):
+    game = new_game(valdimora)
+    game.state.current_room = room
+    game.state.item_locations[key] = "inventory"
+
+    assert game.turn(line) == answer
+
+
+@pytest.mark.parametrize(
+    ("room", "key", "line"),
+    [
+        ("sala_da_pranzo", "chiave_scalone", "apri la credenza con la chiave"),
+        ("dispensa", "chiave_credenza", "apri l'armadietto con la chiave"),
+        ("atrio", "chiavetta", "apri la porta con la chiavetta"),
+        ("cucina", "chiave_scalone", "apri la porta della cantina con la chiave"),
+    ],
+    ids=["sideboard", "medicine cabinet", "staircase", "cellar"],
+)
+def test_a_wrong_key_does_not_fit(valdimora, room, key, line):
+    game = new_game(valdimora)
+    game.state.current_room = room
+    game.state.item_locations[key] = "inventory"
+
+    assert game.turn(line) == "La chiave non entra nella serratura."
+
+
+def test_the_key_board_agrees_with_the_cellar_door(valdimora):
+    # The board had a «Cantina» key hanging, the cellar door said its hook was empty.
+    board = valdimora.items["quadro_chiavi"].description
+
+    assert "Due ganci sono vuoti" in board and "«Cantina»" in board
+
+
+def test_the_sundial_motto_can_be_read(valdimora):
+    game = new_game(valdimora)
+    game.state.current_room = "cortile"
+
+    assert "Horas non numero nisi serenas" in game.turn("leggi il motto")
+
+
+def test_the_countess_note_for_livia_is_asked_about(valdimora):
+    # «dai il biglietto della contessa a Livia» gave her the envelope, and she refused it.
+    game = new_game(valdimora)
+    game.state.current_room = "ufficio_governante"
+    for item in ("busta", "biglietto_livia"):
+        game.state.item_locations[item] = "inventory"
+
+    answer = game.turn("dai il biglietto della contessa a Livia")
+
+    assert answer == "Quale intendi: la busta della contessa o il biglietto sigillato?"
+
+
+MORE_DESCRIBED = [
+    ("ufficio_governante", "quadro"), ("stanza_maggiordomo", "tavolo"), ("stanza_maggiordomo", "sedia"),
+    ("stanza_maggiordomo", "porta"), ("atrio", "vetrata"), ("atrio", "pavimento"),
+    ("lavanderia", "ferro da stiro"), ("biliardo", "tavolino"), ("biliardo", "poltrona"),
+    ("biliardo", "bottiglie"), ("salotto", "spartito"), ("salotto", "porta a vetri"),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(("room", "thing"), MORE_DESCRIBED, ids=[f"{room}: {thing}" for room, thing in MORE_DESCRIBED])
+def test_more_of_what_a_room_describes_can_be_examined(valdimora, room, thing):
+    game = new_game(valdimora)
+    game.state.current_room = room
+
+    answer = game.turn(f"esamina {thing}")
+
+    assert answer not in ("Non vedi niente del genere qui.", "Non ho capito.")

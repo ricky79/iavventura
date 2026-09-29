@@ -104,6 +104,26 @@ def test_longest_name_wins_even_when_it_contains_a_preposition(world):
     assert action == Action(verb="usa", target="corda_con_gancio", with_="pozzo")
 
 
+def test_a_name_does_not_reach_across_con(world_data):
+    # Valdimora: «usa la chiave con la credenza» was «usa la chiave della credenza», alone: «Non
+    # succede niente». A name reaches across «con» only if it has it (the grapple, «corda con gancio»).
+    world_data["items"]["credenza"] = {"name": "credenza", "gender": "f", "description": "-", "location": "atrio"}
+    world_data["items"]["chiave_credenza"] = {
+        "name": "chiave della credenza", "gender": "f", "aliases": ["chiave"], "description": "-", "location": "atrio",
+    }  # fmt: skip
+    world = World.model_validate(world_data)
+
+    action = parse_with(world, "usa la chiave con la credenza", "credenza", "chiave_credenza")
+
+    assert action == Action(verb="usa", target="chiave_credenza", with_="credenza")
+
+
+def test_the_grapple_still_reaches_across_its_own_con(world):
+    assert parse_with(world, "usa la corda con gancio con il pozzo", "corda_con_gancio", "pozzo") == Action(
+        verb="usa", target="corda_con_gancio", with_="pozzo"
+    )
+
+
 def test_names_of_items_out_of_reach_do_not_hide_those_in_reach(world):
     # "corda con gancio" is the name of an item out of play: here the words mean two items.
     action = parse_with(world, "usa la corda con il gancio", "corda", "gancio")

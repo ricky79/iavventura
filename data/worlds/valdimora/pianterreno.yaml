@@ -230,7 +230,7 @@ items:
   meridiana:
     name: meridiana
     gender: f
-    aliases: [orologio solare, gnomone, piedistallo, incavo]
+    aliases: [orologio solare, gnomone, piedistallo, incavo, motto, quadrante]
     description: >
       Una meridiana di pietra su un piedistallo, con lo gnomone di bronzo verde di ruggine. Sul
       quadrante è inciso un motto: «Horas non numero nisi serenas». Conto solo le ore serene.
@@ -250,7 +250,7 @@ items:
   biglietto_livia:
     name: biglietto sigillato
     gender: m
-    aliases: [biglietto, biglietto per livia]
+    aliases: [biglietto, biglietto per livia, biglietto della contessa]
     description: Un biglietto piegato e chiuso con la ceralacca della contessa. Sopra c'è scritto «Per Livia».
     location: null
 
@@ -396,7 +396,7 @@ items:
   pianoforte:
     name: pianoforte
     gender: m
-    aliases: [piano]
+    aliases: [piano, spartito]
     description: Un pianoforte a coda, chiuso. Sul leggio, uno spartito di Chopin ingiallito.
     location: salotto
     scenery: true
@@ -531,10 +531,10 @@ items:
   quadro_chiavi:
     name: quadro delle chiavi
     gender: m
-    aliases: [chiavi, cartellini]
+    aliases: [quadro, chiavi, cartellini, cartellino]
     description: >
-      Decine di chiavi appese, ognuna col suo cartellino scritto da Livia: «Cantina», «Soffitta»,
-      «Biblioteca»… Il gancio dello «Scalone» è vuoto.
+      Decine di chiavi appese, ognuna col suo cartellino scritto da Livia: «Soffitta», «Biblioteca»,
+      «Rimessa»… Due ganci sono vuoti: quello dello «Scalone» e quello della «Cantina».
     location: ufficio_governante
     scenery: true
 
@@ -604,7 +604,7 @@ items:
   carrello:
     name: carrello dei liquori
     gender: m
-    aliases: [carrello, liquori]
+    aliases: [carrello, liquori, bottiglie]
     description: Un carrello d'ottone con bottiglie di liquore. Sono tutte vuote.
     location: biliardo
     scenery: true
@@ -618,6 +618,75 @@ items:
       Le finestre del castello, su tre piani, quasi tutte buie. Solo in alto, sotto il tetto, una
       luce trema per un momento, poi si spegne.
     location: cortile
+    scenery: true
+
+  vetrata:
+    name: vetrata
+    gender: f
+    description: Una vetrata a piombo tra l'atrio e il cortile, rigata di pioggia.
+    location: atrio
+    scenery: true
+
+  pavimento:
+    name: pavimento a scacchi
+    gender: m
+    aliases: [pavimento, scacchi]
+    description: Marmo bianco e nero, consumato da due secoli di passi.
+    location: atrio
+    scenery: true
+
+  porta_vetri:
+    name: porta a vetri
+    gender: f
+    aliases: [porta]
+    description: Una porta a vetri che dà sulla serra. I vetri sono appannati dal caldo.
+    location: salotto
+    scenery: true
+
+  tavolo_argenteria:
+    name: tavolo dell'argenteria
+    gender: m
+    aliases: [tavolo]
+    description: Un tavolo di legno grezzo, coperto di posate e di vassoi da lucidare.
+    location: stanza_maggiordomo
+    scenery: true
+
+  sedia:
+    name: sedia impagliata
+    gender: f
+    aliases: [sedia]
+    description: Una sedia impagliata, con il segno lasciato da chi ci siede da cinquant'anni.
+    location: stanza_maggiordomo
+    scenery: true
+
+  porta_servizio:
+    name: porta di servizio
+    gender: f
+    aliases: [porta]
+    description: La porta di servizio tra la stanza del maggiordomo e la sala da pranzo. Sopra, i campanelli.
+    location: stanza_maggiordomo
+    scenery: true
+
+  ferro_stiro:
+    name: ferro da stiro
+    gender: m
+    aliases: [ferro]
+    description: Un ferro da stiro di ghisa, appoggiato sulla stufa a scaldare.
+    location: lavanderia
+    scenery: true
+
+  tavolino:
+    name: tavolino
+    gender: m
+    description: Un tavolino accanto alla poltrona, con un portacenere pieno e la borsa del dottore.
+    location: biliardo
+    scenery: true
+
+  poltrona:
+    name: poltrona
+    gender: f
+    description: Una poltrona di cuoio, sfondata e comoda.
+    location: biliardo
     scenery: true
 
   # --- Oggetti per gli atti futuri: le forbici (atto 2), la tanica (atto 3) ---
@@ -692,8 +761,11 @@ rules:
   # --- La meridiana ---
   ungi_meridiana:
     trigger: {verb: usa, target: oliatore, with: meridiana}
-    when: {not: {flag: meridiana_oliata}}
+    when: {all: [{flag: busta_letta}, {not: {flag: meridiana_oliata}}]}
     otherwise: Il meccanismo è già unto a dovere.
+    otherwise_variants:
+      - when: {not: {flag: busta_letta}}
+        text: Ungere una vecchia meridiana sotto la pioggia? Non sai nemmeno che cosa cercare.
     effects:
       - set_flag: meridiana_oliata
     text: >
@@ -702,11 +774,13 @@ rules:
 
   apri_meridiana:
     trigger: {verb: usa, target: medaglione, with: meridiana}
-    when: {all: [{flag: meridiana_oliata}, {not: {flag: meridiana_aperta}}]}
+    when: {all: [{flag: busta_letta}, {flag: meridiana_oliata}, {not: {flag: meridiana_aperta}}]}
     otherwise: "Il medaglione entra nell'incavo, ma non gira: il meccanismo è bloccato dalla ruggine."
     otherwise_variants:
       - when: {flag: meridiana_aperta}
         text: Lo scomparto è aperto, e dentro non c'è altro.
+      - when: {not: {flag: busta_letta}}
+        text: Giri intorno alla meridiana col medaglione in mano, ma non vedi dove potrebbe servire.
     effects:
       - give: biglietto_livia
       - give: foglietto
@@ -720,6 +794,10 @@ rules:
   leggi_foglietto:
     trigger: {verb: leggi, target: foglietto}
     text: «Livia ti aprirà la strada, se sarò io a chiederglielo. Poi, lassù, cerca chi ti somiglia.»
+
+  leggi_meridiana:
+    trigger: {verb: leggi, target: meridiana}
+    text: "Sul quadrante è inciso un motto: «Horas non numero nisi serenas». Conto solo le ore serene."
 
   leggi_biglietto_livia:
     trigger: {verb: leggi, target: biglietto_livia}
@@ -753,8 +831,11 @@ rules:
 
   apri_scalone_senza_chiave:
     trigger: {verb: apri, target: porta_scalone}
-    when: {not: {flag: atto_due}}
-    otherwise: La porta dello scalone è già aperta.
+    when: {all: [{not: {flag: atto_due}}, {not: {has: chiave_scalone}}]}
+    otherwise: "Hai la chiave dello scalone: usala."
+    otherwise_variants:
+      - when: {flag: atto_due}
+        text: La porta dello scalone è già aperta.
     text: È chiusa a chiave. In questa casa, le chiavi le tiene la governante.
 
   # --- Il filo facoltativo: la grappa, la borsa, l'armadietto ---
@@ -771,8 +852,11 @@ rules:
 
   apri_credenza_senza_chiave:
     trigger: {verb: apri, target: credenza}
-    when: {not: {flag: credenza_aperta}}
-    otherwise: La credenza è già aperta, e dentro restano solo bicchieri.
+    when: {all: [{not: {flag: credenza_aperta}}, {not: {has: chiave_credenza}}]}
+    otherwise: "Hai la chiave della credenza: usala."
+    otherwise_variants:
+      - when: {flag: credenza_aperta}
+        text: La credenza è già aperta, e dentro restano solo bicchieri.
     text: È chiusa a chiave. Le cose della sala da pranzo, di solito, sono affare del maggiordomo.
 
   dai_grappa_ferri:
@@ -816,9 +900,25 @@ rules:
 
   apri_armadietto_senza_chiave:
     trigger: {verb: apri, target: armadietto}
-    when: {not: {flag: armadietto_aperto}}
-    otherwise: L'armadietto è già aperto.
+    when: {all: [{not: {flag: armadietto_aperto}}, {not: {has: chiavetta}}]}
+    otherwise: "Hai la chiavetta dell'armadietto: usala."
+    otherwise_variants:
+      - when: {flag: armadietto_aperto}
+        text: L'armadietto è già aperto.
     text: È chiuso a chiave. Una chiave così, di solito, ce l'ha il medico.
+
+  chiave_sbagliata:
+    trigger:
+      - {verb: apri, target: porta_scalone, with: chiave_credenza}
+      - {verb: apri, target: porta_scalone, with: chiavetta}
+      - {verb: apri, target: credenza, with: chiave_scalone}
+      - {verb: apri, target: credenza, with: chiavetta}
+      - {verb: apri, target: armadietto, with: chiave_scalone}
+      - {verb: apri, target: armadietto, with: chiave_credenza}
+      - {verb: apri, target: porta_cantina, with: chiave_scalone}
+      - {verb: apri, target: porta_cantina, with: chiave_credenza}
+      - {verb: apri, target: porta_cantina, with: chiavetta}
+    text: La chiave non entra nella serratura.
 
   leggi_registro:
     trigger: {verb: leggi, target: registro}

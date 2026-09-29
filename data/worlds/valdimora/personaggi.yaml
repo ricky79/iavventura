@@ -205,8 +205,8 @@ characters:
     greeting_variants:
       - when: {flag: ferri_addormentato}
         text: Il dottor Ferri russa. Non c'è verso di svegliarlo.
-    unknown: «Sono un medico, signorina, non un indovino.»
-    refuses: «Grazie, ma no.»
+    unknown: Dal dottore, su questo, non cavi niente.
+    refuses: Il dottore non ne vuole sapere.
     topics:
       contessa:
         name: contessa

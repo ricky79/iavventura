@@ -589,6 +589,34 @@ def test_a_name_within_one_said_of_something_here_is_not_elsewhere():
     assert say(game, "leggo il biglietto della contessa") == NOT_UNDERSTOOD
 
 
+def test_what_the_sentence_names_instead_of_the_model_is_asked_first():
+    # «cosa c'è scritto sul biglietto, Livia?»: the model gave the letter to Livia; the sealed note the
+    # sentence names took its place, and the staircase key came from a question (found by the review).
+    valdimora = load_world(WORLDS_DIR / "valdimora")
+    game = Game(Engine(valdimora), talking({"verbo": "dai", "bersaglio": "Livia", "con": "lettera della contessa"}))
+    game.state.current_room = "ufficio_governante"
+    game.state.item_locations["biglietto_livia"] = "inventory"
+    game.state.flags.add("ettore_garantisce")
+
+    answer = say(game, "cosa c'è scritto sul biglietto, Livia?")
+
+    assert answer == "Vuoi dare il biglietto sigillato a Livia?"
+    assert game.state.item_locations["chiave_scalone"] is None
+
+
+def test_the_guessed_tool_is_used_after_yes():
+    valdimora = load_world(WORLDS_DIR / "valdimora")
+    game = Game(Engine(valdimora), talking({"verbo": "usa", "bersaglio": "medaglione", "con": "lettera della contessa"}))
+    game.state.current_room = "cortile"
+    game.state.flags.update({"busta_letta", "meridiana_oliata"})
+
+    question = say(game, "infilo il medaglione nell'incavo")
+    answer = say(game, "sì")
+
+    assert question == "Vuoi usare il medaglione con la meridiana?"
+    assert "Per Livia" in answer
+
+
 @pytest.mark.parametrize(
     ("room", "sentence", "character", "topic"),
     [("radura", "mi dai il miele?", "draghetto", "miele"), ("tana", "mi dai il tuo miele?", "orso", "miele")],

@@ -81,11 +81,13 @@ def interpreter_schema(in_reach: Sequence[Item], characters: Characters = ()) ->
 class NotUnderstood(NamedTuple):
     """No action came out of the sentence. `reason` says why, for the logs; `not_an_action` is set
     when the model judged that the sentence isn't a game action at all ("altro"), `talking` when the
-    player talks to someone and nobody is here."""
+    player talks to someone and nobody is here. `guess` is what the sentence names in place of the
+    model's pick: the game asks about it, and does it only after a yes."""
 
     reason: str
     not_an_action: bool = False
     talking: bool = False
+    guess: Action | None = None
 
 
 def interpret(
@@ -112,6 +114,7 @@ def interpret(
             temperature=0,
         )
         ids_by_name = _ids_by_name([*in_reach, *(character for character, _ in characters)])
+        reply = _examining_not_inventory(reply, in_reach, words_of(sentence))
         result = _to_action(reply, ids_by_name, characters)
         if isinstance(result, Action):
             result = _checked(result, words_of(sentence), in_reach, exits, characters)
@@ -122,6 +125,15 @@ def interpret(
     else:
         log.info("=== azione: %s", describe(result))
     return result
+
+
+def _examining_not_inventory(reply: dict[str, Any], in_reach: Sequence[Item], words: list[str]) -> dict[str, Any]:
+    """"frugo nella borsa del dottore": the model answered "inventario", with an item the sentence
+    names as its target. The inventory has no target: that is looking at the item."""
+    target = str(reply.get("bersaglio", ""))
+    if reply.get("verbo") == Command.INVENTORY and any(item.name == target and is_named(item, words) for item in in_reach):
+        return {**reply, "verbo": Verb.EXAMINE.value}
+    return reply
 
 
 def _ids_by_name(things: Sequence[Item | Character]) -> dict[str, str]:
@@ -211,7 +223,7 @@ def _checked(
         thrown = next((item.id for item in in_reach if item.id != action.target and is_named(item, words)), None)
         if thrown is not None:
             action = Action(verb=Verb.USE, target=action.target, with_=thrown)
-    action = _as_the_sentence_names(action, words, in_reach)
+    action = _read_what_is_named(action, words, in_reach)
     things = {thing.id: thing for thing in [*in_reach, *(character for character, _ in characters)]}
     ids = [thing_id for thing_id in (action.target, action.with_) if thing_id is not None]
     if action.verb in (Verb.GIVE, Verb.USE):
@@ -222,27 +234,31 @@ def _checked(
             return NotUnderstood(f"'{action.verb}' senza un oggetto")
     for thing_id in ids:
         if not is_named(things[thing_id], words):
-            return NotUnderstood(f"la frase non nomina {things[thing_id].name!r}")
+            guess = _guess(action, thing_id, words, in_reach)
+            return NotUnderstood(f"la frase non nomina {things[thing_id].name!r}", guess=guess)
     return action
 
 
-def _as_the_sentence_names(action: Action, words: list[str], in_reach: Sequence[Item]) -> Action:
-    """The model picks from lists, and for a part it can't place it picks anything: an item the
-    sentence names takes its place. Reading and examining have no tool, so a tool the sentence names
-    is what is read ("leggo il biglietto della contessa"); a tool it doesn't name gives way to the
-    only other item it names ("infilo il medaglione nell'incavo"). Characters are left as they are."""
-    items = {item.id for item in in_reach}
-    named = {item.id for item in in_reach if is_named(item, words)}
-    target, tool = action.target, action.with_
-    if action.verb in (Verb.READ, Verb.EXAMINE) and tool is not None:
-        if target in items and target not in named and tool in named:
-            target = tool
-        tool = None
-    elif tool in items and tool not in named and len(others := named - {target}) == 1:
-        tool = others.pop()
-    if (target, tool) == (action.target, action.with_):
+def _read_what_is_named(action: Action, words: list[str], in_reach: Sequence[Item]) -> Action:
+    """Reading and examining have no tool: when the model picked the wrong item and put the one the
+    sentence names as the tool ("leggo il biglietto della contessa"), that one is what is read."""
+    if action.verb not in (Verb.READ, Verb.EXAMINE) or action.with_ is None:
         return action
-    return Action(verb=action.verb, target=target, with_=tool)
+    items = {item.id: item for item in in_reach}
+    target = action.target
+    if target in items and not is_named(items[target], words) and action.with_ in items and is_named(items[action.with_], words):
+        target = action.with_
+    return Action(verb=action.verb, target=target)
+
+
+def _guess(action: Action, unnamed: str, words: list[str], in_reach: Sequence[Item]) -> Action | None:
+    """For a tool the sentence doesn't name, the only other item it names ("infilo il medaglione
+    nell'incavo"): the model picks anything when nothing fits. Only a guess, which the game asks about:
+    a question names things too («cosa c'è scritto sul biglietto, Livia?»)."""
+    if unnamed != action.with_:
+        return None
+    others = {item.id for item in in_reach if is_named(item, words)} - {action.target}
+    return Action(verb=action.verb, target=action.target, with_=others.pop()) if len(others) == 1 else None
 
 
 def _checked_move(

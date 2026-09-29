@@ -40,6 +40,10 @@ DIRECTIONS = {
     "scendo": Direction.DOWN,
 }
 
+# "usa X con Y": between the item and the tool, a mark no name reaches across unless it has it.
+TOOL_WORDS = frozenset({"con", "col", "coi"})
+TOOL_MARK = "|"
+
 GO_WORDS = frozenset({"vai", "va", "vado", "cammina", "torna", "torno", "ritorna", "ritorno", "entra", "entro"})
 LOOK_WORDS = frozenset({"guarda", "g", "descrivi"})  # with an item they mean "esamina"
 INVENTORY_WORDS = frozenset({"inventario", "inv", "i"})
@@ -131,7 +135,8 @@ def parse(
     if verb is None:
         return None
     people = [character for character, _ in characters]
-    mentions = _mentions([word for word in rest if word not in STOPWORDS], world, [*in_reach, *people])
+    kept = [TOOL_MARK if word in TOOL_WORDS else word for word in rest if word in TOOL_WORDS or word not in STOPWORDS]
+    mentions = _mentions(kept, world, [*in_reach, *people])
     if mentions is None or not 1 <= len(mentions) <= 2:
         return None
     for candidates in mentions:
@@ -252,6 +257,9 @@ def _mentions(words: list[str], world: World, in_reach: Sequence[Named]) -> list
     mentions = []
     position = 0
     while position < len(words):
+        if words[position] == TOOL_MARK:
+            position += 1
+            continue
         found = _longest(words, position, near)
         if found is None:
             # An item out of reach: any one will do, the engine answers that it isn't here.
@@ -270,10 +278,16 @@ def _phrases(items: Iterable[Named]) -> _Phrases:
     phrases: _Phrases = {}
     for item in items:
         for name in (item.name, *item.aliases):
-            key = significant_words(name)
-            if item not in phrases.setdefault(key, []):
-                phrases[key].append(item)
+            for key in {significant_words(name), _marked_words(name)}:
+                if item not in phrases.setdefault(key, []):
+                    phrases[key].append(item)
     return phrases
+
+
+def _marked_words(name: str) -> tuple[str, ...]:
+    """The significant words of a name with «con» kept as a mark: "corda con gancio" reaches across the
+    «con» of a sentence, "chiave della credenza" doesn't ("usa la chiave con la credenza")."""
+    return tuple(TOOL_MARK if word in TOOL_WORDS else word for word in words_of(name) if word in TOOL_WORDS or word not in STOPWORDS)
 
 
 def _longest(words: list[str], position: int, phrases: _Phrases) -> tuple[int, tuple[Named, ...]] | None:
