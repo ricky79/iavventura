@@ -849,6 +849,39 @@ def test_the_room_shows_the_characters_in_it(keeper):
     assert elsewhere.room.characters == ()
 
 
+def test_a_character_moves_while_a_condition_holds(keeper_world):
+    # Agnese follows the player from floor to floor: `moves`, the first that holds wins.
+    keeper_world["characters"]["custode"]["moves"] = [
+        {"when": {"has": "chiave"}, "room": "atrio"},
+        {"when": {"flag": "porta_aperta"}, "room": "cella"},
+    ]
+    engine, state = start(keeper_world)
+    custode = engine.world.characters["custode"]
+
+    at_first = engine.character_room(custode, state)
+    state.flags.add("porta_aperta")
+    with_the_flag = engine.character_room(custode, state)
+    state.item_locations["chiave"] = "inventory"
+    with_the_key_too = engine.character_room(custode, state)
+
+    assert (at_first, with_the_flag, with_the_key_too) == ("atrio", "cella", "atrio")
+
+
+def test_a_character_that_moved_away_is_not_here(keeper_world):
+    keeper_world["characters"]["custode"]["moves"] = [{"when": {"flag": "porta_aperta"}, "room": "cella"}]
+    engine, state = start(keeper_world)
+    engine.execute(state, Action(verb="tira", target="leva"))
+
+    talk = engine.execute(state, Action(verb="parla", target="custode"))
+    give = engine.execute(state, Action(verb="dai", target="moneta", with_="custode"))
+    state.current_room = "cella"
+    look = engine.execute(state, Action(verb="guarda"))
+
+    assert (talk.text, give.text) == (messages.NOBODY_HERE, messages.NOBODY_HERE)
+    assert look.room.characters == ("custode",)
+    assert [character.id for character, _ in engine.characters_here(state)] == ["custode"]
+
+
 def test_characters_here_come_with_the_topics_the_player_can_ask_about(keeper):
     engine, state = keeper
 

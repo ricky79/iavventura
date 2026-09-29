@@ -288,6 +288,13 @@ class Topic(_Frozen):
     effects: tuple[Effect, ...] = ()
 
 
+class Move(_Frozen):
+    """Where a character is while a condition holds: Agnese on the floor the player has just opened."""
+
+    when: Condition
+    room: Id
+
+
 class Character(_Frozen):
     """Someone the player can talk to: it greets, and answers about its topics with fixed texts."""
 
@@ -298,7 +305,8 @@ class Character(_Frozen):
     aliases: tuple[Text, ...] = ()
     description: Text
     variants: tuple[TextVariant, ...] = ()
-    location: Id  # a room: characters don't move
+    location: Id  # a room: where the character is while none of its moves holds
+    moves: tuple[Move, ...] = ()  # the first whose condition holds says where the character is now
     greeting: Text  # "parla con X"
     greeting_variants: tuple[TextVariant, ...] = ()  # the first that holds replaces the greeting
     unknown: Text  # the answer about anything else

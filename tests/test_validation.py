@@ -247,6 +247,14 @@ BROKEN_KEEPERS = {
         ),
         ["rules.usa_custode.trigger.0.with", "custode"],
     ),
+    "move to an unknown room": (
+        lambda d: keeper(d).update(moves=[{"when": {"flag": "porta_aperta"}, "room": "cantina"}]),
+        ["characters.custode.moves.0.room", "cantina"],
+    ),
+    "move on a flag never set": (
+        lambda d: keeper(d).update(moves=[{"when": {"flag": "allarme"}, "room": "cella"}]),
+        ["characters.custode.moves.0.when", "allarme"],
+    ),
 }
 
 

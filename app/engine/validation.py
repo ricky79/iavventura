@@ -77,6 +77,8 @@ def find_problems(world: World) -> list[str]:
 
     for character in world.characters.values():
         check_room(f"characters.{character.id}.location", character.location)
+        for index, move in enumerate(character.moves):
+            check_room(f"characters.{character.id}.moves.{index}.room", move.room)
         if character.id in world.items:
             report(f"characters.{character.id}", f"id '{character.id}' is already used by an item")
 
@@ -197,6 +199,8 @@ def _conditions(world: World) -> Iterator[tuple[str, Condition]]:
             yield f"{path}.variants.{index}.when", variant.when
         for index, variant in enumerate(character.greeting_variants):
             yield f"{path}.greeting_variants.{index}.when", variant.when
+        for index, move in enumerate(character.moves):
+            yield f"{path}.moves.{index}.when", move.when
         for topic in character.topics.values():
             if topic.when is not None:
                 yield f"{path}.topics.{topic.id}.when", topic.when

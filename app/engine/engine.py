@@ -151,12 +151,16 @@ class Engine:
             exits.append((direction, destination if destination.id in state.visited or named else None))
         return exits
 
+    def character_room(self, character: Character, state: GameState) -> str:
+        """Where the character is now: the room of its first move whose condition holds, else its location."""
+        return next((move.room for move in character.moves if holds(move.when, state)), character.location)
+
     def characters_here(self, state: GameState) -> list[tuple[Character, list[Topic]]]:
         """The characters in the current room, each with the topics the player can ask about now."""
         return [
             (character, [topic for topic in character.topics.values() if topic.when is None or holds(topic.when, state)])
             for character in self.world.characters.values()
-            if character.location == state.current_room
+            if self.character_room(character, state) == state.current_room
         ]
 
     def expects(self, action: Action) -> bool:
