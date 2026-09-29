@@ -269,7 +269,9 @@ class Engine:
     def _apply_rule(self, state: GameState, rule: Rule) -> Outcome:
         """The rule's text and effects, or `otherwise` when its condition doesn't hold."""
         if rule.when is not None and not holds(rule.when, state):
-            return Outcome(ok=False, text=rule.otherwise or NOTHING_HAPPENS)
+            return Outcome(
+                ok=False, text=_first_variant(rule.otherwise_variants, rule.otherwise or NOTHING_HAPPENS, state)
+            )
         for effect in rule.effects:
             _apply(effect, state)
         return Outcome(ok=True, text=rule.text)

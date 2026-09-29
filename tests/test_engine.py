@@ -432,6 +432,22 @@ def test_rule_whose_condition_fails_without_otherwise_gives_the_generic_answer(d
     assert outcome.text == messages.NOTHING_HAPPENS
 
 
+def test_the_text_of_a_rule_whose_condition_fails_follows_the_game(data):
+    # The medallion in the sundial: "it doesn't turn, it's rusty" / "the compartment is empty".
+    data["rules"]["tira_leva"]["otherwise_variants"] = [
+        {"when": {"has": "chiave"}, "text": "La leva non si muove più, e la chiave l'hai già presa."}
+    ]
+    engine, state = start(data)
+    engine.execute(state, Action(verb="tira", target="leva"))
+
+    with_the_key = engine.execute(state, Action(verb="tira", target="leva"))
+    engine.execute(state, Action(verb="lascia", target="chiave"))
+    without = engine.execute(state, Action(verb="tira", target="leva"))
+
+    assert with_the_key.text == "La leva non si muove più, e la chiave l'hai già presa."
+    assert without.text == "La leva non si muove più."
+
+
 def test_rule_without_effects_is_just_an_answer(data):
     engine, state = start(data)
     before = snapshot(state)

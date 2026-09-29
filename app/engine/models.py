@@ -269,6 +269,7 @@ class Rule(_Frozen):
     triggers: Annotated[tuple[Trigger, ...], BeforeValidator(_one_means_a_list)] = Field(alias="trigger", min_length=1)
     when: Condition | None = None
     otherwise: Text | None = None
+    otherwise_variants: tuple[TextVariant, ...] = ()  # the first that holds replaces otherwise
     effects: tuple[Effect, ...] = ()
     text: Text
 

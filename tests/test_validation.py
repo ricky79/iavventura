@@ -138,6 +138,12 @@ BROKEN_WORLDS = {
         lambda d: d["rooms"]["cella"].update(aliases=["su"]),
         ["rooms.cella.aliases.0", "'su'"],
     ),
+    "rule otherwise variant is checked": (
+        lambda d: d["rules"]["tira_leva"].update(
+            otherwise_variants=[{"when": {"flag": "allarme"}, "text": "Suona un allarme."}]
+        ),
+        ["rules.tira_leva.otherwise_variants.0.when", "allarme"],
+    ),
 }
 
 
