@@ -489,11 +489,13 @@ game:
   ancora); l'esito ha il testo «Riprendi dall'inizio del secondo atto.» e la stanza. Altrimenti
   errore.
 - `Engine.restore` controlla anche lo stato dentro `checkpoint`.
-- `Game.turn("riprendi")` su una partita persa con checkpoint la riprende. Su una partita persa, il
-  testo della morte si chiude con «Scrivi «riprendi» per ricominciare dall'inizio del secondo atto.»
-  (solo se c'è un checkpoint).
-- **Web**: la risposta di `/api/turn` ha un campo nuovo, `resumable` (vero se la partita è persa e
-  si può riprendere). La pagina lascia l'input attivo in quel caso, con il suggerimento
+- `Game.turn("riprendi")` su una partita persa con checkpoint la riprende; su una partita finita,
+  qualunque altra riga risponde «La partita è finita.» senza passare dall'LLM. L'invito a
+  riprendere lo scrivono i front end: la pagina, con `resumable` (il nome dell'atto), «[Scrivi
+  «riprendi» per ricominciare dall'inizio del secondo atto, oppure scegli «Nuova partita».]»; il
+  terminale con la sua domanda.
+- **Web**: la risposta di `/api/turn` ha un campo nuovo, `resumable`: il nome dell'atto da cui si
+  può riprendere, oppure niente. La pagina lascia l'input attivo in quel caso, con il suggerimento
   «riprendi»; «Nuova partita» resta nella riga di stato.
 - **Terminale**: dopo una morte con checkpoint, «Vuoi riprendere dall'inizio del secondo atto?
   (s/n)»; con un no, la domanda di oggi, «Vuoi giocare ancora?».
