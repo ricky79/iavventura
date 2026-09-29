@@ -341,6 +341,7 @@ def parse_giving(world: World, text: str):
         "offri il soldo al custode",
         "regala la moneta al custode",
         "consegna la moneta al custode",
+        "dai la moneta ad un custode",  # «ad» before a vowel, as in «dai il medaglione ad Agnese»
     ],
 )
 def test_giving_an_item_to_a_character(keeper, text):

@@ -15,7 +15,7 @@ from app.engine.text import Named, plain
 STOPWORDS = frozenset(
     """
     il lo la i gli le l un uno una
-    di a da in con su per tra fra verso contro dentro
+    di a ad da in con su per tra fra verso contro dentro
     del dello della dei degli delle dell al allo alla ai agli alle all
     dal dallo dalla dai dagli dalle dall nel nello nella nei negli nelle nell
     col coi sul sullo sulla sui sugli sulle sull

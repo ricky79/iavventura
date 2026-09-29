@@ -268,6 +268,75 @@ items:
     description: Una chiave lunga, di ferro brunito, ancora tiepida della mano di Livia.
     location: null
 
+  # --- Il filo facoltativo: la prova 1 ---
+  credenza:
+    name: credenza
+    gender: f
+    aliases: [mobile]
+    description: >
+      Una credenza di noce scuro, chiusa a chiave. Dietro i vetri si intravedono bicchieri e
+      bottiglie.
+    location: sala_da_pranzo
+    scenery: true
+    variants:
+      - when: {flag: credenza_aperta}
+        text: La credenza di noce, aperta. Dentro restano solo bicchieri.
+
+  chiave_credenza:
+    name: chiave della credenza
+    gender: f
+    aliases: [chiave, chiavina]
+    description: Una chiave piccola e ornata, legata a un nastrino.
+    location: null
+
+  grappa:
+    name: bottiglia di grappa
+    gender: f
+    aliases: [grappa, bottiglia, liquore]
+    description: Una bottiglia di grappa di vinacce, ancora sigillata.
+    location: null
+
+  borsa:
+    name: borsa del dottore
+    gender: f
+    aliases: [borsa, borsa da medico]
+    description: Una borsa da medico di pelle nera, consumata agli angoli.
+    location: biliardo
+    scenery: true
+    variants:
+      - when: {flag: chiavetta_presa}
+        text: La borsa del dottore, aperta sul tavolino. Fiale, ricettari, uno stetoscopio.
+      - when: {flag: ferri_addormentato}
+        text: >
+          La borsa del dottore, sul tavolino accanto a lui. Il dottore dorme: nessuno ti impedirebbe
+          di aprirla.
+
+  chiavetta:
+    name: chiavetta dell'armadietto
+    gender: f
+    aliases: [chiavetta]
+    description: Una chiavetta d'ottone con un cartellino scritto a mano, «Armadietto medicinali».
+    location: null
+
+  armadietto:
+    name: armadietto dei medicinali
+    gender: m
+    aliases: [armadietto, sportello]
+    description: Un armadietto bianco con lo sportello di vetro smerigliato, chiuso a chiave.
+    location: dispensa
+    scenery: true
+    variants:
+      - when: {flag: armadietto_aperto}
+        text: L'armadietto dei medicinali, aperto. Bende, sciroppi, flaconi.
+
+  registro:
+    name: registro delle medicine
+    gender: m
+    aliases: [registro]
+    description: >
+      Un quaderno dalla copertina nera, con le colonne tirate a righello: date, medicine, gocce.
+    location: null
+
 rules:
   # --- La valigia e ciò che Irene porta con sé ---
   apri_valigia:
@@ -388,3 +457,80 @@ rules:
     when: {not: {flag: atto_due}}
     otherwise: La porta dello scalone è già aperta.
     text: È chiusa a chiave. In questa casa, le chiavi le tiene la governante.
+
+  # --- Il filo facoltativo: la grappa, la borsa, l'armadietto ---
+  apri_credenza:
+    trigger: {verb: apri, target: credenza, with: chiave_credenza}
+    when: {not: {flag: credenza_aperta}}
+    otherwise: La credenza è già aperta, e dentro restano solo bicchieri.
+    effects:
+      - give: grappa
+      - set_flag: credenza_aperta
+    text: >
+      La chiavina gira senza fatica. Tra i bicchieri buoni c'è una bottiglia di grappa ancora
+      sigillata. La prendi.
+
+  apri_credenza_senza_chiave:
+    trigger: {verb: apri, target: credenza}
+    when: {not: {flag: credenza_aperta}}
+    otherwise: La credenza è già aperta, e dentro restano solo bicchieri.
+    text: È chiusa a chiave. Le cose della sala da pranzo, di solito, sono affare del maggiordomo.
+
+  dai_grappa_ferri:
+    trigger: {verb: dai, target: grappa, with: ferri}
+    effects:
+      - remove: grappa
+      - set_flag: ferri_addormentato
+    text: >
+      Il dottore ti guarda come si guarda un angelo. «Signorina, voi siete una santa.» Ne versa un
+      bicchiere, poi un altro, poi un terzo. Al quarto si appoggia allo schienale, chiude gli occhi
+      e comincia a russare.
+
+  prendi_borsa:
+    trigger:
+      - {verb: prendi, target: borsa}
+      - {verb: apri, target: borsa}
+    when: {all: [{flag: ferri_addormentato}, {not: {flag: chiavetta_presa}}]}
+    otherwise: >
+      Il dottor Ferri ti ferma la mano. «Giù le mani, signorina. Lì dentro c'è il segreto
+      professionale.»
+    otherwise_variants:
+      - when: {flag: chiavetta_presa}
+        text: Nella borsa non c'è altro che ti serva.
+    effects:
+      - give: chiavetta
+      - set_flag: chiavetta_presa
+    text: >
+      Mentre il dottore russa, apri piano la borsa. Fiale, ricettari, uno stetoscopio e, legata a
+      un cartellino, una chiavetta d'ottone: «Armadietto medicinali». La prendi.
+
+  apri_armadietto:
+    trigger: {verb: apri, target: armadietto, with: chiavetta}
+    when: {not: {flag: armadietto_aperto}}
+    otherwise: L'armadietto è già aperto.
+    effects:
+      - give: registro
+      - set_flag: armadietto_aperto
+    text: >
+      Lo sportello si apre con un cigolio. Bende, sciroppi, flaconi e, sul ripiano più basso, un
+      quaderno nero: il registro delle medicine. Lo prendi.
+
+  apri_armadietto_senza_chiave:
+    trigger: {verb: apri, target: armadietto}
+    when: {not: {flag: armadietto_aperto}}
+    otherwise: L'armadietto è già aperto.
+    text: È chiuso a chiave. Una chiave così, di solito, ce l'ha il medico.
+
+  leggi_registro:
+    trigger: {verb: leggi, target: registro}
+    text: >
+      Colonne ordinate: data, farmaco, dose. «Digitale, dieci gocce, la sera.» Pagina dopo pagina,
+      sempre uguale, e ogni riga siglata con la stessa iniziale, «A.». Nell'ultima settimana di vita
+      della contessa, però, le gocce diventano venti. Sempre siglate «A.».
+
+  # --- Agnese e il medaglione (nell'atto 4 questa regola porterà al finale «tradita») ---
+  dai_medaglione_agnese:
+    trigger: {verb: dai, target: medaglione, with: agnese}
+    text: >
+      Agnese prende il medaglione e lo rigira a lungo tra le dita, alla luce delle candele. Poi te
+      lo rende con un sorriso. «Che strana stella.»

@@ -122,3 +122,95 @@ def test_the_key_of_the_staircase_comes_only_from_livia(valdimora):
     ]
 
     assert (givers, topics) == (["dai_biglietto_livia"], [])
+
+
+# From the atrium: Ettore gives the key of the sideboard, the grappa puts the doctor to sleep,
+# his bag has the key of the medicine cabinet, and the cabinet the register.
+TO_THE_REGISTER = [
+    "ovest", "nord", "nord", "dai la lettera a Ettore", "chiedi a Ettore della credenza",
+    "sud", "apri la credenza con la chiave della credenza",
+    "est", "sud", "est",
+    "dai la grappa al dottore", "prendi la borsa",
+    "nord", "nord", "ovest",
+    "apri l'armadietto con la chiavetta", "leggi il registro",
+]  # fmt: skip
+
+
+def test_the_register_can_be_found(valdimora):
+    game = new_game(valdimora)
+
+    answers = play(game, *TO_THE_REGISTER)
+
+    assert "Ecco la chiave" in answers[4]
+    assert "bottiglia di grappa" in answers[6]
+    assert "comincia a russare" in answers[10]
+    assert "chiavetta d'ottone" in answers[11]
+    assert "le gocce diventano venti" in answers[-1]
+    assert game.state.item_locations["registro"] == "inventory"
+
+
+def test_the_optional_thread_in_the_wrong_order(valdimora):
+    game = new_game(valdimora)
+
+    sideboard = play(game, "ovest", "nord", "apri la credenza")[-1]
+    bag = play(game, "sud", "est", "est", "prendi la borsa")[-1]
+    cabinet = play(game, "nord", "nord", "ovest", "apri l'armadietto")[-1]
+
+    assert "chiusa a chiave" in sideboard
+    assert "Giù le mani" in bag
+    assert "chiuso a chiave" in cabinet
+    assert game.state.item_locations["chiavetta"] is None
+
+
+def test_two_keys_ask_which_one(valdimora):
+    game = new_game(valdimora)
+    game.state.current_room = "sala_da_pranzo"
+    for key in ("chiave_scalone", "chiave_credenza"):
+        game.state.item_locations[key] = "inventory"
+
+    question = game.turn("apri la credenza con la chiave")
+    opened = game.turn("apri la credenza con la chiave della credenza")
+
+    assert question == "Quale intendi: la chiave dello scalone o la chiave della credenza?"
+    assert "bottiglia di grappa" in opened
+
+
+def test_wrong_gifts_are_refused_and_kept(valdimora):
+    game = new_game(valdimora)
+    game.state.item_locations["grappa"] = "inventory"
+    game.state.current_room = "biliardo"
+
+    to_corrado = game.turn("dai la grappa a Corrado")
+    game.state.current_room = "ufficio_governante"
+    to_livia = game.turn("dai la lettera a Livia")
+    game.state.current_room = "cappella"
+    to_agnese = game.turn("dai il medaglione ad Agnese")
+
+    assert to_corrado == "«Non accetto regali dagli estranei.»"
+    assert to_livia == "«Tenete le vostre cose, signorina.»"
+    assert "Che strana stella" in to_agnese
+    assert all(game.state.item_locations[item] == "inventory" for item in ("grappa", "lettera", "medaglione"))
+
+
+def test_the_sleeping_doctor_only_snores(valdimora):
+    game = new_game(valdimora)
+    game.state.current_room = "biliardo"
+    game.state.flags.add("ferri_addormentato")
+
+    answers = play(game, "parla con il dottore", "chiedi al dottore della contessa", "guarda")
+
+    assert answers[0] == "Il dottor Ferri russa. Non c'è verso di svegliarlo."
+    assert answers[1] == "Il dottore russa."
+    assert "Qui ci sono Corrado e il dottor Ferri." in answers[2]
+
+
+def test_no_character_gives_a_shortcut(valdimora):
+    # Only Ettore's word for Livia and the key of the sideboard come from talking.
+    effects = {
+        (character.id, topic.id): topic.effects
+        for character in valdimora.characters.values()
+        for topic in character.topics.values()
+        if topic.effects
+    }
+
+    assert set(effects) == {("ettore", "livia"), ("ettore", "credenza")}

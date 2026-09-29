@@ -36,6 +36,19 @@ characters:
         variants:
           - when: {flag: busta_data}
             text: «L'ha scritta con le ultime forze, ne sono sicuro.»
+      credenza:
+        name: credenza
+        gender: f
+        aliases: [grappa, liquori, chiave della credenza]
+        when: {flag: busta_data}
+        effects:
+          - give: chiave_credenza
+        text: >
+          «La grappa buona è nella credenza della sala da pranzo.» Ettore ti mette in mano una
+          chiavina legata a un nastro. «Ecco la chiave. Ma non ditelo alla signora Livia.»
+        variants:
+          - when: {flag: credenza_aperta}
+            text: «Avete trovato la grappa? Acqua in bocca con Livia, mi raccomando.»
       clara:
         name: Clara
         article: none
@@ -130,3 +143,135 @@ characters:
         plural: true
         aliases: [mazzo di chiavi, quadro delle chiavi]
         text: «Ogni chiave di questa casa passa da me.»
+
+  corrado:
+    name: Corrado
+    article: none
+    gender: m
+    aliases: [nipote, signor corrado]
+    description: >
+      Un uomo sui quarant'anni, elegante ma trasandato, con la cravatta allentata e un bicchiere
+      vuoto in mano. Ha l'aria di chi aspetta un treno in ritardo.
+    location: biliardo
+    greeting: >
+      «Un'altra parente sconosciuta?» Corrado ride senza allegria. «Mettetevi in fila. Quando
+      arriverà il notaio vedrete che qui non c'è niente per nessuno, tranne che per me.»
+    unknown: Corrado scrolla le spalle. «Chiedetelo a Ettore, lui sa tutto.»
+    refuses: «Non accetto regali dagli estranei.»
+    topics:
+      eredita:
+        name: eredità
+        gender: f
+        aliases: [notaio, testamento, castello, soldi]
+        text: >
+          «Il castello, le terre, tutto quanto. Il conte non aveva altri eredi che me, e mia zia,
+          pace all'anima sua, si è solo presa il suo tempo.»
+      contessa:
+        name: contessa
+        gender: f
+        aliases: [zia, adelaide, morte]
+        text: >
+          «Il cuore. Ferri l'ha detto subito, e meno se ne parla meglio è: i giornali della città
+          non aspettano altro.»
+      ferri:
+        name: dottor Ferri
+        article: definite
+        gender: m
+        aliases: [dottore, medico, ferri]
+        text: «Il nostro dottore beve più di quanto curi. Ma sa quando tacere.»
+      frana:
+        name: frana
+        gender: f
+        aliases: [strada]
+        text: «Una settimana, dicono, per liberare la strada. Una settimana chiuso qui con voi tutti.»
+
+  ferri:
+    name: dottor Ferri
+    article: definite
+    gender: m
+    aliases: [dottore, medico, ferri]
+    description: >
+      Un uomo grasso e rubicondo, col panciotto slacciato. Accanto a lui, sul tavolino, la sua borsa
+      da medico.
+    variants:
+      - when: {flag: ferri_addormentato}
+        text: >
+          Il dottor Ferri dorme sprofondato in poltrona, con la bocca aperta. La sua borsa è sul
+          tavolino.
+    location: biliardo
+    greeting: >
+      «Signorina.» Il dottore solleva il bicchiere vuoto e lo guarda con tristezza. «In questa casa
+      si muore, e non si beve nemmeno più.»
+    greeting_variants:
+      - when: {flag: ferri_addormentato}
+        text: Il dottor Ferri russa. Non c'è verso di svegliarlo.
+    unknown: «Sono un medico, signorina, non un indovino.»
+    refuses: «Grazie, ma no.»
+    topics:
+      contessa:
+        name: contessa
+        gender: f
+        aliases: [morte, adelaide, certificato, cuore]
+        text: >
+          «Arresto cardiaco. Il cuore era stanco, lo sapevamo tutti. Ho firmato il certificato la
+          mattina stessa.» Beve un sorso dal bicchiere vuoto. «Corrado insisteva per non chiamare
+          nessuno da fuori.»
+        variants:
+          - when: {flag: ferri_addormentato}
+            text: Il dottore russa.
+      grappa:
+        name: grappa
+        gender: f
+        aliases: [bottiglia, bere, liquore]
+        text: >
+          «Questa è vuota. La grappa buona Ettore la tiene sotto chiave, nella credenza della sala da
+          pranzo. Come un tesoro.»
+        variants:
+          - when: {flag: ferri_addormentato}
+            text: Il dottore russa.
+      medicine:
+        name: medicine
+        gender: f
+        plural: true
+        aliases: [farmaco, gocce, digitale, borsa]
+        text: >
+          «Digitale, gocce per il cuore. Io le prescrivevo, e la ragazza, Agnese, gliele dava ogni
+          sera.»
+        variants:
+          - when: {flag: ferri_addormentato}
+            text: Il dottore russa.
+
+  agnese:
+    name: Agnese
+    article: none
+    gender: f
+    aliases: [dama di compagnia, ragazza]
+    description: >
+      Una ragazza di trent'anni, pallida, vestita di nero. Ha gli occhi gonfi e un rosario tra le
+      dita.
+    location: cappella
+    greeting: >
+      Agnese si alza di scatto, poi ti sorride tra le lacrime. «Voi dovete essere la signorina di
+      Genova. La contessa parlava di una visita… Se vi serve qualcosa, qualunque cosa, chiedete a
+      me.»
+    unknown: «Non saprei, signorina. Chiedete a Ettore, forse.»
+    refuses: «Oh, no, non potrei.»
+    topics:
+      contessa:
+        name: contessa
+        gender: f
+        aliases: [adelaide, padrona, morte]
+        text: >
+          «Era così buona con me. La sera le leggevo i romanzi, e le davo le sue gocce.» Si asciuga
+          gli occhi. «Quella notte dormiva così tranquilla…»
+      medicine:
+        name: medicine
+        gender: f
+        plural: true
+        aliases: [gocce, digitale, farmaco]
+        text: «Le gocce per il cuore. Le contavo io, una per una, come diceva il dottore.»
+      aiuto:
+        name: aiuto
+        gender: m
+        aliases: [aiutare, serve]
+        text: «Qualunque cosa. La contessa avrebbe voluto così.»
