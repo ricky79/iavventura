@@ -294,7 +294,7 @@ tests/
   
   Un salto su un personaggio non si capisce. Nel terminale, a fine partita, vinta o persa, il gioco
   chiede «Vuoi giocare ancora?» e torna al menu. «Scendi nel pozzo» resta «giù», senza uscita:
-  calarsi non è saltare.
+  calarsi non è saltare. L'aiuto non elenca «salta», per non suggerire il pericolo.
   Col modello vero la riga nuova ha rotto due frasi, riparate senza toccare il prompt:
   - «salgo sul sasso» diventava `salta`: un salto senza parola da salto ma con una direzione
     («salgo», «scendo») torna uno spostamento;
