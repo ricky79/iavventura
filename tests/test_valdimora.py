@@ -214,3 +214,52 @@ def test_no_character_gives_a_shortcut(valdimora):
     }
 
     assert set(effects) == {("ettore", "livia"), ("ettore", "credenza")}
+
+
+# Everything a room describes can be examined: (room, what the player types).
+DESCRIBED = [
+    ("atrio", "portone"), ("atrio", "annuncio"),
+    ("rimessa", "calesse"), ("rimessa", "scaffali"), ("rimessa", "frana"),
+    ("salotto", "poltrone"), ("salotto", "pianoforte"), ("salotto", "specchi"),
+    ("serra", "rosaio"), ("serra", "limoni"),
+    ("sala_da_pranzo", "tavola"), ("sala_da_pranzo", "lampadario"), ("sala_da_pranzo", "credenza"),
+    ("stanza_maggiordomo", "argenteria"), ("stanza_maggiordomo", "campanelli"),
+    ("cucina", "focolare"), ("cucina", "pentole"), ("cucina", "porta della cantina"),
+    ("lavanderia", "vasche"), ("lavanderia", "lenzuola"), ("lavanderia", "stufa"),
+    ("dispensa", "conserve"), ("dispensa", "armadietto"),
+    ("ufficio_governante", "quadro delle chiavi"), ("ufficio_governante", "calendario"),
+    ("ufficio_governante", "libri contabili"),
+    ("cappella", "bara"), ("cappella", "candele"), ("cappella", "gigli"),
+    ("biliardo", "tavolo da biliardo"), ("biliardo", "stecche"), ("biliardo", "carrello"),
+    ("biliardo", "borsa"),
+    ("cortile", "meridiana"), ("cortile", "finestre"),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(("room", "thing"), DESCRIBED, ids=[f"{room}: {thing}" for room, thing in DESCRIBED])
+def test_what_a_room_describes_can_be_examined(valdimora, room, thing):
+    game = new_game(valdimora)
+    game.state.current_room = room
+
+    answer = game.turn(f"esamina {thing}")
+
+    assert answer not in ("Non vedi niente del genere qui.", "Non ho capito.")
+
+
+def test_things_for_the_next_acts_are_already_here(valdimora):
+    items = valdimora.items
+
+    assert (items["forbici"].location, items["tanica"].location, items["fiammiferi"].location) == (
+        "rimessa", "rimessa", "cucina",
+    )
+    assert items["rosaio"].scenery and items["porta_cantina"].scenery
+
+
+def test_the_mourning_notice_tells_the_countess_is_dead(valdimora):
+    game = new_game(valdimora)
+
+    notice = game.turn("leggi l'annuncio")
+    door = game.turn("apri il portone")
+
+    assert "14 ottobre 1927" in notice
+    assert "frana" in door

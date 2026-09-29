@@ -337,6 +337,305 @@ items:
       Un quaderno dalla copertina nera, con le colonne tirate a righello: date, medicine, gocce.
     location: null
 
+  # --- Arredi: ogni cosa nominata in una descrizione si può esaminare ---
+  portone:
+    name: portone
+    gender: m
+    aliases: [drappo, drappo nero]
+    description: Il portone da cui sei entrata, con un drappo nero appeso ai battenti. Fuori piove.
+    location: atrio
+    scenery: true
+
+  annuncio:
+    name: annuncio funebre
+    gender: m
+    aliases: [annuncio, avviso, cavalletto, lutto]
+    description: >
+      Un cartoncino listato di nero, su un cavalletto: «Il 14 ottobre 1927 è mancata all'affetto dei
+      suoi cari la contessa Adelaide di Valdimora. Le esequie si terranno non appena la strada lo
+      permetterà.»
+    location: atrio
+    scenery: true
+
+  calesse:
+    name: calesse
+    gender: m
+    aliases: [carrozza]
+    description: Un calesse senza ruote, sollevato su due cavalletti. Il cuoio dei sedili è screpolato.
+    location: rimessa
+    scenery: true
+
+  attrezzi:
+    name: attrezzi
+    gender: m
+    plural: true
+    aliases: [scaffali, barattoli]
+    description: Rastrelli, vanghe, barattoli di chiodi e di vernice secca. Niente di utile, a parte quello che vedi qui intorno.
+    location: rimessa
+    scenery: true
+
+  frana:
+    name: frana
+    gender: f
+    aliases: [strada, cancello]
+    description: >
+      Oltre il cancello, dove prima c'era la strada, ora c'è una colata di fango e di sassi. Ci
+      vorranno giorni per liberarla.
+    location: rimessa
+    scenery: true
+
+  poltrone:
+    name: poltrone
+    gender: f
+    plural: true
+    aliases: [teli, velluti]
+    description: Poltrone di velluto rosso, coperte da teli bianchi come fantasmi seduti.
+    location: salotto
+    scenery: true
+
+  pianoforte:
+    name: pianoforte
+    gender: m
+    aliases: [piano]
+    description: Un pianoforte a coda, chiuso. Sul leggio, uno spartito di Chopin ingiallito.
+    location: salotto
+    scenery: true
+
+  specchi:
+    name: specchi
+    gender: m
+    plural: true
+    aliases: [specchio]
+    description: Specchi dalle cornici dorate, appannati dal tempo. Ti ci vedi appena.
+    location: salotto
+    scenery: true
+
+  rosaio:
+    name: rosaio
+    gender: m
+    aliases: [rose, rose bianche, rosa]
+    description: Un rosaio rampicante carico di rose bianche. Qualcuno se ne prende ancora cura.
+    location: serra
+    scenery: true
+
+  limoni:
+    name: limoni
+    gender: m
+    plural: true
+    aliases: [felci, vasi]
+    description: Limoni in grandi vasi di terracotta, e felci che arrivano al soffitto.
+    location: serra
+    scenery: true
+
+  tavola:
+    name: tavola
+    gender: f
+    aliases: [tavolo da pranzo, tovaglia]
+    description: Una tavola per dodici, apparecchiata con piatti e posate d'argento. Nessuno la sparecchia.
+    location: sala_da_pranzo
+    scenery: true
+
+  lampadario:
+    name: lampadario
+    gender: m
+    description: Un lampadario di vetro di Murano, spento, con metà delle candele consumate.
+    location: sala_da_pranzo
+    scenery: true
+
+  argenteria:
+    name: argenteria
+    gender: f
+    aliases: [argento, posate]
+    description: Posate, vassoi e candelieri d'argento, in attesa di essere lucidati.
+    location: stanza_maggiordomo
+    scenery: true
+
+  campanelli:
+    name: campanelli
+    gender: m
+    plural: true
+    aliases: [campanello]
+    description: >
+      Una fila di campanelli di ottone, ognuno con una targhetta: «Salotto», «Biblioteca», «Camera
+      della contessa»… Quello della contessa ha il filo tagliato.
+    location: stanza_maggiordomo
+    scenery: true
+
+  focolare:
+    name: focolare
+    gender: m
+    aliases: [fuoco, camino]
+    description: Un focolare acceso, l'unico fuoco di tutta la casa. Ci si scalda le mani volentieri.
+    location: cucina
+    scenery: true
+
+  pentole:
+    name: pentole
+    gender: f
+    plural: true
+    aliases: [rame, travi]
+    description: Pentole e padelle di rame, appese alle travi, lucide come specchi.
+    location: cucina
+    scenery: true
+
+  porta_cantina:
+    name: porta della cantina
+    gender: f
+    aliases: [porta, cantina, porta bassa]
+    description: Una porta bassa di legno massiccio, sbarrata e chiusa a chiave. Da sotto sale odore di muffa.
+    location: cucina
+    scenery: true
+
+  fiammiferi:
+    name: scatola di fiammiferi
+    gender: f
+    aliases: [fiammiferi, cerini, scatola]
+    description: Una scatola di fiammiferi da cucina, quasi piena.
+    location: cucina
+
+  vasche:
+    name: vasche
+    gender: f
+    plural: true
+    aliases: [mastello, vasche di pietra]
+    description: Vasche di pietra per il bucato, e un mastello di legno pieno d'acqua saponata.
+    location: lavanderia
+    scenery: true
+
+  lenzuola:
+    name: lenzuola
+    gender: f
+    plural: true
+    aliases: [lenzuolo]
+    description: Lenzuola di lino stese ad asciugare. Una porta ricamate le iniziali «A. V.».
+    location: lavanderia
+    scenery: true
+
+  stufa:
+    name: stufa
+    gender: f
+    aliases: [stufa di ghisa]
+    description: Una stufa di ghisa che scalda la lavanderia. Sopra, un ferro da stiro.
+    location: lavanderia
+    scenery: true
+
+  conserve:
+    name: conserve
+    gender: f
+    plural: true
+    aliases: [scaffali, formaggio, farina, sacchi]
+    description: Barattoli di pomodori e di pesche, forme di formaggio, sacchi di farina. Provviste per l'inverno.
+    location: dispensa
+    scenery: true
+
+  quadro_chiavi:
+    name: quadro delle chiavi
+    gender: m
+    aliases: [chiavi, cartellini]
+    description: >
+      Decine di chiavi appese, ognuna col suo cartellino scritto da Livia: «Cantina», «Soffitta»,
+      «Biblioteca»… Il gancio dello «Scalone» è vuoto.
+    location: ufficio_governante
+    scenery: true
+
+  calendario:
+    name: calendario
+    gender: m
+    description: Un calendario da muro, fermo al 14 ottobre. Nessuno ha più voltato il foglio.
+    location: ufficio_governante
+    scenery: true
+
+  libri_contabili:
+    name: libri contabili
+    gender: m
+    plural: true
+    aliases: [contabilità, libri]
+    description: >
+      File di libri contabili rilegati in tela, uno per anno. La calligrafia di Livia, minuta e
+      diritta, riempie tutte le pagine.
+    location: ufficio_governante
+    scenery: true
+
+  bara:
+    name: bara della contessa
+    gender: f
+    aliases: [bara, feretro]
+    description: >
+      Una bara di legno scuro, chiusa, coperta di gigli bianchi. Sul coperchio, una targhetta
+      d'ottone: «Adelaide di Valdimora, 1855 – 1927».
+    location: cappella
+    scenery: true
+
+  candele:
+    name: candele
+    gender: f
+    plural: true
+    aliases: [candela, ceri]
+    description: Due file di candele accese, che qualcuno cambia con cura.
+    location: cappella
+    scenery: true
+
+  gigli:
+    name: gigli
+    gender: m
+    plural: true
+    aliases: [fiori]
+    description: Gigli bianchi, freschi. Il profumo è così forte che quasi stordisce.
+    location: cappella
+    scenery: true
+
+  tavolo_biliardo:
+    name: tavolo da biliardo
+    gender: m
+    aliases: [tavolo, panno]
+    description: Un tavolo da biliardo dal panno verde consumato, con le bilie ferme a metà partita.
+    location: biliardo
+    scenery: true
+
+  stecche:
+    name: stecche
+    gender: f
+    plural: true
+    aliases: [stecca, bilie]
+    description: Due stecche abbandonate sul panno, come se i giocatori fossero appena usciti.
+    location: biliardo
+    scenery: true
+
+  carrello:
+    name: carrello dei liquori
+    gender: m
+    aliases: [carrello, liquori]
+    description: Un carrello d'ottone con bottiglie di liquore. Sono tutte vuote.
+    location: biliardo
+    scenery: true
+
+  finestre:
+    name: finestre
+    gender: f
+    plural: true
+    aliases: [finestra]
+    description: >
+      Le finestre del castello, su tre piani, quasi tutte buie. Solo in alto, sotto il tetto, una
+      luce trema per un momento, poi si spegne.
+    location: cortile
+    scenery: true
+
+  # --- Oggetti per gli atti futuri: le forbici (atto 2), la tanica (atto 3) ---
+  forbici:
+    name: forbici da potatura
+    gender: f
+    plural: true
+    aliases: [forbici, cesoie]
+    description: Un paio di forbici da potatura, ben affilate.
+    location: rimessa
+
+  tanica:
+    name: tanica di petrolio
+    gender: f
+    aliases: [tanica, petrolio]
+    description: Una tanica di latta, piena di petrolio per le lampade.
+    location: rimessa
+
 rules:
   # --- La valigia e ciò che Irene porta con sé ---
   apri_valigia:
@@ -534,3 +833,36 @@ rules:
     text: >
       Agnese prende il medaglione e lo rigira a lungo tra le dita, alla luce delle candele. Poi te
       lo rende con un sorriso. «Che strana stella.»
+
+  # --- Risposte d'atmosfera ---
+  leggi_annuncio:
+    trigger: {verb: leggi, target: annuncio}
+    text: >
+      «Il 14 ottobre 1927 è mancata all'affetto dei suoi cari la contessa Adelaide di Valdimora. Le
+      esequie si terranno non appena la strada lo permetterà.»
+
+  apri_portone:
+    trigger: {verb: apri, target: portone}
+    text: >
+      Fuori c'è solo la pioggia. La strada verso valle è chiusa dalla frana: di qui, per ora, non
+      si va da nessuna parte.
+
+  apri_porta_cantina:
+    trigger: {verb: apri, target: porta_cantina}
+    text: È sbarrata e chiusa a chiave. Sul quadro delle chiavi di Livia, il gancio «Cantina» è vuoto.
+
+  prendi_quadro_chiavi:
+    trigger: {verb: prendi, target: quadro_chiavi}
+    text: Livia ti ferma con un'occhiata. «Quelle non si toccano.»
+
+  prendi_candele:
+    trigger: {verb: prendi, target: candele}
+    text: Non ti sembra il caso di toccare niente, qui.
+
+  apri_bara:
+    trigger: {verb: apri, target: bara}
+    text: Non ne hai il coraggio, e non ne hai il diritto.
+
+  suona_pianoforte:
+    trigger: {verb: usa, target: pianoforte}
+    text: Sollevi il coperchio e sfiori un tasto. La nota rimbomba nella casa in lutto, e lo richiudi subito.
