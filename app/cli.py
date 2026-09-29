@@ -17,7 +17,7 @@ from app.engine.engine import Engine
 from app.engine.loader import load_adventures
 from app.engine.models import World
 from app.engine.parser import words_of
-from app.game import Game
+from app.game import RESUME_WORD, Game
 
 CONFIRM_QUIT = "Vuoi davvero terminare la partita? (s/n)"
 GOODBYE = "Alla prossima!"
@@ -81,7 +81,8 @@ def session(
             run(game, read_line, write)
             while game.resumable is not None:
                 write(RESUME.format(act=game.resumable))
-                if not _yes(read_line()):
+                answer = read_line()
+                if not (_yes(answer) or words_of(answer)[:1] == [RESUME_WORD]):  # «riprendi» is a yes too
                     break
                 write(game.resume())
                 keep_playing(game, read_line, write)

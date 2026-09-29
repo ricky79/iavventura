@@ -217,3 +217,12 @@ def test_a_death_before_any_act_only_asks_whether_to_play_again(acts_world):
 
     assert GO_ON not in output
     assert output[-2:] == [PLAY_AGAIN, GOODBYE]
+
+
+def test_riprendi_is_a_yes_to_the_terminal_question(acts_world):
+    # «Vuoi riprendere…?» → «riprendi»: counted as no, it ended the game and lost it (found by the review).
+    output = play_session(
+        {"prova": World.model_validate(acts_world)}, "1", "tira la leva", "salta sulla leva", "riprendi", "nord", "no"
+    )
+
+    assert output[output.index(GO_ON) + 1].startswith("Riprendi dall'inizio del secondo atto.")

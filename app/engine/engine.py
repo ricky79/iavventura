@@ -188,13 +188,15 @@ class Engine:
 
     def execute(self, state: GameState, action: Action) -> Outcome:
         """Applies the action to `state` and tells what happened. An act whose condition now holds
-        begins (its state is kept), then the first ending that holds closes the game."""
+        begins (its state is kept), and the first ending that holds closes the game."""
         if state.finished:
             return Outcome(ok=False, text=GAME_OVER)
         outcome = self._perform(state, action)
         state.turns += 1
-        self._begin_acts(state)
         ending = next((ending for ending in self.world.game.endings if holds(ending.when, state)), None)
+        if ending is None or not ending.death:
+            # Not on the turn of a death: the kept state would be dead already, and «riprendi» would kill again.
+            self._begin_acts(state)
         if ending is not None:
             state.finished = True
             state.lost = ending.death

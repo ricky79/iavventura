@@ -333,6 +333,29 @@ def test_a_death_before_any_act_cannot_go_on(acts_world):
         engine.resume(state)
 
 
+def test_an_act_does_not_begin_on_the_turn_the_player_dies(acts_world):
+    # Entering the cell with the coin kills. Had the second act begun on that turn, its kept state
+    # would be dead already, and «riprendi» would kill again (found by the review).
+    acts_world["game"]["acts"] = [
+        {"name": "primo atto", "when": {"player_in": "atrio"}},
+        {"name": "secondo atto", "when": {"player_in": "cella"}},
+    ]
+    acts_world["game"]["endings"].insert(
+        0, {"when": {"all": [{"player_in": "cella"}, {"has": "moneta"}]}, "death": True, "text": "Il pavimento cede."}
+    )
+    engine, state = start(acts_world)
+    engine.execute(state, Action(verb="tira", target="leva"))
+    engine.execute(state, Action(verb="vai", direction="nord"))
+
+    act = engine.resumable(state)
+    resumed, _ = engine.resume(state)
+    engine.execute(resumed, Action(verb="guarda"))
+
+    assert act == "primo atto"
+    assert resumed.current_room == "atrio"
+    assert not resumed.finished
+
+
 def test_a_game_won_does_not_go_on(acts_world):
     engine, state = start(acts_world)
     engine.execute(state, Action(verb="tira", target="leva"))
