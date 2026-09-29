@@ -1,0 +1,390 @@
+# Il pianterreno di Valdimora (piano terra): stanze, oggetti e regole del primo atto.
+# Spec: docs/superpowers/specs/2026-09-29-valdimora-design.md, sezioni 3 e 4 (atto 1).
+
+rooms:
+  atrio:
+    name: Atrio
+    description: >
+      Un atrio alto e freddo, col pavimento a scacchi bianchi e neri. Sul portone da cui sei entrata
+      pende un drappo nero, e accanto, su un cavalletto, c'è un annuncio listato a lutto. In fondo,
+      lo scalone di pietra sale verso il piano nobile, chiuso da una porta di legno scuro. A nord,
+      oltre una vetrata, il cortile; a ovest il salotto, a est la sala del biliardo. A sud, fuori
+      sotto la pioggia, la rimessa.
+    exits:
+      nord: {to: cortile}
+      sud: {to: rimessa}
+      ovest: {to: salotto}
+      est: {to: biliardo}
+      su:
+        to: loggia
+        when: {flag: atto_due}
+        otherwise: La porta dello scalone è chiusa a chiave.
+
+  rimessa:
+    name: Rimessa
+    aliases: [carrozze]
+    description: >
+      Una rimessa per le carrozze, che sa di cuoio e di fieno bagnato. Di carrozze non ce n'è più:
+      solo un calesse senza ruote e, appoggiata al muro, la tua valigia, dove l'ha lasciata il
+      vetturino. Sugli scaffali, attrezzi e barattoli. Oltre il cancello, verso valle, la strada
+      sparisce sotto la frana. A nord si torna nell'atrio.
+    exits:
+      nord: {to: atrio}
+
+  salotto:
+    name: Salotto
+    description: >
+      Un salotto di velluti rossi e di specchi appannati. Le poltrone sono coperte da teli bianchi,
+      come si usa nelle case in lutto, e il pianoforte è chiuso. Una porta a vetri dà a ovest sulla
+      serra; a nord c'è la sala da pranzo, a est l'atrio.
+    exits:
+      ovest: {to: serra}
+      nord: {to: sala_da_pranzo}
+      est: {to: atrio}
+
+  serra:
+    name: Serra
+    description: >
+      Una serra di ferro e di vetro, calda e umida dopo il freddo della casa. Limoni in vaso, felci
+      e, contro la parete di fondo, un grande rosaio di rose bianche: l'unica cosa in fiore in tutto
+      il castello. La pioggia batte sui vetri. A est si torna nel salotto.
+    exits:
+      est: {to: salotto}
+
+  sala_da_pranzo:
+    name: Sala da pranzo
+    description: >
+      Una lunga tavola apparecchiata per nessuno, sotto un lampadario spento. Contro la parete, una
+      credenza di noce. A nord una porta di servizio dà sulla stanza del maggiordomo; a est si esce
+      nel cortile, a sud si torna nel salotto.
+    exits:
+      nord: {to: stanza_maggiordomo}
+      est: {to: cortile}
+      sud: {to: salotto}
+
+  stanza_maggiordomo:
+    name: Stanza del maggiordomo
+    description: >
+      Una stanzetta di servizio: un tavolo con l'argenteria da lucidare, una sedia impagliata e,
+      sopra la porta, una fila di campanelli, uno per ogni stanza del castello. A sud la sala da
+      pranzo, a est la cucina.
+    exits:
+      sud: {to: sala_da_pranzo}
+      est: {to: cucina}
+
+  cucina:
+    name: Cucina
+    description: >
+      Una cucina enorme, col focolare acceso e le pentole di rame appese alle travi. In un angolo,
+      una porta bassa e sbarrata scende in cantina. A ovest la stanza del maggiordomo, a est la
+      dispensa, a nord la lavanderia; a sud si esce nel cortile.
+    exits:
+      ovest: {to: stanza_maggiordomo}
+      est: {to: dispensa}
+      nord: {to: lavanderia}
+      sud: {to: cortile}
+
+  lavanderia:
+    name: Lavanderia
+    description: >
+      Vasche di pietra, un mastello, lenzuola stese ad asciugare davanti a una stufa di ghisa. Tutto
+      sa di sapone e di cenere. A sud si torna in cucina.
+    exits:
+      sud: {to: cucina}
+
+  dispensa:
+    name: Dispensa
+    description: >
+      Scaffali di conserve, forme di formaggio, sacchi di farina. Appeso al muro, un armadietto dei
+      medicinali con lo sportello di vetro smerigliato. A ovest la cucina, a est l'ufficio della
+      governante.
+    exits:
+      ovest: {to: cucina}
+      est: {to: ufficio_governante}
+
+  ufficio_governante:
+    name: Ufficio della governante
+    aliases: [ufficio]
+    description: >
+      Un ufficio ordinato fino all'ossessione: libri contabili allineati, un calendario fermo al 14
+      ottobre e, alla parete, un quadro di legno con decine di chiavi appese, ognuna col suo
+      cartellino. A ovest la dispensa, a sud la cappella.
+    exits:
+      ovest: {to: dispensa}
+      sud: {to: cappella}
+
+  cappella:
+    name: Cappella
+    aliases: [chiesetta]
+    description: >
+      Una piccola cappella fredda, che sa di cera e di gigli. Tra due file di candele accese c'è una
+      bara di legno scuro, chiusa: la contessa riposa qui, in attesa che la strada riapra. A nord
+      l'ufficio della governante, a sud la sala del biliardo, a ovest il cortile.
+    exits:
+      nord: {to: ufficio_governante}
+      sud: {to: biliardo}
+      ovest: {to: cortile}
+
+  biliardo:
+    name: Sala del biliardo
+    aliases: [biliardo]
+    description: >
+      Fumo di sigaro, un tavolo da biliardo con le stecche abbandonate sul panno, un carrello di
+      liquori quasi vuoto. Sul tavolino accanto alla poltrona, una borsa da medico di pelle nera. A
+      nord la cappella, a ovest l'atrio.
+    exits:
+      nord: {to: cappella}
+      ovest: {to: atrio}
+
+  cortile:
+    name: Cortile
+    description: >
+      Un cortile quadrato, lucido di pioggia. Al centro, su un piedistallo di pietra, c'è una
+      vecchia meridiana: con questo cielo non segna nessuna ora. Tutt'intorno, le finestre del
+      castello, quasi tutte buie. A sud l'atrio, a nord la cucina, a ovest la sala da pranzo, a est
+      la cappella.
+    exits:
+      sud: {to: atrio}
+      nord: {to: cucina}
+      ovest: {to: sala_da_pranzo}
+      est: {to: cappella}
+
+  # Provvisoria: nessuno ci entra, perché aprire lo scalone chiude il primo atto. La riscrive l'atto 2.
+  loggia:
+    name: Loggia dello scalone
+    description: In cima allo scalone, il piano nobile è buio e silenzioso.
+    exits:
+      giù: {to: atrio}
+
+items:
+  # --- Quello che Irene porta con sé ---
+  lettera:
+    name: lettera della contessa
+    gender: f
+    aliases: [lettera, invito]
+    description: >
+      Carta color avorio, una grafia sottile e un po' tremante. Poche righe, firmate «Adelaide di
+      Valdimora».
+    location: inventory
+
+  medaglione:
+    name: medaglione
+    gender: m
+    aliases: [ciondolo, medaglione d'argento]
+    description: >
+      Un medaglione d'argento grande quanto una moneta, con una stella a otto punte incisa sul
+      coperchio. Il bordo ha una forma strana, a dentelli, come quello di una chiave. Era di tua
+      madre; lo porti al collo.
+    location: inventory
+
+  # --- Rimessa ---
+  valigia:
+    name: valigia
+    gender: f
+    aliases: [bagaglio]
+    description: La tua valigia di cartone, ancora bagnata di pioggia.
+    location: rimessa
+    scenery: true
+    variants:
+      - when: {flag: valigia_aperta}
+        text: La tua valigia di cartone, aperta. Dentro, solo i tuoi vestiti.
+
+  fotografia:
+    name: fotografia di tua madre
+    gender: f
+    aliases: [fotografia, foto]
+    description: >
+      Tua madre a trent'anni, in uno studio fotografico di Genova: il vestito scuro, i capelli
+      raccolti, il medaglione al collo. Non sorride, ma ha gli occhi buoni.
+    location: null
+
+  oliatore:
+    name: oliatore
+    gender: m
+    aliases: [olio, lattina]
+    description: Un oliatore di latta col beccuccio lungo, per le ruote delle carrozze. È quasi pieno.
+    location: rimessa
+
+  # --- Atrio ---
+  porta_scalone:
+    name: porta dello scalone
+    gender: f
+    aliases: [porta, scalone]
+    description: Una porta di legno scuro, in cima ai primi gradini dello scalone. È chiusa a chiave.
+    location: atrio
+    scenery: true
+    variants:
+      - when: {flag: atto_due}
+        text: La porta dello scalone, aperta sullo scalone buio.
+
+  # --- La pista della contessa ---
+  busta:
+    name: busta della contessa
+    gender: f
+    aliases: [busta, cartoncino, indovinello, biglietto della contessa]
+    description: >
+      Una busta color avorio col sigillo della contessa, ormai rotto. Dentro c'è un cartoncino
+      scritto a mano.
+    location: null
+
+  meridiana:
+    name: meridiana
+    gender: f
+    aliases: [orologio solare, gnomone, piedistallo, incavo]
+    description: >
+      Una meridiana di pietra su un piedistallo, con lo gnomone di bronzo verde di ruggine. Sul
+      quadrante è inciso un motto: «Horas non numero nisi serenas». Conto solo le ore serene.
+    location: cortile
+    scenery: true
+    variants:
+      - when: {flag: meridiana_aperta}
+        text: >
+          La meridiana di pietra. Alla base del piedistallo, dietro l'incavo a stella, lo
+          scomparto è aperto e vuoto.
+      - when: {flag: busta_letta}
+        text: >
+          Una meridiana di pietra con un motto inciso: «Horas non numero nisi serenas». Chinandoti,
+          alla base del piedistallo trovi quello che la pioggia nascondeva: un piccolo incavo a
+          forma di stella, incrostato di ruggine. Della misura giusta per il tuo medaglione.
+
+  biglietto_livia:
+    name: biglietto sigillato
+    gender: m
+    aliases: [biglietto, biglietto per livia]
+    description: Un biglietto piegato e chiuso con la ceralacca della contessa. Sopra c'è scritto «Per Livia».
+    location: null
+
+  foglietto:
+    name: foglietto
+    gender: m
+    aliases: [foglio, indizio]
+    description: Un foglietto piegato in quattro, nella stessa grafia tremante della busta.
+    location: null
+
+  chiave_scalone:
+    name: chiave dello scalone
+    gender: f
+    aliases: [chiave, chiave lunga]
+    description: Una chiave lunga, di ferro brunito, ancora tiepida della mano di Livia.
+    location: null
+
+rules:
+  # --- La valigia e ciò che Irene porta con sé ---
+  apri_valigia:
+    trigger: {verb: apri, target: valigia}
+    when: {not: {flag: valigia_aperta}}
+    otherwise: Dentro restano solo i tuoi vestiti.
+    effects:
+      - give: fotografia
+      - set_flag: valigia_aperta
+    text: >
+      Apri la valigia: i tuoi due vestiti buoni, la camicia da notte e, in fondo, avvolta in un
+      fazzoletto, la fotografia di tua madre. La prendi con te.
+
+  prendi_valigia:
+    trigger: {verb: prendi, target: valigia}
+    text: È troppo pesante per portarla in giro per il castello. La lasci dov'è, per ora.
+
+  lascia_medaglione:
+    trigger: {verb: lascia, target: medaglione}
+    text: "No: è tutto ciò che ti resta di tua madre."
+
+  leggi_lettera:
+    trigger: {verb: leggi, target: lettera}
+    text: >
+      «Gentile signorina, perdonerete se vi scrivo senza conoscervi. Ho una cosa che appartiene a
+      voi e a vostra madre. Venite a Valdimora appena potete: vi spiegherò ogni cosa. Adelaide di
+      Valdimora.»
+
+  # --- Ettore e la busta ---
+  dai_lettera_ettore:
+    trigger: {verb: dai, target: lettera, with: ettore}
+    when: {not: {flag: busta_data}}
+    otherwise: Ettore scuote la testa. «L'ho già letta, signorina. Tenetela voi.»
+    effects:
+      - give: busta
+      - set_flag: busta_data
+    text: >
+      Ettore legge la lettera due volte. Poi alza gli occhi, e il suo sguardo si ferma sul
+      medaglione che porti al collo. Impallidisce. «Avete gli occhi di vostra madre», mormora.
+      Prima che tu possa chiedergli niente, si ricompone e ti porge una busta color avorio, col
+      sigillo della contessa. «Mi ha lasciato questa per voi. Solo per voi, ha detto: per la
+      ragazza con la lettera.» E ti rende la lettera.
+
+  leggi_busta:
+    trigger: {verb: leggi, target: busta}
+    effects:
+      - set_flag: busta_letta
+    text: >
+      Sul cartoncino, nella grafia tremante della lettera: «Cara Irene, se leggi queste righe non
+      ho fatto in tempo, e te ne chiedo perdono. Quello che ti appartiene l'ho nascosto dove nessun
+      altro potrà trovarlo, e la strada comincia qui. Conto le ore solo col sole; quando piove,
+      cercami più in basso. A.»
+
+  # --- La meridiana ---
+  ungi_meridiana:
+    trigger: {verb: usa, target: oliatore, with: meridiana}
+    when: {not: {flag: meridiana_oliata}}
+    otherwise: Il meccanismo è già unto a dovere.
+    effects:
+      - set_flag: meridiana_oliata
+    text: >
+      Versi l'olio nell'incavo e intorno al perno dello gnomone. La ruggine si scioglie in rivoli
+      scuri, e la pioggia li porta via.
+
+  apri_meridiana:
+    trigger: {verb: usa, target: medaglione, with: meridiana}
+    when: {all: [{flag: meridiana_oliata}, {not: {flag: meridiana_aperta}}]}
+    otherwise: "Il medaglione entra nell'incavo, ma non gira: il meccanismo è bloccato dalla ruggine."
+    otherwise_variants:
+      - when: {flag: meridiana_aperta}
+        text: Lo scomparto è aperto, e dentro non c'è altro.
+    effects:
+      - give: biglietto_livia
+      - give: foglietto
+      - set_flag: meridiana_aperta
+    text: >
+      Appoggi il medaglione nell'incavo: entra perfettamente, come una chiave nella sua toppa. Lo
+      giri, e con uno scatto una lastra di pietra si apre alla base del piedistallo. Dentro,
+      avvolti in una tela cerata, ci sono un biglietto sigillato con la scritta «Per Livia» e un
+      foglietto piegato in quattro. Li prendi, e ti rimetti il medaglione al collo.
+
+  leggi_foglietto:
+    trigger: {verb: leggi, target: foglietto}
+    text: «Livia ti aprirà la strada, se sarò io a chiederglielo. Poi, lassù, cerca chi ti somiglia.»
+
+  leggi_biglietto_livia:
+    trigger: {verb: leggi, target: biglietto_livia}
+    text: È chiuso con la ceralacca, e sopra c'è scritto «Per Livia». Non spetta a te aprirlo.
+
+  # --- Livia e lo scalone ---
+  dai_biglietto_livia:
+    trigger: {verb: dai, target: biglietto_livia, with: livia}
+    when: {flag: ettore_garantisce}
+    otherwise: >
+      Livia legge il biglietto e stringe le labbra. «È la sua scrittura. Ma una lettera si ruba,
+      signorina. Chi garantisce per voi?» Ti rende il biglietto senza aggiungere altro.
+    effects:
+      - remove: biglietto_livia
+      - give: chiave_scalone
+      - set_flag: livia_chiave
+    text: >
+      Livia legge il biglietto, e le mani le tremano. Poi ti guarda a lungo, come se ti vedesse per
+      la prima volta. «Ettore dice che siete chi dite di essere. Ed è la sua scrittura», dice piano.
+      Si sfila dalla cintura una chiave lunga e te la porge. «Lo scalone. Non fatemene pentire.»
+
+  apri_scalone:
+    trigger: {verb: apri, target: porta_scalone, with: chiave_scalone}
+    when: {not: {flag: atto_due}}
+    otherwise: La porta dello scalone è già aperta.
+    effects:
+      - set_flag: atto_due
+    text: >
+      La chiave gira con un rumore secco. La porta si apre sullo scalone buio, che sale verso il
+      piano nobile.
+
+  apri_scalone_senza_chiave:
+    trigger: {verb: apri, target: porta_scalone}
+    when: {not: {flag: atto_due}}
+    otherwise: La porta dello scalone è già aperta.
+    text: È chiusa a chiave. In questa casa, le chiavi le tiene la governante.

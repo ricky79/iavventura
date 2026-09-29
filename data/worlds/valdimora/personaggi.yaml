@@ -1,0 +1,132 @@
+# I personaggi di Valdimora. Dove stanno nel primo atto: spec, sezione 2 (tabella dei personaggi);
+# gli spostamenti (moves) arrivano con gli atti successivi.
+# I domestici danno del voi a Irene («signorina»).
+
+characters:
+  ettore:
+    name: Ettore
+    article: none
+    gender: m
+    aliases: [maggiordomo, vecchio]
+    description: >
+      Un uomo alto e magro, sui settant'anni, in livrea nera. Ha gli occhi rossi di chi non dorme da
+      giorni.
+    location: stanza_maggiordomo
+    greeting: >
+      Ettore si alza a fatica dalla sedia. «Perdonate, signorina: la casa è in lutto. La contessa ci
+      ha lasciati tre giorni fa. Chi siete, e chi vi manda?»
+    greeting_variants:
+      - when: {flag: busta_data}
+        text: «Signorina Irene.» Ettore si inchina appena. «Chiedete pure. Quello che so, è vostro.»
+    unknown: Ettore scuote la testa. «Su questo non so dirvi niente, signorina.»
+    refuses: «No, signorina, tenetelo voi.»
+    topics:
+      contessa:
+        name: contessa
+        gender: f
+        aliases: [adelaide, padrona, morte]
+        text: >
+          «Il cuore, dicono. Da mesi non stava bene, ma quella notte…» Ettore tace, e guarda altrove.
+          «Il dottore l'ha trovata all'alba.»
+      lettera:
+        name: lettera
+        gender: f
+        aliases: [invito, lettera della contessa]
+        text: «La contessa vi ha scritto?» Ettore tende la mano. «Posso vederla?»
+        variants:
+          - when: {flag: busta_data}
+            text: «L'ha scritta con le ultime forze, ne sono sicuro.»
+      clara:
+        name: Clara
+        article: none
+        gender: f
+        aliases: [madre, mamma, mia madre, tua madre]
+        when: {flag: busta_data}
+        text: >
+          Ettore distoglie lo sguardo. «Non qui, signorina. Non ancora. La contessa ha voluto che le
+          cose le trovaste da voi.»
+      livia:
+        name: Livia
+        article: none
+        gender: f
+        aliases: [governante, chiavi]
+        effects:
+          - set_flag: ettore_garantisce
+        text: >
+          «Livia? Tiene le chiavi di tutto, ed è dura. Ma è onesta.» Ettore annuisce, deciso. «Se vi
+          serve qualcosa da lei, una parola gliela metto io: saprà che siete chi dite di essere.»
+        variants:
+          - when: {flag: livia_chiave}
+            text: «Visto? Livia è dura, ma è giusta.»
+      corrado:
+        name: Corrado
+        article: none
+        gender: m
+        aliases: [nipote]
+        text: >
+          «Il nipote del conte. Si considera già il padrone.» Ettore abbassa la voce. «Non fidatevi
+          troppo, signorina.»
+      agnese:
+        name: Agnese
+        article: none
+        gender: f
+        aliases: [dama di compagnia]
+        text: >
+          «La dama di compagnia della contessa. Le leggeva i romanzi, le dava le medicine. Da quando
+          è morta non si stacca da lei, in cappella.»
+      frana:
+        name: frana
+        gender: f
+        aliases: [strada, notaio]
+        text: «Finché non liberano la strada, qui non arriva nessuno. Nemmeno il notaio.»
+
+  livia:
+    name: Livia
+    article: none
+    gender: f
+    aliases: [governante, signora livia]
+    description: >
+      Una donna sulla cinquantina, vestita di grigio, con un mazzo di chiavi alla cintura. Ti guarda
+      come si guarda una macchia sul tappeto.
+    location: ufficio_governante
+    greeting: >
+      «Siete voi, quella della corriera.» Livia non si alza. «La casa è in lutto, signorina. Non so
+      che cosa siate venuta a cercare, ma qui non troverete niente.»
+    greeting_variants:
+      - when: {flag: livia_chiave}
+        text: «Avete la chiave. Non toccate le cose della contessa.»
+    unknown: «Non sono cose che vi riguardano.»
+    refuses: «Tenete le vostre cose, signorina.»
+    topics:
+      scalone:
+        name: scalone
+        gender: m
+        aliases: [piano nobile, piano di sopra, chiave dello scalone, porta]
+        text: «Il piano nobile resta chiuso finché non arriva il notaio. Ordini miei.»
+        variants:
+          - when: {flag: livia_chiave}
+            text: «Avete la chiave. Non fatemene pentire.»
+      contessa:
+        name: contessa
+        gender: f
+        aliases: [adelaide, padrona, morte]
+        text: >
+          «Trent'anni al suo servizio.» Per un attimo la voce le si incrina. «Non parlo della
+          contessa con gli estranei.»
+      ettore:
+        name: Ettore
+        article: none
+        gender: m
+        aliases: [maggiordomo]
+        text: «Ettore è vecchio, e crede ancora alle favole.»
+      notaio:
+        name: notaio
+        gender: m
+        aliases: [frana, strada]
+        text: «Il notaio doveva venire il 20. Con la frana, chissà quando.»
+      chiavi:
+        name: chiavi
+        gender: f
+        plural: true
+        aliases: [mazzo di chiavi, quadro delle chiavi]
+        text: «Ogni chiave di questa casa passa da me.»

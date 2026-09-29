@@ -1,0 +1,24 @@
+# La Stella di Valdimora — dati generali della partita.
+# Spec: docs/superpowers/specs/2026-09-29-valdimora-design.md. Formato: docs/formato-mondo.md
+# Il primo atto finisce aprendo la porta dello scalone (finale provvisorio: lo toglie l'atto 2).
+
+game:
+  title: La Stella di Valdimora
+  summary: >-
+    Autunno 1927: una contessa che non conosci ti chiama nel suo castello di montagna.
+    (In costruzione: per ora il primo atto.)
+  intro: >
+    Genova, ottobre 1927. La lettera è arrivata su carta color avorio, firmata da una contessa di
+    cui non avevi mai sentito parlare: «Ho una cosa che appartiene a voi e a vostra madre. Venite a
+    Valdimora, vi spiegherò ogni cosa.» Tua madre, Clara, è morta da nove anni, e di Valdimora non
+    ti ha mai detto una parola. Ti ha lasciato soltanto un medaglione d'argento con una stella
+    incisa. Così hai preso la corriera. L'ultimo tratto di strada sale tra i castagni sotto una
+    pioggia fitta; il vetturino ti lascia davanti al castello, mette la tua valigia nella rimessa e
+    riparte in fretta verso valle. Poco dopo, un boato: una frana ha chiuso la strada alle sue
+    spalle. Il portone di Valdimora è socchiuso. Entri.
+  start_room: atrio
+  endings:
+    - when: {flag: atto_due}
+      text: >
+        Sali i primi gradini dello scalone. Sopra di te il piano nobile è buio, e da qualche parte,
+        lassù, c'è qualcuno che ti somiglia. Fine del primo atto. (Il secondo è in costruzione.)

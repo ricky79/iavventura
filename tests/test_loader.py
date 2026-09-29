@@ -300,7 +300,7 @@ def test_the_summary_for_the_menu_is_required(world_data):
 def test_the_real_adventures_load():
     worlds = load_adventures()
 
-    assert list(worlds) == ["rocca", "draghetto"]
+    assert list(worlds) == ["rocca", "draghetto", "valdimora"]
     assert worlds["rocca"].game.title == "La Rocca di Serravento"
     assert worlds["draghetto"].game.title == "Il draghetto raffreddato"
     assert load_world(WORLDS_DIR / "rocca") == worlds["rocca"]
