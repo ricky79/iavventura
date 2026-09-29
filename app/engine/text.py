@@ -8,6 +8,7 @@ from collections.abc import Iterable
 
 from app.engine.models import (
     Action,
+    Article,
     Character,
     Conversation,
     Direction,
@@ -48,17 +49,27 @@ _ARTICULATED = {
 
 
 def definite(item: Named) -> str:
-    """The name with its definite article: il gancio, lo specchio, l'uncino, la corda, gli attrezzi."""
+    """The name with its definite article: il gancio, lo specchio, l'uncino, la corda, gli attrezzi;
+    a first name without one: Ettore."""
+    if item.article is Article.NONE:
+        return item.name
     return _definite_article(item) + item.name
 
 
 def articulated(preposition: str, item: Named) -> str:
-    """The name after "a", "di" or "in", joined to its article: al pellegrino, della torre, nel pozzo."""
+    """The name after "a", "di" or "in", joined to its article: al pellegrino, della torre, nel pozzo;
+    a first name keeps the preposition apart: a Ettore, di Livia."""
+    if item.article is Article.NONE:
+        return f"{preposition} {item.name}"
     return _ARTICULATED[preposition][_definite_article(item)] + item.name
 
 
 def indefinite(item: Named) -> str:
-    """The name with its indefinite article (partitive in the plural): un gancio, un'ascia, dei sassi."""
+    """The name with its indefinite article (partitive in the plural): un gancio, un'ascia, dei sassi;
+    a proper name or a title keeps its own: Ettore, il dottor Ferri."""
+    if item.article is not None:
+        # Someone or something already known by name: "Qui c'è Ettore", "Qui c'è il dottor Ferri".
+        return definite(item)
     feminine = item.gender is Gender.FEMININE
     if item.plural:
         if feminine:

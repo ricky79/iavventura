@@ -114,6 +114,7 @@ items:
     name: gancio da macellaio    # nome canonico: unico in tutto il mondo
     gender: m                    # genere del nome: m oppure f
     plural: false                # facoltativo: true per nomi plurali (attrezzi, chiavi)
+    article: definite            # facoltativo: definite (sempre l'articolo determinativo) o none (nessun articolo)
     aliases: [gancio, uncino]    # altri nomi; possono coincidere con quelli di altri oggetti
     description: Testo mostrato quando lo si esamina.
     location: cucina             # una stanza, inventory, oppure null
@@ -131,6 +132,10 @@ items:
 - `gender` e `plural` servono agli articoli, che il gioco calcola da solo con le regole
   dell'italiano: il gancio / un gancio, lo specchio / uno specchio, l'ascia / un'ascia,
   la corda / una corda, gli attrezzi / degli attrezzi.
+- `article` per i nomi propri: `none` per un nome di persona, che non vuole articolo («Ettore»,
+  «a Ettore», «di Livia», «Qui c'è Agnese»); `definite` per un titolo o una cosa unica, che vuole
+  sempre il determinativo («il dottor Ferri», «Qui c'è il dottor Ferri», mai «un dottor Ferri»).
+  Vale anche per i personaggi e per i loro argomenti («chiedi a Ettore di Livia»).
 - Il nome e gli alias si scrivono senza articolo: "gancio da macellaio", non "il gancio".
 - Gli alias possono ripetersi: dopo la combinazione, "corda" deve indicare la corda con gancio.
 - `visible_from`: l'oggetto **si vede ma non si raggiunge** (la chiave in fondo al pozzo). Dalla
@@ -244,6 +249,7 @@ characters:
     name: pellegrino             # nome canonico: unico tra oggetti e personaggi
     gender: m
     plural: false                # facoltativo
+    article: none                # facoltativo: none per un nome di persona, definite per un titolo
     aliases: [viandante, vecchio]
     description: Testo mostrato quando lo si esamina.
     variants: []                 # come per le stanze

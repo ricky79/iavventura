@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.engine.models import Action, Direction, Item, Outcome, RoomView, World
+from app.engine.models import Action, Article, Direction, Item, Outcome, RoomView, World
 from app.engine.text import action_text, articulated, confirmation, definite, indefinite, join, render, which_one
 
 
@@ -177,6 +177,23 @@ def test_prepositions_join_the_article(name, gender, plural, to_the, of_the, in_
     assert articulated("in", item(name, gender, plural)) == in_the
 
 
+@pytest.mark.parametrize(
+    ("name", "gender", "article", "the", "a", "to_the", "of_the"),
+    [
+        ("Ettore", "m", "none", "Ettore", "Ettore", "a Ettore", "di Ettore"),
+        ("Livia", "f", "none", "Livia", "Livia", "a Livia", "di Livia"),
+        ("dottor Ferri", "m", "definite", "il dottor Ferri", "il dottor Ferri", "al dottor Ferri", "del dottor Ferri"),
+        ("Stella di Valdimora", "f", "definite", "la Stella di Valdimora", "la Stella di Valdimora",
+         "alla Stella di Valdimora", "della Stella di Valdimora"),
+    ],
+)  # fmt: skip
+def test_proper_names_take_their_own_article(name, gender, article, the, a, to_the, of_the):
+    proper = Item(id="nome", name=name, gender=gender, article=Article(article), description="-", location=None)
+
+    assert (definite(proper), indefinite(proper)) == (the, a)
+    assert (articulated("a", proper), articulated("di", proper)) == (to_the, of_the)
+
+
 @pytest.fixture
 def keeper(keeper_world) -> World:
     keeper_world["characters"]["cuoca"] = {
@@ -236,3 +253,30 @@ def test_actions_on_characters_read_as_commands(keeper, action, expected):
 )
 def test_actions_on_characters_are_asked_as_questions(keeper, action, expected):
     assert confirmation(action, keeper) == expected
+
+
+def test_characters_with_a_proper_name(keeper_world):
+    keeper_world["characters"]["custode"].update(name="Ettore", article="none")
+    keeper_world["characters"]["custode"]["topics"]["cella"].update(name="Livia", article="none")
+    world = World.model_validate(keeper_world)
+
+    here = render(Outcome(ok=True, room=room_with(world, "custode")), world)
+
+    assert "Qui c'è Ettore." in here
+    assert action_text(Action(verb="chiedi", target="custode", topic="cella"), world) == "chiedi a Ettore di Livia"
+    assert confirmation(Action(verb="dai", target="moneta", with_="custode"), world) == "Vuoi dare la moneta a Ettore?"
+
+
+def test_a_title_is_always_definite(keeper_world):
+    keeper_world["characters"]["custode"].update(name="dottor Ferri", article="definite")
+    world = World.model_validate(keeper_world)
+
+    here = render(Outcome(ok=True, room=room_with(world, "custode")), world)
+
+    assert "Qui c'è il dottor Ferri." in here
+    assert action_text(Action(verb="parla", target="custode"), world) == "parla con il dottor Ferri"
+
+
+def room_with(world: World, *characters: str) -> RoomView:
+    return RoomView(id="atrio", name="Atrio", description="Un atrio.", items=(), exits=(), first_visit=True,
+                    characters=characters)  # fmt: skip
