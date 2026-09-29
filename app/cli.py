@@ -115,7 +115,7 @@ def main() -> None:
         settings = Settings.from_env()
     except ValueError as exc:
         sys.exit(str(exc))
-    start_llm_log(settings.llm_log)
+    start_llm_log(settings.llm_log, full=settings.llm_log_full)
     start_command_log(settings.command_log, origin="terminale")
     llm = make_client(settings)
     if llm is not None and (reason := llm.unavailable_reason()):

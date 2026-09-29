@@ -4,6 +4,8 @@
     OLLAMA_URL   default http://127.0.0.1:11434
     LLM_MODEL    default qwen2.5:3b
     LLM_LOG      file for what goes to the model and comes back; default logs/llm.log, off to disable
+    LLM_LOG_FULL 1 to log also the whole request to Ollama (schema and options too) and its whole reply;
+                 default 0
     COMMAND_LOG  JSON lines of the commands that went wrong; default logs/comandi.jsonl, off to disable
 """
 
@@ -30,6 +32,7 @@ class Settings:
     model: str = "qwen2.5:3b"
     llm_log: str = str(DEFAULT_LLM_LOG)
     command_log: str = str(DEFAULT_COMMAND_LOG)
+    llm_log_full: bool = False
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] = os.environ, default_llm_log: Path = DEFAULT_LLM_LOG) -> "Settings":
@@ -39,12 +42,16 @@ class Settings:
             raise ValueError(f"LLM={llm!r}: valid values are {', '.join(PROVIDERS)}")
         llm_log = env.get("LLM_LOG", str(default_llm_log)).strip()
         command_log = env.get("COMMAND_LOG", cls.command_log).strip()
+        llm_log_full = env.get("LLM_LOG_FULL", "0").strip()
+        if llm_log_full not in ("0", "1"):
+            raise ValueError(f"LLM_LOG_FULL={llm_log_full!r}: valid values are 0, 1")
         return cls(
             llm=llm,
             ollama_url=env.get("OLLAMA_URL", cls.ollama_url),
             model=env.get("LLM_MODEL", cls.model),
             llm_log="off" if llm_log.lower() == "off" else llm_log,
             command_log="off" if command_log.lower() == "off" else command_log,
+            llm_log_full=llm_log_full == "1",
         )
 
 
@@ -55,8 +62,9 @@ def make_client(settings: Settings) -> LLMClient | None:
     return OllamaClient(settings.ollama_url, settings.model)
 
 
-def start_llm_log(path: str) -> None:
-    """Appends what goes to the model and what comes back to `path` ("off": no log)."""
+def start_llm_log(path: str, full: bool = False) -> None:
+    """Appends what goes to the model and what comes back to `path` ("off": no log). `full` also
+    writes the whole request and reply (LLM_LOG_FULL): the client logs them at DEBUG."""
     if path == "off":
         return
     log_file = Path(path)
@@ -65,7 +73,7 @@ def start_llm_log(path: str) -> None:
     handler.setFormatter(logging.Formatter("%(asctime)s  %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
     logger = logging.getLogger("app.llm")
     logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG if full else logging.INFO)
 
 
 def start_command_log(path: str, origin: str) -> None:

@@ -100,6 +100,31 @@ def test_the_logs_folder_is_created_when_missing(tmp_path, llm_logger):
     assert log_file.read_text(encoding="utf-8").endswith("=== azione: guarda\n")
 
 
+@pytest.mark.parametrize(("value", "expected"), [(None, False), ("0", False), ("1", True), (" 1 ", True)])
+def test_the_full_llm_log_is_off_unless_asked_for(value, expected):
+    env = {} if value is None else {"LLM_LOG_FULL": value}
+
+    assert Settings.from_env(env).llm_log_full is expected
+
+
+def test_the_full_llm_log_wants_0_or_1():
+    with pytest.raises(ValueError, match="LLM_LOG_FULL"):
+        Settings.from_env({"LLM_LOG_FULL": "sì"})
+
+
+@pytest.mark.parametrize("full", [False, True])
+def test_the_full_llm_log_also_writes_the_details(tmp_path, llm_logger, full):
+    log_file = tmp_path / "llm.log"
+
+    start_llm_log(str(log_file), full=full)
+    logging.getLogger("app.llm.client").debug("richiesta a Ollama: {}")
+    logging.getLogger("app.llm.client").info("qwen2.5:3b  5.1 s")
+
+    written = log_file.read_text(encoding="utf-8")
+    assert ("richiesta a Ollama" in written) is full
+    assert "qwen2.5:3b  5.1 s" in written
+
+
 def test_no_log_file_when_switched_off(tmp_path, llm_logger):
     start_llm_log("off")
     logging.getLogger("app.llm.client").info("niente")
