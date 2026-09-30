@@ -646,3 +646,32 @@ def test_the_doctor_knows_the_flask(valdimora):
     game = in_act_two(valdimora, "biliardo", carried=("flacone",))
 
     assert "L'avevo portata piena" in game.turn("chiedi al dottore delle medicine")
+
+
+@pytest.mark.parametrize(
+    ("room", "flags", "line", "expected"),
+    [
+        ("loggia", (), "parla con Agnese", "Posso vedere il vostro medaglione"),
+        ("loggia", (), "chiedi ad Agnese del medaglione", "Che bella stella"),
+        ("loggia", (), "dai il medaglione ad Agnese", "Che strana stella"),
+        ("studio_conte", (), "parla con Corrado", "Prendete pure quello che volete"),
+        ("studio_conte", (), "chiedi a Corrado del bastone", "Prendetelo pure"),
+        ("camera_contessa", (), "parla con Livia", "Siete salita"),
+        ("camera_contessa", (), "chiedi a Livia della rosa", "Ogni mattina"),
+        ("camera_contessa", (), "chiedi a Livia del cordone", "Non me n'ero accorta"),
+        ("camera_contessa", (), "chiedi a Livia della scala di servizio", "la teneva la contessa"),
+        ("galleria", (), "parla con Ettore", "Sapevo"),
+        ("galleria", (), "chiedi a Ettore del ritratto", "coperto dal 1897"),
+        ("galleria", ("ritratto_scoperto",), "chiedi a Ettore del ritratto", "La signorina Clara"),
+        ("galleria", ("ritratto_scoperto",), "chiedi a Ettore del carillon", "ninna nanna"),
+    ],
+)  # fmt: skip
+def test_the_characters_have_something_to_say_upstairs(valdimora, room, flags, line, expected):
+    assert expected in in_act_two(valdimora, room, *flags).turn(line)
+
+
+def test_agnese_no_longer_goes_back_to_the_coffin(valdimora):
+    answer = in_act_two(valdimora, "loggia").turn("arrivederci, Agnese")
+
+    assert "Io resto qui ad aspettarvi" in answer
+    assert "bara" not in answer
