@@ -158,6 +158,11 @@ characters:
         text: >
           «La dama di compagnia della contessa. Le leggeva i romanzi, le dava le medicine. Da quando
           è morta non si stacca da lei, in cappella.»
+        variants:
+          - when: {flag: atto_due}
+            text: >
+              «La dama di compagnia della contessa. Le leggeva i romanzi, le dava le medicine. Ora sta
+              nella loggia, in cima allo scalone: dice che vi aspetta, se avete bisogno.»
         again: «Povera ragazza. È sempre in cappella, con la contessa.»
       ferri:
         name: dottor Ferri
@@ -287,7 +292,7 @@ characters:
       rose:
         name: rosa bianca
         gender: f
-        aliases: [rosa, rose, rose bianche, fiori, vasetto, comodino]
+        aliases: [rosa, rose, rose bianche, vasetto, comodino]
         when: {flag: atto_due}
         text: >
           «Ogni mattina, per trent'anni, le ho portato una rosa bianca della serra, per il comodino.
@@ -434,7 +439,7 @@ characters:
       studio:
         name: studio
         gender: m
-        aliases: [studio del conte, scrivania, conte, zio, ruggero]
+        aliases: [studio del conte, scrivania, zio, ruggero]
         when: {flag: atto_due}
         text: >
           «Lo studio di mio zio Ruggero. È morto nel '15, e da allora qui dentro non ha comandato più

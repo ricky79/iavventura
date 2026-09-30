@@ -675,3 +675,34 @@ def test_agnese_no_longer_goes_back_to_the_coffin(valdimora):
 
     assert "Io resto qui ad aspettarvi" in answer
     assert "bara" not in answer
+
+
+# --- Found by the final review of act 2 --------------------------------------------------------------
+
+
+def test_with_the_stick_in_hand_taking_the_vase_is_only_a_hint(valdimora):
+    # The model dropped the stick («recupero il vaso usando il bastone» became «prendi il vaso»), and the
+    # player who had done the right thing fell from the balcony.
+    game = in_act_two(valdimora, "balcone", carried=("bastone",))
+
+    answer = game.turn("prendi il vaso")
+
+    assert "bastone" in answer
+    assert not game.finished
+
+
+def test_upstairs_ettore_knows_where_agnese_is(valdimora):
+    answer = in_act_two(valdimora, "galleria").turn("chiedi a Ettore di Agnese")
+
+    assert "loggia" in answer
+    assert "cappella" not in answer
+
+
+def test_the_rose_can_be_put_in_the_vase_by_hand(valdimora):
+    # Livia and the room point at the silver vase on the bedside table.
+    game = in_act_two(valdimora, "camera_contessa", carried=("rosa_bianca",))
+
+    answer = game.turn("usa la rosa con il comodino")
+
+    assert "Lei avrebbe voluto così" in answer
+    assert "livia_permette" in game.state.flags

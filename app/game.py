@@ -186,7 +186,7 @@ class Game:
                 self._log("llm", interpreted, "fallita", instead)
                 return instead
         in_hand = self._using_what_is_in_hand(interpreted, words, near)
-        if in_hand is not None or not self._foreseen(interpreted, words, exits):
+        if in_hand is not None or not self._foreseen(interpreted, words, exits) or self._would_kill(interpreted):
             self.pending = self._carried_first(in_hand or interpreted)
             question = confirmation(self.pending, self.world)
             self._log("llm", self.pending, "conferma", question)
@@ -329,6 +329,16 @@ class Game:
         if action.verb is Verb.JUMP and not JUMP_WORDS.intersection(words):
             return False
         return action.direction is None or names_the_way(action.direction, words, exits)
+
+    def _would_kill(self, action: Action) -> bool:
+        """Whether an interpreted action would end the game with a death: it is asked about first, since
+        the model may have misunderstood («tocco la balaustra» taken for pushing it). Jumps have their own
+        rule (_foreseen): asked for with a word for jumping, they are done at once."""
+        if action.verb is Verb.JUMP:
+            return False
+        trial = self.state.model_copy(deep=True)
+        self.engine.execute(trial, action)
+        return trial.lost
 
     def _using_what_is_in_hand(self, action: Action, words: list[str], near: list[Item]) -> Action | None:
         """«carico il carillon con la chiavetta»: the model took what the player already holds, while the

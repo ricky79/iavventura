@@ -855,6 +855,43 @@ def test_taking_what_is_in_hand_alone_is_still_taking_it():
     assert say(game, "riprendo in mano la chiavetta") == "(prendi la chiavetta di carica)\nCe l'hai già."
 
 
+def on_the_balcony(reply: dict) -> Game:
+    """Valdimora, act 2, on the balcony with the cracked balustrade."""
+    game = Game(Engine(load_world(WORLDS_DIR / "valdimora")), talking(reply))
+    game.state.current_room = "balcone"
+    game.state.flags.update({"atto_due", "busta_data"})
+    game.state.act = 1
+    return game
+
+
+def test_an_interpreted_action_that_would_kill_is_asked_first():
+    # Found by the final review of act 2: a model slip («tocco la balaustra» as «spingi») killed at once.
+    game = on_the_balcony({"verbo": "spingi", "bersaglio": "balaustra", "con": "nessuno"})
+
+    assert say(game, "tocco la balaustra") == "Vuoi spingere la balaustra?"
+    assert not game.finished
+    assert say(game, "sì").endswith("Sei morta.")
+
+
+@pytest.mark.parametrize(
+    ("room", "sentence", "reply", "shown"),
+    [
+        ("camera_contessa", "c'era qualcuno di fuori quella notte?",
+         {"verbo": "chiedi", "bersaglio": "Livia", "con": "campanello"}, "(chiedi a Livia del campanello)"),
+        ("studio_conte", "Corrado, come vanno i vostri conti?",
+         {"verbo": "chiedi", "bersaglio": "Corrado", "con": "cambiali"}, "(chiedi a Corrado delle cambiali)"),
+    ],
+)  # fmt: skip
+def test_a_common_word_is_no_topic(room, sentence, reply, shown):
+    # «fuori» is nearly «fiori» (Livia's rose), «conti» nearly «conte» (Corrado's study): they were aliases.
+    game = Game(Engine(load_world(WORLDS_DIR / "valdimora")), talking(reply))
+    game.state.current_room = room
+    game.state.flags.update({"atto_due", "busta_data"})
+    game.state.act = 1
+
+    assert say(game, sentence).startswith(f"{shown}\n")
+
+
 def test_no_thanks_answers_the_question_even_with_someone_here(castle):
     # «no, grazie» is also a formula: the answer to «Vuoi…?» comes first.
     game = in_the_stable(castle)

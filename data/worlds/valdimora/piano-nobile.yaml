@@ -702,7 +702,9 @@ rules:
       non ne cogli nemmeno una.
 
   dai_rosa_livia:
-    trigger: {verb: dai, target: rosa_bianca, with: livia}
+    trigger:
+      - {verb: dai, target: rosa_bianca, with: livia}
+      - {verb: usa, target: rosa_bianca, with: comodino}
     when: {flag: atto_due}
     otherwise: >
       Livia guarda la rosa, e per un attimo le si addolcisce lo sguardo. Poi scuote la testa.
@@ -840,8 +842,13 @@ rules:
 
   prendi_vaso:
     trigger: {verb: prendi, target: vaso}
-    when: {not: {flag: vaso_recuperato}}
+    when: {all: [{not: {flag: vaso_recuperato}}, {not: {has: bastone}}]}
     otherwise: È pesante e pieno di terra. Lo lasci dov'è, al sicuro.
+    otherwise_variants:
+      - when: {not: {flag: vaso_recuperato}}
+        text: >
+          Sporgerti su quella balaustra sarebbe una follia. Hai in mano il bastone del conte: col
+          manico ricurvo potresti agganciare il vaso restando lontana dal bordo.
     effects:
       - set_flag: caduta_dal_balcone
     text: Ti sporgi oltre la balaustra, allunghi il braccio verso il vaso e ci appoggi tutto il peso.

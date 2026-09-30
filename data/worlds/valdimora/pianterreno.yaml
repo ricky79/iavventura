@@ -580,7 +580,6 @@ items:
     name: gigli
     gender: m
     plural: true
-    aliases: [fiori]
     description: Gigli bianchi, freschi. Il profumo è così forte che quasi stordisce.
     location: cappella
     scenery: true
