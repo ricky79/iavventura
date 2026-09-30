@@ -366,6 +366,13 @@ tests/
     più dell'insulto: «i draghi cattivi sputano fuoco?» è una domanda); con più personaggi e nessun
     nome né ultimo interlocutore presente, gesti e domande ricevono «A chi?» (`parser.ToWhom`,
     `NotUnderstood.to_whom`).
+  - Minori della revisione (2026-09-30, branch `feature/dialoghi-minori`): la conferma di
+    un'ipotesi viene prima del gesto detto; «chiamate il dottore» non è «chi sei» (solo «ti
+    chiami», «vi chiamate», «tuo/vostro/suo nome»); una formula senza nessuno presente riceve
+    «Qui non c'è nessuno con cui parlare.» dal parser; una domanda che non nomina argomenti ma dice
+    un gesto è quel gesto («chiedi al pellegrino del suo nome», «chiedi scusa al custode»); l'orso,
+    dopo lo scambio, ringrazia per le more. Lasciati: «chi era il castellano?» dall'interprete da
+    solo (servirebbe ritoccare il prompt, il turno risponde giusto) e `engine.py` che usa `definite`.
 
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.
