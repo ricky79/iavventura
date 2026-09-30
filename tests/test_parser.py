@@ -441,11 +441,12 @@ def test_a_formula_that_is_a_topic_is_a_question(keeper_world):
 def test_social_formulas_do_not_steal_commands(keeper):
     assert parse_near_keeper(keeper, "vai a nord") == Action(verb="vai", direction="nord")
     assert parse_near_keeper(keeper, "parla con il custode") == Action(verb="parla", target="custode")
-    assert parse("vai al diavolo", keeper, [], (), []) is None  # with nobody here, no move either
+    assert parse("vai al diavolo", keeper, [], (), []) == ToWhom(())  # with nobody here, no move either
 
 
-def test_with_nobody_here_a_formula_is_left_to_the_llm(keeper):
-    assert parse("grazie", keeper, [], (), []) is None
+def test_with_nobody_here_a_formula_is_said_to_nobody(keeper):
+    # The game answers «Qui non c'è nessuno con cui parlare.» without asking the LLM.
+    assert parse("grazie", keeper, [], (), []) == ToWhom(())
 
 
 def test_a_gesture_without_a_name_goes_to_the_last_one_spoken_to(with_cook):

@@ -146,7 +146,7 @@ class Game:
         if isinstance(parsed, Ambiguous):
             return which_one(parsed.candidates)
         if isinstance(parsed, ToWhom):
-            return GIVE_TO_WHOM
+            return GIVE_TO_WHOM if parsed.people else NOBODY_TO_TALK_TO
         if parsed is not None:
             return self._execute(parsed, "parser")
         if self.llm is None:

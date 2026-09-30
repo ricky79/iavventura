@@ -170,7 +170,8 @@ class Ambiguous(NamedTuple):
 
 class ToWhom(NamedTuple):
     """A gesture or a question without a name, with several characters here and none of them spoken to
-    last: the player has to say to whom («A chi?»)."""
+    last: the player has to say to whom («A chi?»). Without anyone, a formula said to nobody («grazie»
+    in an empty room)."""
 
     people: tuple[Character, ...]
 
@@ -300,7 +301,7 @@ def _gesture(
 ) -> Action | ToWhom | None:
     """«grazie», «arrivederci, Livia», «Livia, come state?»: a gesture, if the words are a formula with
     at most the name of someone here at the start or at the end; «A chi?» if nobody is named and several
-    could be meant."""
+    could be meant; said to nobody if nobody is here."""
     said = tuple(word for word in words if word not in STOPWORDS)
     for person, topics in characters:
         for phrase in {significant_words(name) for name in (person.name, *person.aliases)} - {()}:
@@ -311,7 +312,7 @@ def _gesture(
     if said not in GESTURE_FORMULAS:
         return None
     if (addressee := _addressee(characters, last_speaker)) is None:
-        return ToWhom(tuple(person for person, _ in characters)) if len(characters) > 1 else None
+        return ToWhom(tuple(person for person, _ in characters))
     return _said_to(*addressee, said)
 
 

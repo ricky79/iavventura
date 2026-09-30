@@ -515,6 +515,16 @@ def test_talking_with_nobody_around_says_so(castle):
     assert say(game, "ciao, come va?") == NOBODY_TO_TALK_TO
 
 
+@pytest.mark.parametrize("sentence", ["grazie", "addio", "scusa"])
+def test_a_formula_with_nobody_around_needs_no_llm(castle, sentence):
+    # Found by the review of the dialogues: without the LLM it was «Non ho capito.».
+    llm = FakeLLMClient()
+
+    assert say(Game(Engine(castle), llm), sentence) == NOBODY_TO_TALK_TO
+    assert say(Game(Engine(castle)), sentence) == NOBODY_TO_TALK_TO
+    assert llm.calls == []
+
+
 def test_greeting_a_character_who_is_elsewhere_says_nobody_like_that_is_here(dragon):
     # "ciao orso" at the brook: the game answered "Non sembra un'azione del gioco."
     game = Game(Engine(dragon), talking({"verbo": "parla", "bersaglio": "nessuno", "con": "nessuno"}))
