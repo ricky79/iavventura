@@ -210,9 +210,11 @@ def test_the_bear_remembers_the_trade(dragon):
         ("radura", "miele_dato", Action(verb="chiedi", target="draghetto", topic="more"), "roveto"),
         ("tana", "miele_dato", Action(verb="esamina", target="orso"), "briciole"),
         ("tana", "miele_dato", Action(verb="chiedi", target="orso", topic="more"), "mi pungo"),
+        ("tana", "miele_dato", Action(verb="parla", target="orso", gesture="grazie"), "qualcosa da mangiare"),
+        ("tana", "miele_dato", Action(verb="parla", target="orso", gesture="chi_sei"), "E il mio miele"),
     ],
     ids=["climbing the oak", "the dragon's greeting", "the oak", "the dragon on the berries", "the bear",
-         "the bear on the berries"],
+         "the bear on the berries", "thanking the bear", "the bear says who he is"],
 )  # fmt: skip
 def test_the_texts_follow_the_game(dragon, room, flag, action, stale):
     # Found while playing: hints that still pointed at what was already done (the empty nest, the
