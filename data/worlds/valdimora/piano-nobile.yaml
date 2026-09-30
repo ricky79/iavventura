@@ -1,0 +1,795 @@
+# Il piano nobile di Valdimora (primo piano): stanze, oggetti e regole del secondo atto.
+# Spec: docs/superpowers/specs/2026-09-29-valdimora-design.md, sezioni 3 e 4 (atto 2).
+# Il rosaio della serra e le forbici stanno al pianterreno; la regola della rosa bianca è qui.
+
+rooms:
+  loggia:
+    name: Loggia dello scalone
+    aliases: [loggia, scalone]
+    description: >
+      In cima allo scalone si apre la loggia del piano nobile: un colonnato di pietra grigia, un
+      pavimento di marmo che rimbomba a ogni passo, due candelabri di ferro spenti. Fa freddo. A
+      nord, oltre un arco, la galleria dei ritratti; a ovest il salone delle feste, a est il salone
+      della musica. Lo scalone scende all'atrio.
+    exits:
+      giù: {to: atrio}
+      nord: {to: galleria}
+      ovest: {to: salone_feste}
+      est: {to: salone_musica}
+
+  salone_feste:
+    name: Salone delle feste
+    aliases: [sala delle feste]
+    description: >
+      Un salone immenso, fatto per cento invitati e vuoto da anni. I lampadari sono chiusi in sacchi
+      di tela, e le sedie dorate stanno in fila tutt'intorno, come per una festa che non comincia
+      mai. A sud, una portafinestra dà sul balcone; a nord il salottino verde, a est si torna nella
+      loggia.
+    exits:
+      est: {to: loggia}
+      sud: {to: balcone}
+      nord: {to: salottino_verde}
+
+  balcone:
+    name: Balcone
+    description: >
+      Un balcone di pietra sospeso sulla valle, battuto dal vento e dalla pioggia. La balaustra è
+      crepata in più punti, e in un angolo ne manca un pezzo: meglio non appoggiarcisi. Sull'orlo
+      esterno, in bilico sopra il vuoto, c'è un vaso di gerani secchi. A nord si rientra nel salone
+      delle feste.
+    exits:
+      nord: {to: salone_feste}
+
+  salottino_verde:
+    name: Salottino verde
+    aliases: [salottino]
+    description: >
+      Un salottino tappezzato di seta verde, piccolo e caldo di tappeti. Su un tavolino da gioco è
+      rimasto un solitario a metà, le carte in fila come le ha lasciate la contessa. A nord la camera
+      della contessa, a est la galleria dei ritratti, a sud il salone delle feste.
+    exits:
+      sud: {to: salone_feste}
+      nord: {to: camera_contessa}
+      est: {to: galleria}
+
+  camera_contessa:
+    name: Camera della contessa
+    description: >
+      La camera della contessa: un letto a baldacchino rifatto con cura, le tende tirate, un odore di
+      lavanda e di medicine. Sul comodino, un vasetto d'argento vuoto. Accanto al letto pende il
+      cordone di seta del campanello. A ovest una porta bassa dà sul boudoir; a est il guardaroba, a
+      sud il salottino verde.
+    variants:
+      - when: {flag: livia_permette}
+        text: >
+          La camera della contessa: un letto a baldacchino rifatto con cura, le tende tirate, un
+          odore di lavanda e di medicine. Sul comodino, nel vasetto d'argento, la rosa bianca che hai
+          portato dalla serra. Accanto al letto pende il cordone di seta del campanello. A ovest la
+          porta del boudoir è aperta; a est il guardaroba, a sud il salottino verde.
+    exits:
+      sud: {to: salottino_verde}
+      est: {to: guardaroba}
+      ovest:
+        to: boudoir
+        when: {flag: livia_permette}
+        otherwise: >
+          Livia si alza e si mette davanti alla porta. «Il boudoir no, signorina. Lì dentro la
+          contessa non voleva nessuno.»
+
+  boudoir:
+    name: Boudoir
+    description: >
+      Un boudoir minuscolo, tutto merletti e velluti, che sa ancora di cipria. Sulla toeletta, tra
+      spazzole d'argento e boccette di profumo, c'è un portagioie di legno intarsiato. A est si torna
+      nella camera della contessa.
+    exits:
+      est: {to: camera_contessa}
+
+  guardaroba:
+    name: Guardaroba
+    description: >
+      Un corridoio stretto, foderato di armadi a muro. Dietro le ante socchiuse, gli abiti della
+      contessa: sete scure, una pelliccia, cappelli nelle loro scatole rotonde. A ovest la camera
+      della contessa; a est una porticina dà sul pianerottolo di servizio.
+    exits:
+      ovest: {to: camera_contessa}
+      est: {to: pianerottolo_servizio}
+
+  galleria:
+    name: Galleria dei ritratti
+    aliases: [galleria]
+    description: >
+      Una galleria lunga e stretta, fredda come una chiesa. Alle pareti, i ritratti degli antenati
+      di Valdimora: dame incipriate, cavalieri, un vescovo. Uno solo dei quadri è coperto da un
+      drappo di velluto nero. A sud la loggia, a ovest il salottino verde, a est la biblioteca; a
+      nord la galleria finisce sul pianerottolo di servizio.
+    variants:
+      - when: {flag: ritratto_scoperto}
+        text: >
+          Una galleria lunga e stretta, fredda come una chiesa. Alle pareti, i ritratti degli
+          antenati di Valdimora: dame incipriate, cavalieri, un vescovo. Il drappo di velluto nero
+          giace a terra, sotto il ritratto di una ragazza vestita di bianco. A sud la loggia, a ovest
+          il salottino verde, a est la biblioteca; a nord la galleria finisce sul pianerottolo di
+          servizio.
+    exits:
+      sud: {to: loggia}
+      ovest: {to: salottino_verde}
+      est: {to: biblioteca}
+      nord: {to: pianerottolo_servizio}
+
+  pianerottolo_servizio:
+    name: Pianerottolo di servizio
+    aliases: [pianerottolo]
+    description: >
+      Un pianerottolo spoglio, per la servitù: pareti imbiancate a calce e un odore di cera. Una
+      porta stretta chiude la scala di servizio, che sale verso la soffitta. A sud si torna nella
+      galleria dei ritratti, a ovest nel guardaroba.
+    exits:
+      sud: {to: galleria}
+      ovest: {to: guardaroba}
+      su:
+        to: pianerottolo_soffitta
+        when: {flag: atto_tre}
+        otherwise: La porta della scala di servizio è chiusa a chiave.
+
+  salone_musica:
+    name: Salone della musica
+    aliases: [sala della musica]
+    description: >
+      Un salone chiaro, con un'arpa senza corde in un angolo e file di poltroncine davanti a un
+      piccolo palco. Su un tavolino rotondo, sotto una campana di vetro, c'è un carillon d'argento. A
+      ovest la loggia, a nord la biblioteca.
+    exits:
+      ovest: {to: loggia}
+      nord: {to: biblioteca}
+
+  biblioteca:
+    name: Biblioteca
+    description: >
+      Una biblioteca a due piani, con un ballatoio che corre lungo gli scaffali e una scala di legno
+      su ruote. Libri in latino, atlanti, annate di giornali rilegate in pelle. Su uno scrittoio,
+      aperto, c'è un grosso libro di enigmi pieno di segni a matita. A sud il salone della musica, a
+      ovest la galleria dei ritratti, a nord lo studio del conte.
+    exits:
+      sud: {to: salone_musica}
+      ovest: {to: galleria}
+      nord: {to: studio_conte}
+
+  studio_conte:
+    name: Studio del conte
+    aliases: [studio]
+    description: >
+      Lo studio del conte Ruggero, rimasto com'era nel 1915: una scrivania di mogano, trofei di
+      caccia alle pareti, una rastrelliera di bastoni da passeggio in un angolo. Sulla scrivania,
+      carte sparse e un posacenere pieno: qualcuno ci lavora ancora. A sud la biblioteca, a nord la
+      camera di Corrado.
+    exits:
+      sud: {to: biblioteca}
+      nord: {to: camera_corrado}
+
+  camera_corrado:
+    name: Camera di Corrado
+    description: >
+      Una camera da scapolo in disordine: il letto sfatto, una sacca da viaggio mai disfatta,
+      bottiglie vuote sul davanzale. Sul tavolino da notte, un mucchio di cambiali tenute insieme da
+      un elastico. A sud si torna nello studio del conte.
+    exits:
+      sud: {to: studio_conte}
+
+  # Provvisoria: nessuno ci entra, perché aprire la scala di servizio chiude il secondo atto. La
+  # riscrive l'atto 3, nel file della soffitta.
+  pianerottolo_soffitta:
+    name: Pianerottolo della soffitta
+    description: In cima alla scala di servizio, la soffitta è buia e silenziosa.
+    exits:
+      giù: {to: pianerottolo_servizio}
+
+items:
+  # --- La galleria: il ritratto di Clara ---
+  ritratto:
+    name: ritratto
+    gender: m
+    aliases: [quadro, quadro coperto, ritratto coperto, cornice, incavo, ragazza]
+    description: >
+      Un quadro alto quanto una persona, nascosto da un drappo di velluto nero inchiodato tutto
+      intorno alla cornice.
+    location: galleria
+    scenery: true
+    variants:
+      - when: {all: [{flag: cornice_aperta}, {has: fotografia}]}
+        text: >
+          Tua madre a vent'anni, vestita di bianco, col medaglione al collo: la fotografia che hai
+          in mano non lascia dubbi. Nella cornice, lo scomparto dietro l'incavo a stella è aperto e
+          vuoto.
+      - when: {all: [{flag: ritratto_scoperto}, {has: fotografia}]}
+        text: >
+          Una ragazza di vent'anni in un abito bianco da ballo, ritta accanto a una finestra
+          fiorita. I capelli raccolti, gli occhi buoni; al collo, una stella d'argento. Il tuo
+          medaglione. Alzi la fotografia accanto al quadro, e non c'è più nessun dubbio: è lei. È
+          tua madre, qui, in questa casa, prima che tu nascessi. Nella cornice dorata, in basso, c'è
+          un incavo a forma di stella.
+      - when: {flag: cornice_aperta}
+        text: >
+          La ragazza vestita di bianco, col medaglione al collo. Quel viso l'hai già visto, più
+          vecchio e più stanco. Nella cornice, lo scomparto dietro l'incavo a stella è aperto e
+          vuoto.
+      - when: {flag: ritratto_scoperto}
+        text: >
+          Una ragazza di vent'anni in un abito bianco da ballo, ritta accanto a una finestra
+          fiorita. I capelli raccolti, gli occhi buoni; al collo, una stella d'argento. Il tuo
+          medaglione. Quel viso l'hai già visto, più vecchio e più stanco: se avessi con te la
+          fotografia di tua madre… Nella cornice dorata, in basso, c'è un incavo a forma di stella.
+
+  drappo:
+    name: drappo di velluto
+    gender: m
+    aliases: [drappo, velluto, velluto nero, drappo nero]
+    description: Un drappo di velluto nero, inchiodato tutto intorno alla cornice del quadro.
+    location: galleria
+    scenery: true
+    variants:
+      - when: {flag: ritratto_scoperto}
+        text: Il drappo di velluto nero, a terra sotto il ritratto, coi chiodi ancora attaccati.
+
+  antenati:
+    name: ritratti degli antenati
+    gender: m
+    plural: true
+    aliases: [ritratti, antenati, quadri, dame, cavalieri, vescovo, pareti]
+    description: >
+      Generazioni di Valdimora in cornici dorate: dame incipriate, cavalieri in armatura, un vescovo
+      dall'aria severa. Sotto ognuno, una targhetta col nome e le date. Nessuno di quei volti ti
+      somiglia.
+    location: galleria
+    scenery: true
+
+  cilindro:
+    name: cilindro del carillon
+    gender: m
+    aliases: [cilindro, rullo, striscia di carta]
+    description: >
+      Un piccolo cilindro d'ottone irto di punte sottilissime: il cuore di un carillon. Era avvolto
+      in una striscia di carta, con la grafia della contessa: «Suonala per me, come faceva lei.»
+    location: null
+
+  # --- La camera della contessa, la rosa bianca e il boudoir ---
+  letto_contessa:
+    name: letto a baldacchino
+    gender: m
+    aliases: [letto, baldacchino, tende, cuscino]
+    description: >
+      Un letto a baldacchino rifatto con cura, il cuscino ancora segnato. Le tende sono tirate a
+      metà, come se qualcuno dovesse tornare a dormirci.
+    location: camera_contessa
+    scenery: true
+
+  comodino:
+    name: comodino
+    gender: m
+    aliases: [vasetto, vasetto d'argento]
+    description: >
+      Un comodino di noce con un vasetto d'argento, vuoto. Sul ripiano, un cerchio più chiaro dove
+      per anni è stata appoggiata sempre la stessa cosa.
+    location: camera_contessa
+    scenery: true
+    variants:
+      - when: {flag: livia_permette}
+        text: Nel vasetto d'argento, sul comodino, la rosa bianca che hai portato dalla serra.
+
+  cordone:
+    name: cordone del campanello
+    gender: m
+    aliases: [cordone, campanello, seta rossa]
+    description: >
+      Un cordone di seta rossa per chiamare la servitù. È tagliato di netto all'altezza del letto:
+      il pezzo che arrivava al cuscino è sparito.
+    location: camera_contessa
+    scenery: true
+
+  porta_boudoir:
+    name: porta del boudoir
+    gender: f
+    aliases: [porta, porta bassa]
+    description: Una porta bassa, dipinta di bianco e d'oro, che dà sul boudoir della contessa.
+    location: camera_contessa
+    scenery: true
+    variants:
+      - when: {flag: livia_permette}
+        text: La porta del boudoir, aperta.
+
+  rosa_bianca:
+    name: rosa bianca
+    gender: f
+    aliases: [rosa]
+    description: Una rosa bianca appena aperta, colta nella serra. Profuma di pioggia.
+    location: null
+
+  toeletta:
+    name: toeletta
+    gender: f
+    aliases: [spazzole, boccette, profumo, merletti, velluti, cipria]
+    description: >
+      Una toeletta coperta di merletti: spazzole d'argento, boccette di profumo mezze vuote, un
+      piumino da cipria. Tutto è rimasto come l'ha lasciato la contessa.
+    location: boudoir
+    scenery: true
+
+  portagioie:
+    name: portagioie
+    gender: m
+    aliases: [cofanetto, scrigno, gioielli, legno intarsiato]
+    description: Un portagioie di legno intarsiato, con una stella di madreperla sul coperchio. Non ha serratura.
+    location: boudoir
+    scenery: true
+    variants:
+      - when: {flag: portagioie_aperto}
+        text: >
+          Il portagioie è aperto: collane, spille, gli orecchini di granato della contessa. Non sono
+          tuoi, e li lasci dove sono.
+
+  chiavetta_carica:
+    name: chiavetta di carica
+    gender: f
+    aliases: [chiavetta, chiave a farfalla, farfalla]
+    description: Una chiavetta d'ottone con la testa a farfalla, per caricare un carillon.
+    location: null
+
+  armadi:
+    name: armadi a muro
+    gender: m
+    plural: true
+    aliases: [armadi, armadio, ante, abiti, pelliccia, scatole]
+    description: >
+      Abiti di seta scura, una pelliccia di volpe, cappelli nelle loro scatole rotonde. Profumano di
+      lavanda. Nelle tasche, solo fazzoletti ricamati «A. V.».
+    location: guardaroba
+    scenery: true
+
+  porticina:
+    name: porticina
+    gender: f
+    aliases: [porta]
+    description: Una porticina per la cameriera, che dà sul pianerottolo di servizio.
+    location: guardaroba
+    scenery: true
+
+  # --- Il carillon e la scala di servizio ---
+  carillon:
+    name: carillon
+    gender: m
+    aliases: [carillon d'argento, campana, campana di vetro, tavolino, tavolino rotondo, scatola musicale, tempietto, base]
+    description: >
+      Un carillon d'argento a forma di tempietto, sotto una campana di vetro. Sopra, l'alloggio vuoto
+      del cilindro della musica; alla base, un piccolo foro per la chiavetta di carica.
+    location: salone_musica
+    scenery: true
+    variants:
+      - when: {flag: carillon_suonato}
+        text: >
+          Il carillon d'argento, col cilindro al suo posto e la base aperta come un cassetto. Dentro
+          non c'è più niente.
+      - when: {flag: cilindro_messo}
+        text: >
+          Il carillon d'argento, col cilindro nel suo alloggio. Manca solo di caricarlo: alla base
+          c'è il foro per la chiavetta.
+
+  chiave_servizio:
+    name: chiave della scala di servizio
+    gender: f
+    aliases: [chiave, chiave di servizio, chiave di ferro, nastro]
+    description: >
+      Una chiave di ferro, legata a un nastro azzurro con un cartellino. Sul cartellino, la grafia
+      della contessa: «Dove lei dormiva bambina.»
+    location: null
+
+  porta_scala_servizio:
+    name: porta della scala di servizio
+    gender: f
+    aliases: [porta, porta stretta, porta di servizio, scala di servizio]
+    description: Una porta stretta di legno grezzo, chiusa a chiave. Dietro, una scala sale verso la soffitta.
+    location: pianerottolo_servizio
+    scenery: true
+
+  pareti_imbiancate:
+    name: pareti imbiancate
+    gender: f
+    plural: true
+    aliases: [pareti, calce]
+    description: >
+      Pareti imbiancate a calce e un pavimento di legno tirato a cera. Di qui passava la servitù,
+      senza farsi vedere.
+    location: pianerottolo_servizio
+    scenery: true
+
+  arpa:
+    name: arpa
+    gender: f
+    aliases: [corde]
+    description: Un'arpa dorata, in un angolo, senza più corde. Nessuno la suona da anni.
+    location: salone_musica
+    scenery: true
+
+  poltroncine:
+    name: poltroncine
+    gender: f
+    plural: true
+    aliases: [poltroncina, palco, piccolo palco]
+    description: >
+      Poltroncine di velluto azzurro in file ordinate, davanti a un palco vuoto. Qui, una volta, si
+      davano concerti.
+    location: salone_musica
+    scenery: true
+
+  # --- Gli arredi della loggia, del salone delle feste, del balcone e del salottino ---
+  scalone_pietra:
+    name: scalone di pietra
+    gender: m
+    aliases: [scalone, gradini]
+    description: Lo scalone di pietra da cui sei salita. Scende nel buio verso l'atrio.
+    location: loggia
+    scenery: true
+
+  colonnato:
+    name: colonnato
+    gender: m
+    aliases: [colonne, colonna, arco]
+    description: Colonne di pietra grigia, lisce e fredde. Tra l'una e l'altra, il buio del piano nobile.
+    location: loggia
+    scenery: true
+
+  pavimento_marmo:
+    name: pavimento di marmo
+    gender: m
+    aliases: [pavimento, marmo]
+    description: Marmo bianco e grigio, lucidato da generazioni di passi. Rimbomba a ogni passo.
+    location: loggia
+    scenery: true
+
+  candelabri:
+    name: candelabri
+    gender: m
+    plural: true
+    aliases: [candelabro]
+    description: >
+      Due candelabri di ferro battuto, alti quanto te. Le candele si sono consumate fino in fondo, e
+      nessuno le ha cambiate.
+    location: loggia
+    scenery: true
+
+  lampadari_coperti:
+    name: lampadari coperti
+    gender: m
+    plural: true
+    aliases: [lampadari, lampadario, sacchi, sacchi di tela, tela]
+    description: >
+      Tre lampadari di cristallo, chiusi in sacchi di tela grezza contro la polvere. Da anni nessuno
+      li accende.
+    location: salone_feste
+    scenery: true
+
+  sedie_dorate:
+    name: sedie dorate
+    gender: f
+    plural: true
+    aliases: [sedie, sedia]
+    description: Sedie dorate dal sedile di velluto rosso, in fila lungo i muri. Sulla polvere dei sedili, nessun segno.
+    location: salone_feste
+    scenery: true
+
+  portafinestra:
+    name: portafinestra
+    gender: f
+    aliases: [porta, vetri]
+    description: Una portafinestra coi vetri rigati di pioggia. Dà sul balcone.
+    location: salone_feste
+    scenery: true
+
+  balaustra:
+    name: balaustra
+    gender: f
+    aliases: [parapetto, crepe, angolo]
+    description: >
+      Una balaustra di pietra, crepata in più punti. In un angolo ne manca un pezzo, e sotto c'è solo
+      il vuoto. Non ti fideresti ad appoggiarci nemmeno una mano.
+    location: balcone
+    scenery: true
+
+  vaso:
+    name: vaso di gerani
+    gender: m
+    aliases: [vaso, gerani, terracotta]
+    description: >
+      Un vaso di terracotta coi gerani secchi, in bilico sull'orlo esterno della balaustra, appena
+      fuori dalla tua portata. Tra i gerani brilla qualcosa di vetro.
+    location: balcone
+    scenery: true
+
+  valle:
+    name: valle
+    gender: f
+    aliases: [panorama, montagne]
+    description: La valle sparisce nella pioggia. Laggiù, da qualche parte, la frana ha chiuso l'unica strada.
+    location: balcone
+    scenery: true
+
+  solitario:
+    name: solitario
+    gender: m
+    aliases: [carte, mazzo, tavolino, tavolino da gioco]
+    description: >
+      Un solitario lasciato a metà sul tavolino da gioco, le carte in fila perfetta. Manca poco a
+      chiuderlo, ma nessuno l'ha più toccato.
+    location: salottino_verde
+    scenery: true
+
+  tappezzeria:
+    name: tappezzeria
+    gender: f
+    aliases: [seta, seta verde, tappeti, tappeto]
+    description: Seta verde alle pareti, tappeti persiani uno sull'altro. È la stanza più calda del piano.
+    location: salottino_verde
+    scenery: true
+
+  # --- Gli arredi della biblioteca, dello studio e della camera di Corrado ---
+  scaffali_biblioteca:
+    name: scaffali della biblioteca
+    gender: m
+    plural: true
+    aliases: [scaffali, libri, atlanti, giornali, ballatoio, scala, scala di legno]
+    description: >
+      Migliaia di libri, dal pavimento al soffitto: latino, storia, atlanti, annate di giornali
+      rilegate in pelle. Una scala di legno su ruote corre lungo il ballatoio.
+    location: biblioteca
+    scenery: true
+
+  libro_enigmi:
+    name: libro di enigmi
+    gender: m
+    aliases: [libro, enigmi, sciarade, scrittoio, segni, matita]
+    description: >
+      Un grosso volume di enigmi, sciarade e rebus, consumato dall'uso. Nei margini, la grafia della
+      contessa li ha risolti quasi tutti. Accanto all'ultimo c'è scritto soltanto: «Per I.»
+    location: biblioteca
+    scenery: true
+
+  scrivania:
+    name: scrivania di mogano
+    gender: f
+    aliases: [scrivania, carte, posacenere, mogano]
+    description: >
+      Una scrivania di mogano ingombra di carte: conti, lettere di banche, il catalogo di una casa
+      d'aste di Milano. Il posacenere è pieno di mozziconi freschi.
+    location: studio_conte
+    scenery: true
+
+  trofei:
+    name: trofei di caccia
+    gender: m
+    plural: true
+    aliases: [trofei, corna, pareti]
+    description: >
+      Corna di cervo e di camoscio, e un cinghiale impagliato che digrigna i denti. Il conte cacciava
+      su queste montagne fino all'ultimo.
+    location: studio_conte
+    scenery: true
+
+  rastrelliera:
+    name: rastrelliera
+    gender: f
+    aliases: [bastoni, bastoni da passeggio, portabastoni]
+    description: "Una rastrelliera di bastoni da passeggio, quasi tutti col pomo d'argento: la collezione del conte."
+    location: studio_conte
+    scenery: true
+
+  disordine:
+    name: disordine
+    gender: m
+    aliases: [letto, letto sfatto, sacca, sacca da viaggio, bottiglie, davanzale]
+    description: >
+      Il letto sfatto, una sacca da viaggio pronta per partire, bottiglie vuote in fila sul
+      davanzale. Corrado non ha l'aria di uno che dorme molto.
+    location: camera_corrado
+    scenery: true
+
+  cambiali:
+    name: cambiali
+    gender: f
+    plural: true
+    aliases: [cambiale, elastico, tavolino, tavolino da notte, debiti]
+    description: >
+      Cambiali firmate da Corrado, una sopra l'altra, alcune già protestate: Torino, Milano,
+      Sanremo. Debiti di gioco, per una somma da far girare la testa.
+    location: camera_corrado
+    scenery: true
+
+rules:
+  # --- La galleria: il ritratto e la cornice ---
+  scopri_ritratto:
+    trigger:
+      - {verb: prendi, target: drappo}
+      - {verb: tira, target: drappo}
+      - {verb: tira, target: ritratto}
+      - {verb: apri, target: ritratto}
+      - {verb: prendi, target: drappo, with: ritratto}
+      - {verb: tira, target: drappo, with: ritratto}
+    when: {not: {flag: ritratto_scoperto}}
+    otherwise: Il drappo è già a terra.
+    effects:
+      - set_flag: ritratto_scoperto
+    text: >
+      Afferri il velluto e tiri. I chiodi cedono uno dopo l'altro, e il drappo scivola a terra in
+      una nuvola di polvere. Da sotto, una ragazza vestita di bianco ti guarda.
+
+  prendi_ritratto:
+    trigger: {verb: prendi, target: ritratto}
+    text: È grande quanto una porta, e inchiodato al muro. Lo lasci dov'è.
+
+  apri_cornice:
+    trigger: {verb: usa, target: medaglione, with: ritratto}
+    when: {all: [{flag: ritratto_scoperto}, {not: {flag: cornice_aperta}}]}
+    otherwise: "Il quadro è coperto dal drappo: non vedi dove potrebbe servire il medaglione."
+    otherwise_variants:
+      - when: {flag: cornice_aperta}
+        text: Lo scomparto della cornice è aperto, e dentro non c'è altro.
+    effects:
+      - give: cilindro
+      - set_flag: cornice_aperta
+    text: >
+      Appoggi il medaglione nell'incavo della cornice. Entra perfettamente, come nella meridiana; lo
+      giri, e con uno scatto un listello dorato si stacca. Dietro, avvolto in una striscia di carta,
+      c'è un piccolo cilindro d'ottone irto di punte, come quelli dei carillon. Sulla carta, la
+      grafia della contessa: «Suonala per me, come faceva lei.» Lo prendi, e ti rimetti il medaglione
+      al collo.
+
+  leggi_cilindro:
+    trigger: {verb: leggi, target: cilindro}
+    text: "Sulla striscia di carta che avvolgeva il cilindro: «Suonala per me, come faceva lei.»"
+
+  # --- La rosa bianca (il rosaio e le forbici sono al pianterreno) ---
+  cogli_rosa:
+    trigger:
+      - {verb: usa, target: forbici, with: rosaio}
+      - {verb: prendi, target: rosaio, with: forbici}
+    when: {not: {flag: rosa_colta}}
+    otherwise: Hai già colto la tua rosa. Le altre lasciale alla serra.
+    otherwise_variants:
+      - when: {flag: livia_permette}
+        text: La tua rosa è sul comodino della contessa. Le altre lasciale alla serra.
+    effects:
+      - give: rosa_bianca
+      - set_flag: rosa_colta
+    text: >
+      Scegli la rosa più bella, appena aperta, e la tagli con un colpo netto delle forbici. Profuma
+      di pioggia.
+
+  prendi_rosaio:
+    trigger: {verb: prendi, target: rosaio}
+    when: {not: {flag: rosa_colta}}
+    otherwise: Hai già colto la tua rosa. Le altre lasciale alla serra.
+    otherwise_variants:
+      - when: {flag: livia_permette}
+        text: La tua rosa è sul comodino della contessa. Le altre lasciale alla serra.
+    text: >
+      Allunghi la mano, ma i gambi sono irti di spine lunghe come aghi. Senza qualcosa per tagliarli
+      non ne cogli nemmeno una.
+
+  dai_rosa_livia:
+    trigger: {verb: dai, target: rosa_bianca, with: livia}
+    when: {flag: atto_due}
+    otherwise: >
+      Livia guarda la rosa, e per un attimo le si addolcisce lo sguardo. Poi scuote la testa.
+      «Tenetela voi, signorina.»
+    effects:
+      - remove: rosa_bianca
+      - set_flag: livia_permette
+    text: >
+      Livia prende la rosa e la guarda a lungo, senza parlare. Poi la mette nel vasetto d'argento
+      sul comodino, e ne sistema il gambo con cura, come faceva ogni mattina. Quando si volta ha gli
+      occhi lucidi. «Il boudoir», dice piano, e si scosta dalla porta. «Andate. Lei avrebbe voluto
+      così.»
+
+  apri_porta_boudoir:
+    trigger: {verb: apri, target: porta_boudoir}
+    when: {flag: livia_permette}
+    otherwise: >
+      Livia si alza e si mette davanti alla porta. «Il boudoir no, signorina. Lì dentro la contessa
+      non voleva nessuno.»
+    text: La porta del boudoir è aperta. Basta entrare.
+
+  # --- Il boudoir ---
+  apri_portagioie:
+    trigger: {verb: apri, target: portagioie}
+    when: {not: {flag: portagioie_aperto}}
+    otherwise: Il portagioie è aperto. Il resto sono gioielli della contessa, e non sono tuoi.
+    effects:
+      - give: chiavetta_carica
+      - set_flag: portagioie_aperto
+    text: >
+      Sollevi il coperchio. Collane, spille, un paio di orecchini di granato e, in uno scomparto
+      foderato di velluto, una chiavetta d'ottone con la testa a farfalla, come quelle che servono a
+      caricare i carillon. Prendi la chiavetta; i gioielli li lasci dove sono.
+
+  prendi_portagioie:
+    trigger: {verb: prendi, target: portagioie}
+    text: È della contessa, e il suo posto è sulla toeletta. Lo lasci lì.
+
+  # --- Il carillon ---
+  metti_cilindro:
+    trigger: {verb: usa, target: cilindro, with: carillon}
+    effects:
+      - remove: cilindro
+      - set_flag: cilindro_messo
+    text: Sollevi la campana di vetro e incastri il cilindro nel suo alloggio. Combacia alla perfezione.
+
+  carica_carillon:
+    trigger: {verb: usa, target: chiavetta_carica, with: carillon}
+    when: {all: [{flag: cilindro_messo}, {not: {flag: carillon_suonato}}]}
+    otherwise: La musica è finita, e la base del carillon è aperta e vuota.
+    otherwise_variants:
+      - when: {not: {flag: cilindro_messo}}
+        text: >
+          Carichi la molla, e il carillon gira a vuoto con un ronzio: nell'alloggio del cilindro non
+          c'è niente da suonare.
+    effects:
+      - give: chiave_servizio
+      - set_flag: carillon_suonato
+    text: >
+      Infili la chiavetta e la giri, tre, quattro volte. Il cilindro comincia a ruotare, e la stanza
+      si riempie di una musica piccola e lenta. La conosci. È la ninna nanna che ti cantava tua
+      madre la sera, a Genova, quando eri bambina. Resti ferma finché l'ultima nota si spegne.
+      Allora, con uno scatto, la base del carillon si apre come un cassetto: dentro c'è una chiave di
+      ferro, legata a un nastro azzurro. La prendi.
+
+  apri_carillon:
+    trigger:
+      - {verb: apri, target: carillon}
+      - {verb: tira, target: carillon}
+    when: {not: {flag: carillon_suonato}}
+    otherwise: La base del carillon è aperta, e dentro non c'è più niente.
+    text: La base non ha serrature né cassetti che tu veda, solo un piccolo foro per la chiavetta di carica.
+
+  prendi_carillon:
+    trigger: {verb: prendi, target: carillon}
+    text: È troppo delicato, e la campana di vetro pesa. Lo lasci sul suo tavolino.
+
+  leggi_chiave_servizio:
+    trigger: {verb: leggi, target: chiave_servizio}
+    text: "Sul cartellino legato al nastro, la grafia della contessa: «Dove lei dormiva bambina.»"
+
+  # --- La scala di servizio ---
+  apri_scala_servizio:
+    trigger: {verb: apri, target: porta_scala_servizio, with: chiave_servizio}
+    when: {not: {flag: atto_tre}}
+    otherwise: La porta della scala di servizio è già aperta.
+    effects:
+      - remove: chiave_servizio
+      - set_flag: atto_tre
+    text: La chiave gira dura, poi scatta. La lasci nella serratura, e spingi la porta.
+
+  apri_scala_servizio_senza_chiave:
+    trigger: {verb: apri, target: porta_scala_servizio}
+    when: {all: [{not: {flag: atto_tre}}, {not: {has: chiave_servizio}}]}
+    otherwise: "Hai la chiave della scala di servizio: usala."
+    otherwise_variants:
+      - when: {flag: atto_tre}
+        text: La porta della scala di servizio è già aperta.
+    text: È chiusa a chiave, e una chiave così non l'hai mai vista sul quadro di Livia.
+
+  # --- Risposte d'atmosfera ---
+  leggi_libro_enigmi:
+    trigger: {verb: leggi, target: libro_enigmi}
+    text: >
+      Ne leggi uno a caso: «Più ne togli, più diventa grande.» Accanto, a matita, la contessa ha
+      scritto: «la buca». Sull'ultima pagina, soltanto: «Per I.»
+
+  leggi_cambiali:
+    trigger: {verb: leggi, target: cambiali}
+    text: Leggi le cifre, e ti gira la testa. Corrado deve a mezzo Piemonte quasi quanto vale questo castello.
+
+  prendi_cambiali:
+    trigger: {verb: prendi, target: cambiali}
+    text: Non sono affari tuoi. Almeno per ora.
+
+  suona_arpa:
+    trigger: {verb: usa, target: arpa}
+    text: Sfiori il legno dove una volta c'erano le corde. Non ne esce niente.

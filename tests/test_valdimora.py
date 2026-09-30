@@ -1,4 +1,4 @@
-"""La Stella di Valdimora, atto 1 (il pianterreno): the game played with typed commands through Game,
+"""La Stella di Valdimora, atti 1 e 2 (il pianterreno e il piano nobile): the game played with typed commands through Game,
 and the invariants that keep its puzzles honest.
 
 Chain: the letter to Ettore -> the countess's envelope (the riddle) -> oil and medallion in the sundial
@@ -54,8 +54,9 @@ def test_the_first_act_can_be_played_to_its_end(valdimora):
     assert "Per Livia" in answers[14]
     assert "cerca chi ti somiglia" in answers[15]
     assert "Non fatemene pentire" in answers[18]
-    assert answers[-1].endswith("Fine del primo atto. (Il secondo è in costruzione.)")
-    assert game.finished and not game.state.lost
+    # The staircase opens the second act: its state is kept, to go on from here after a death.
+    assert "la lasci nella toppa" in answers[-1]
+    assert not game.finished and game.state.act == 1 and game.state.checkpoint is not None
 
 
 def test_the_game_opens_in_the_atrium_with_the_letter_and_the_medallion(valdimora):
@@ -451,3 +452,151 @@ def test_the_photograph_of_my_mother(valdimora):
     game.state.item_locations["fotografia"] = "inventory"
 
     assert game.turn("dai la fotografia di mia madre a Ettore") == valdimora.characters["ettore"].refuses
+
+
+# --- Atto 2: il piano nobile -----------------------------------------------------------------------
+
+# From the atrium, once the staircase is open: the portrait, the rose for Livia (the shears are in the
+# coach house, the rose bush in the greenhouse), the jewel box, the music box, the service stairs.
+TO_THE_SERVICE_STAIRS = [
+    "su", "nord", "prendi il drappo", "esamina il ritratto", "usa il medaglione con il ritratto",
+    "sud", "ovest", "nord", "nord", "chiedi a Livia della rosa",
+    "sud", "sud", "est", "giù", "sud", "prendi le forbici", "nord", "ovest", "ovest",
+    "usa le forbici con il rosaio",
+    "est", "est", "su", "ovest", "nord", "nord", "dai la rosa a Livia",
+    "ovest", "apri il portagioie", "est", "sud", "est", "sud", "est",
+    "usa il cilindro con il carillon", "usa la chiavetta con il carillon",
+    "ovest", "nord", "nord", "apri la porta della scala di servizio con la chiave",
+]  # fmt: skip
+
+
+def in_act_two(valdimora: World, room: str, *flags: str, carried: tuple[str, ...] = ()) -> Game:
+    """A game already in the second act (its state kept), in `room`."""
+    game = new_game(valdimora)
+    game.state.flags.update({"atto_due", "busta_data", *flags})
+    game.state.act = 1
+    game.state.current_room = room
+    for item_id in carried:
+        game.state.item_locations[item_id] = "inventory"
+    return game
+
+
+def test_the_second_act_can_be_played_to_its_end(valdimora):
+    game = new_game(valdimora)
+    play(game, *TO_THE_STAIRCASE)
+
+    answers = play(game, *TO_THE_SERVICE_STAIRS)
+
+    assert "Da sotto, una ragazza" in answers[2]
+    assert "È tua madre" in answers[3]
+    assert "Suonala per me" in answers[4]
+    assert "Profuma di pioggia" in answers[19]
+    assert "Lei avrebbe voluto così" in answers[26]
+    assert "testa a farfalla" in answers[28]
+    assert "ninna nanna" in answers[35]
+    assert answers[-1].endswith("Fine del secondo atto. (Il terzo è in costruzione.)")
+    assert game.finished and not game.state.lost
+
+
+def test_in_the_second_act_the_characters_are_upstairs(valdimora):
+    # The doctor stays by his bag in the billiard room (spec, «Atto 2: decisioni»).
+    game = in_act_two(valdimora, "loggia")
+
+    rooms = {character.id: game.engine.character_room(character, game.state) for character in valdimora.characters.values()}
+
+    assert rooms == {"ettore": "galleria", "livia": "camera_contessa", "corrado": "studio_conte", "ferri": "biliardo",
+                     "agnese": "loggia"}  # fmt: skip
+
+
+def test_going_up_the_staircase_by_name(valdimora):
+    game = in_act_two(valdimora, "atrio")
+
+    game.turn("vai sullo scalone")
+
+    assert game.state.current_room == "loggia"
+
+
+@pytest.mark.parametrize(
+    ("room", "carried", "line", "hint"),
+    [
+        ("galleria", (), "usa il medaglione con il ritratto", "coperto dal drappo"),
+        ("salone_musica", ("chiavetta_carica",), "usa la chiavetta con il carillon", "gira a vuoto"),
+        ("camera_contessa", (), "ovest", "Il boudoir no"),
+        ("camera_contessa", (), "apri la porta del boudoir", "Il boudoir no"),
+        ("pianerottolo_servizio", (), "apri la porta", "chiusa a chiave"),
+        ("pianerottolo_servizio", (), "su", "chiusa a chiave"),
+        ("serra", (), "prendi la rosa", "spine"),
+    ],
+    ids=["frame before the drape", "key before the cylinder", "boudoir", "boudoir door", "service door",
+         "service stairs", "rose without shears"],
+)  # fmt: skip
+def test_act_two_in_the_wrong_order_gives_hints(valdimora, room, carried, line, hint):
+    game = in_act_two(valdimora, room, carried=carried)
+    before = game.state.model_dump(exclude={"turns", "asked", "last_speaker"})
+
+    answer = game.turn(line)
+
+    assert hint in answer
+    assert game.state.model_dump(exclude={"turns", "asked", "last_speaker"}) == before
+
+
+def test_livia_takes_the_rose_only_upstairs(valdimora):
+    game = new_game(valdimora)
+    game.state.current_room = "ufficio_governante"
+    game.state.item_locations["rosa_bianca"] = "inventory"
+
+    assert "Tenetela voi" in game.turn("dai la rosa a Livia")
+    assert game.state.item_locations["rosa_bianca"] == "inventory"
+
+
+def test_two_things_with_the_same_name_in_reach_ask_which_one(valdimora):
+    greenhouse = in_act_two(valdimora, "serra", carried=("rosa_bianca",))
+    music_room = in_act_two(valdimora, "salone_musica", "cilindro_messo", carried=("chiavetta", "chiavetta_carica"))
+
+    assert greenhouse.turn("prendi la rosa") == "Quale intendi: la rosa bianca o il rosaio?"
+    assert music_room.turn("usa la chiavetta con il carillon") == (
+        "Quale intendi: la chiavetta di carica o la chiavetta dell'armadietto?"
+    )
+    assert "ninna nanna" in music_room.turn("usa la chiavetta di carica con il carillon")
+
+
+def test_the_key_of_the_service_stairs_comes_only_from_the_music_box(valdimora):
+    givers = [rule.id for rule in valdimora.rules.values() if Give(give="chiave_servizio") in rule.effects]
+    topics = [
+        (character.id, topic.id)
+        for character in valdimora.characters.values()
+        for topic in character.topics.values()
+        if Give(give="chiave_servizio") in topic.effects
+    ]
+
+    assert givers == ["carica_carillon"]
+    assert topics == []
+
+
+# Everything a room of the second act describes can be examined: (room, what the player types).
+ACT_TWO_DESCRIBED = [
+    ("loggia", "scalone"), ("loggia", "colonnato"), ("loggia", "pavimento"), ("loggia", "candelabri"),
+    ("salone_feste", "lampadari"), ("salone_feste", "sedie"), ("salone_feste", "portafinestra"),
+    ("balcone", "balaustra"), ("balcone", "vaso"), ("balcone", "valle"),
+    ("salottino_verde", "solitario"), ("salottino_verde", "tappezzeria"), ("salottino_verde", "tavolino"),
+    ("camera_contessa", "letto"), ("camera_contessa", "comodino"), ("camera_contessa", "cordone"),
+    ("camera_contessa", "porta del boudoir"), ("boudoir", "toeletta"), ("boudoir", "portagioie"),
+    ("guardaroba", "armadi"), ("guardaroba", "porticina"),
+    ("galleria", "ritratti"), ("galleria", "drappo"), ("galleria", "ritratto"),
+    ("pianerottolo_servizio", "porta"), ("pianerottolo_servizio", "pareti"),
+    ("salone_musica", "arpa"), ("salone_musica", "poltroncine"), ("salone_musica", "carillon"),
+    ("biblioteca", "scaffali"), ("biblioteca", "libro"),
+    ("studio_conte", "scrivania"), ("studio_conte", "trofei"), ("studio_conte", "rastrelliera"),
+    ("camera_corrado", "letto"), ("camera_corrado", "cambiali"), ("camera_corrado", "bottiglie"),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(("room", "thing"), ACT_TWO_DESCRIBED, ids=[f"{room}: {thing}" for room, thing in ACT_TWO_DESCRIBED])
+def test_what_a_room_of_the_second_act_describes_can_be_examined(valdimora, room, thing):
+    game = new_game(valdimora)
+    game.state.current_room = room
+
+    answer = game.turn(f"esamina {thing}")
+
+    assert answer not in ("Non vedi niente del genere qui.", "Non ho capito.")
+    assert not answer.startswith("Quale intendi")

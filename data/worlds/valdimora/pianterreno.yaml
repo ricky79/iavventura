@@ -10,6 +10,14 @@ rooms:
       lo scalone di pietra sale verso il piano nobile, chiuso da una porta di legno scuro. A nord,
       oltre una vetrata, il cortile; a ovest il salotto, a est la sala del biliardo. A sud, fuori
       sotto la pioggia, la rimessa.
+    variants:
+      - when: {flag: atto_due}
+        text: >
+          Un atrio alto e freddo, col pavimento a scacchi bianchi e neri. Sul portone da cui sei
+          entrata pende un drappo nero, e accanto, su un cavalletto, c'è un annuncio listato a lutto.
+          In fondo, lo scalone di pietra sale verso la loggia del piano nobile: la sua porta ora è
+          aperta. A nord, oltre una vetrata, il cortile; a ovest il salotto, a est la sala del
+          biliardo. A sud, fuori sotto la pioggia, la rimessa.
     exits:
       nord: {to: cortile}
       sud: {to: rimessa}
@@ -148,13 +156,6 @@ rooms:
       nord: {to: cucina}
       ovest: {to: sala_da_pranzo}
       est: {to: cappella}
-
-  # Provvisoria: nessuno ci entra, perché aprire lo scalone chiude il primo atto. La riscrive l'atto 2.
-  loggia:
-    name: Loggia dello scalone
-    description: In cima allo scalone, il piano nobile è buio e silenzioso.
-    exits:
-      giù: {to: atrio}
 
 items:
   # --- Quello che Irene porta con sé ---
@@ -922,6 +923,11 @@ rules:
       - {verb: apri, target: porta_cantina, with: chiave_scalone}
       - {verb: apri, target: porta_cantina, with: chiave_credenza}
       - {verb: apri, target: porta_cantina, with: chiavetta}
+      - {verb: apri, target: porta_cantina, with: chiave_servizio}
+      - {verb: apri, target: porta_cantina, with: chiavetta_carica}
+      - {verb: apri, target: porta_scala_servizio, with: chiave_credenza}
+      - {verb: apri, target: porta_scala_servizio, with: chiavetta}
+      - {verb: apri, target: porta_scala_servizio, with: chiavetta_carica}
     text: La chiave non entra nella serratura.
 
   leggi_registro:

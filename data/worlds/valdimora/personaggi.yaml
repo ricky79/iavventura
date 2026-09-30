@@ -14,6 +14,9 @@ characters:
       Un uomo alto e magro, sui settant'anni, in livrea nera. Ha gli occhi rossi di chi non dorme da
       giorni.
     location: stanza_maggiordomo
+    moves:
+      - when: {flag: atto_due}
+        room: galleria
     greeting: >
       Ettore si alza a fatica dalla sedia. «Perdonate, signorina: la casa è in lutto. La contessa ci
       ha lasciati tre giorni fa. Chi siete, e chi vi manda?»
@@ -145,6 +148,9 @@ characters:
       Una donna sulla cinquantina, vestita di grigio, con un mazzo di chiavi alla cintura. Ti guarda
       come si guarda una macchia sul tappeto.
     location: ufficio_governante
+    moves:
+      - when: {flag: atto_due}
+        room: camera_contessa
     greeting: >
       «Siete voi, quella della corriera.» Livia non si alza. «La casa è in lutto, signorina. Non so
       che cosa siate venuta a cercare, ma qui non troverete niente.»
@@ -246,6 +252,9 @@ characters:
       Un uomo sui quarant'anni, elegante ma trasandato, con la cravatta allentata e un bicchiere
       vuoto in mano. Ha l'aria di chi aspetta un treno in ritardo.
     location: biliardo
+    moves:
+      - when: {flag: atto_due}
+        room: studio_conte
     greeting: >
       «Un'altra parente sconosciuta?» Corrado ride senza allegria. «Mettetevi in fila. Quando
       arriverà il notaio vedrete che qui non c'è niente per nessuno, tranne che per me.»
@@ -458,6 +467,9 @@ characters:
       Una ragazza di trent'anni, pallida, vestita di nero. Ha gli occhi gonfi e un rosario tra le
       dita.
     location: cappella
+    moves:
+      - when: {flag: atto_due}
+        room: loggia
     greeting: >
       Agnese si alza di scatto, poi ti sorride tra le lacrime. «Voi dovete essere la signorina di
       Genova. La contessa parlava di una visita… Se vi serve qualcosa, qualunque cosa, chiedete a
