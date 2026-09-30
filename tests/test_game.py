@@ -813,6 +813,14 @@ def test_a_sentence_the_model_calls_no_game_action_is_left_alone(dragon):
     assert say(game, "che stupido questo bosco") == NOT_A_GAME_ACTION
 
 
+def test_the_guess_comes_before_the_gesture_the_sentence_says(keeper_world):
+    # «scusate» is also an apology, but the sentence names two items: the guess is asked first.
+    reply = {"verbo": "spingi", "bersaglio": "moneta", "con": "custode"}
+    game = Game(Engine(World.model_validate(keeper_world)), talking(reply))
+
+    assert say(game, "scusate, spingo la moneta contro la leva") == "Vuoi spingere la moneta con la leva?"
+
+
 def test_no_thanks_answers_the_question_even_with_someone_here(castle):
     # «no, grazie» is also a formula: the answer to «Vuoi…?» comes first.
     game = in_the_stable(castle)

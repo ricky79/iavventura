@@ -157,14 +157,14 @@ class Game:
         asking = _is_question(line, words)
         if isinstance(interpreted, NotUnderstood):
             asked = _topic_asked(words, characters) if asking else None
-            if asked is None and not interpreted.not_an_action:
-                asked = self._gesture_said(words, characters, here)
             if asked is None and interpreted.guess is not None:
                 # What the sentence names in place of the model's pick: asked about, done after a yes.
                 self.pending = self._carried_first(interpreted.guess)
                 question = confirmation(self.pending, self.world)
                 self._log("llm", self.pending, "conferma", question)
                 return question
+            if asked is None and not interpreted.not_an_action:
+                asked = self._gesture_said(words, characters, here)
             if asked is not None:
                 answer = f"({action_text(asked, self.world)})\n" + self._execute(asked, "llm")
             else:
