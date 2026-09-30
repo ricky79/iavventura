@@ -22,6 +22,11 @@ game:
     - name: secondo atto
       when: {flag: atto_due}
   endings:
+    - when: {flag: caduta_dal_balcone}
+      death: true
+      text: >
+        La pietra cede con uno schiocco secco, e tu con lei. Per un attimo vedi la valle sotto di
+        te, grigia di pioggia; poi più niente. Sei morta.
     - when: {flag: atto_tre}
       text: >
         La porta si apre su una scala di legno stretta e ripida, che sale nel buio verso la soffitta.

@@ -37,6 +37,12 @@ rooms:
       crepata in più punti, e in un angolo ne manca un pezzo: meglio non appoggiarcisi. Sull'orlo
       esterno, in bilico sopra il vuoto, c'è un vaso di gerani secchi. A nord si rientra nel salone
       delle feste.
+    variants:
+      - when: {flag: vaso_recuperato}
+        text: >
+          Un balcone di pietra sospeso sulla valle, battuto dal vento e dalla pioggia. La balaustra è
+          crepata in più punti, e in un angolo ne manca un pezzo: meglio non appoggiarcisi. Il vaso
+          di gerani ora è al sicuro ai tuoi piedi. A nord si rientra nel salone delle feste.
     exits:
       nord: {to: salone_feste}
 
@@ -503,6 +509,9 @@ items:
       fuori dalla tua portata. Tra i gerani brilla qualcosa di vetro.
     location: balcone
     scenery: true
+    variants:
+      - when: {flag: vaso_recuperato}
+        text: Il vaso di gerani, al sicuro sul pavimento del balcone. Tra i gerani secchi non c'è più niente.
 
   valle:
     name: valle
@@ -601,6 +610,25 @@ items:
       Sanremo. Debiti di gioco, per una somma da far girare la testa.
     location: camera_corrado
     scenery: true
+
+  # --- Il filo facoltativo: il bastone del conte e il flacone sul balcone ---
+  bastone:
+    name: bastone dal manico ricurvo
+    gender: m
+    aliases: [bastone, bastone del conte, manico, manico ricurvo]
+    description: >
+      Un bastone da passeggio di frassino, col manico ricurvo come un uncino. Il conte ci si
+      appoggiava negli ultimi anni.
+    location: studio_conte
+
+  flacone:
+    name: flacone vuoto
+    gender: m
+    aliases: [flacone, boccetta, boccetta vuota]
+    description: >
+      Una boccetta di vetro scuro, vuota e senza tappo. Sull'etichetta, scritto a mano: «Digitale,
+      gocce». Ha ancora un odore amaro.
+    location: null
 
 rules:
   # --- La galleria: il ritratto e la cornice ---
@@ -793,3 +821,47 @@ rules:
   suona_arpa:
     trigger: {verb: usa, target: arpa}
     text: Sfiori il legno dove una volta c'erano le corde. Non ne esce niente.
+
+  # --- Il balcone: il vaso, il flacone (prova 2) e la balaustra (pericolo) ---
+  aggancia_vaso:
+    trigger:
+      - {verb: usa, target: bastone, with: vaso}
+      - {verb: prendi, target: vaso, with: bastone}
+      - {verb: tira, target: vaso, with: bastone}
+    when: {not: {flag: vaso_recuperato}}
+    otherwise: Il vaso è già al sicuro ai tuoi piedi, e dentro non c'è altro.
+    effects:
+      - give: flacone
+      - set_flag: vaso_recuperato
+    text: >
+      Tenendoti lontana dal bordo, allunghi il bastone e agganci il vaso col manico ricurvo. Lo tiri
+      piano verso di te lungo la pietra, finché non è al sicuro ai tuoi piedi. Tra i gerani secchi
+      c'è una boccetta di vetro scuro, vuota. Qualcuno l'ha nascosta qui. La prendi.
+
+  prendi_vaso:
+    trigger: {verb: prendi, target: vaso}
+    when: {not: {flag: vaso_recuperato}}
+    otherwise: È pesante e pieno di terra. Lo lasci dov'è, al sicuro.
+    effects:
+      - set_flag: caduta_dal_balcone
+    text: Ti sporgi oltre la balaustra, allunghi il braccio verso il vaso e ci appoggi tutto il peso.
+
+  tira_vaso:
+    trigger: {verb: tira, target: vaso}
+    when: {not: {flag: vaso_recuperato}}
+    otherwise: È pesante e pieno di terra. Lo lasci dov'è, al sicuro.
+    text: >
+      Con le mani non ci arrivi, e sporgerti su quella balaustra sarebbe una follia. Ti servirebbe
+      qualcosa di lungo, per agganciarlo.
+
+  spingi_balaustra:
+    trigger: {verb: spingi, target: balaustra}
+    effects:
+      - set_flag: caduta_dal_balcone
+    text: Appoggi tutte e due le mani sulla balaustra crepata, e spingi.
+
+  scavalca_balaustra:
+    trigger: {verb: salta, target: balaustra}
+    effects:
+      - set_flag: caduta_dal_balcone
+    text: Metti un piede sulla balaustra per scavalcarla.

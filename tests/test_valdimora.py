@@ -600,3 +600,49 @@ def test_what_a_room_of_the_second_act_describes_can_be_examined(valdimora, room
 
     assert answer not in ("Non vedi niente del genere qui.", "Non ho capito.")
     assert not answer.startswith("Quale intendi")
+
+
+# From the atrium, once the staircase is open: the count's walking stick, then the balcony.
+TO_THE_FLASK = [
+    "su", "est", "nord", "nord", "prendi il bastone", "sud", "sud", "ovest", "ovest", "sud",
+    "usa il bastone con il vaso",
+]  # fmt: skip
+
+
+def test_the_flask_can_be_found(valdimora):
+    game = new_game(valdimora)
+    play(game, *TO_THE_STAIRCASE)
+
+    answers = play(game, *TO_THE_FLASK, "prendi il vaso", "esamina il flacone")
+
+    assert "boccetta di vetro scuro" in answers[10]
+    assert game.state.item_locations["flacone"] == "inventory"
+    assert "al sicuro" in answers[11] and not game.finished  # once hooked, the vase is harmless
+    assert "Digitale" in answers[12]
+
+
+@pytest.mark.parametrize("line", ["prendi il vaso", "spingi la balaustra", "salta dalla balaustra"])
+def test_the_balcony_kills_and_the_game_goes_on_from_the_second_act(valdimora, line):
+    game = new_game(valdimora)
+    play(game, *TO_THE_STAIRCASE)
+    play(game, "su", "ovest", "sud")
+
+    answer = game.turn(line)
+
+    assert answer.endswith("Sei morta.")
+    assert game.finished and game.state.lost and game.resumable == "secondo atto"
+    assert game.turn("riprendi").startswith("Riprendi dall'inizio del secondo atto.")
+    assert game.state.current_room == "atrio" and not game.finished
+
+
+def test_pulling_the_vase_by_hand_is_only_a_hint(valdimora):
+    game = in_act_two(valdimora, "balcone")
+
+    assert "qualcosa di lungo" in game.turn("tira il vaso")
+    assert not game.finished
+
+
+def test_the_doctor_knows_the_flask(valdimora):
+    game = in_act_two(valdimora, "biliardo", carried=("flacone",))
+
+    assert "L'avevo portata piena" in game.turn("chiedi al dottore delle medicine")

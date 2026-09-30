@@ -425,13 +425,18 @@ characters:
         name: medicine
         gender: f
         plural: true
-        aliases: [farmaco, gocce, digitale, borsa]
+        aliases: [farmaco, gocce, digitale, borsa, flacone, boccetta]
         text: >
           «Digitale, gocce per il cuore. Io le prescrivevo, e la ragazza, Agnese, gliele dava ogni
           sera.»
         variants:
           - when: {flag: ferri_addormentato}
             text: Il dottore russa.
+          - when: {has: flacone}
+            text: >
+              Il dottore vede la boccetta che hai in mano, e il colore gli sparisce dalla faccia.
+              «Questa è la digitale della contessa. Dove l'avete trovata?» La annusa, e te la rende
+              con la mano che trema. «L'avevo portata piena, una settimana prima che morisse.»
         again: «Digitale, vi ho detto. Io la prescrivevo, lei la dava.»
       corrado:
         name: Corrado
