@@ -665,17 +665,23 @@ def test_a_question_without_its_question_mark_is_asked_too(dragon, sentence):
     assert output == f"(chiedi al draghetto del solletico)\n{dragon.characters['draghetto'].topics['solletico'].text}"
 
 
-@pytest.mark.parametrize(
-    ("sentence", "topic"),
-    [("chi sei?", "pellegrino"), ("vecchio, come ti chiami?", "pellegrino"), ("com'è andato il viaggio?", "pellegrino")],
-)
+@pytest.mark.parametrize(("sentence", "topic"), [("com'è andato il viaggio?", "pellegrino")])
 def test_talking_about_a_topic_is_asking_about_it(castle, sentence, topic):
-    # "chi sei?": the model answered "parla", and the pilgrim only greeted.
+    # "com'è andato il viaggio?": the model answered "parla", and the pilgrim only greeted.
     game = in_the_stable(castle, talking({"verbo": "parla", "bersaglio": "pellegrino", "con": "nessuno"}))
 
     output = say(game, sentence)
 
     assert output == f"(chiedi al pellegrino del pellegrino)\n{castle.characters['pellegrino'].topics[topic].text}"
+
+
+@pytest.mark.parametrize("sentence", ["chi sei?", "vecchio, come ti chiami?"])
+def test_asking_who_he_is_needs_no_llm(castle, sentence):
+    llm = FakeLLMClient()
+
+    say(in_the_stable(castle, llm), sentence)
+
+    assert llm.calls == []
 
 
 @pytest.mark.parametrize(
@@ -694,6 +700,41 @@ def test_greeting_the_character_by_name_is_still_greeting(castle):
     game = in_the_stable(castle, talking({"verbo": "parla", "bersaglio": "pellegrino", "con": "nessuno"}))
 
     assert say(game, "salve, pellegrino!").endswith(castle.characters["pellegrino"].greeting)
+
+
+def test_a_gesture_without_a_name_goes_to_the_last_one_spoken_to(keeper_world):
+    keeper_world["characters"]["cuoca"] = {
+        "name": "cuoca", "gender": "f", "description": "-", "location": "atrio",
+        "greeting": "«Ciao.»", "unknown": "«Boh.»",
+    }  # fmt: skip
+    game = Game(Engine(World.model_validate(keeper_world)))
+
+    say(game, "parla con la cuoca")
+    answer = say(game, "come state?")
+
+    assert game.state.last_speaker == "cuoca"
+    assert answer == "La cuoca non risponde."
+
+
+def test_no_thanks_answers_the_question_even_with_someone_here(castle):
+    # «no, grazie» is also a formula: the answer to «Vuoi…?» comes first.
+    game = in_the_stable(castle)
+    game.pending = Action(verb="vai", direction="nord")
+
+    assert say(game, "no, grazie") == ALL_RIGHT
+    assert game.pending is None
+
+
+def test_giving_to_someone_elsewhere_gives_nothing_to_the_last_one_spoken_to():
+    # Two here, and the model gives to nobody: the grappa would go to the doctor, spoken to last.
+    valdimora = load_world(WORLDS_DIR / "valdimora")
+    game = Game(Engine(valdimora), talking({"verbo": "dai", "bersaglio": "bottiglia di grappa", "con": "nessuno"}))
+    game.state.current_room = "biliardo"
+    game.state.item_locations["grappa"] = "inventory"
+    game.state.last_speaker = "ferri"
+
+    assert say(game, "porto la grappa ad Agnese") == NOBODY_HERE
+    assert game.state.item_locations["grappa"] == "inventory"
 
 
 @pytest.mark.parametrize(

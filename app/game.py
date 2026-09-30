@@ -140,7 +140,7 @@ class Game:
         near = self.engine.in_reach(self.state) + self.engine.visible(self.state)
         exits = self.engine.known_exits(self.state)
         characters = self.engine.characters_here(self.state)
-        parsed = parse(line, self.world, near, exits, characters)
+        parsed = parse(line, self.world, near, exits, characters, self.state.last_speaker)
         if isinstance(parsed, Ambiguous):
             return which_one(parsed.candidates)
         if parsed is not None:
@@ -241,8 +241,10 @@ class Game:
         naming only someone elsewhere is "Non vedi nessuno del genere qui." ("ciao orso", or "do le
         more al drago" in the den, where the model gave them to the bear)."""
         person = next((person for person, _ in characters if person.id in (action.target, action.with_)), None)
-        if person is None and action.verb is Verb.GIVE and len(characters) == 1:
-            person = characters[0][0]  # "dai le more" goes to the only one here
+        if person is None and action.verb is Verb.GIVE:
+            # "dai le more" goes to the only one here, or to the one spoken to last
+            people = [someone for someone, _ in characters]
+            person = people[0] if len(people) == 1 else next((p for p in people if p.id == self.state.last_speaker), None)
         if person is None:
             return action
         topics = next(topics for someone, topics in characters if someone is person)

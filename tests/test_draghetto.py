@@ -352,8 +352,6 @@ def test_the_closed_ways_answer_even_when_named(dragon, room, line, direction):
 
 DRAGON_REPLIES = [
     # (room, carried, flags, seen, sentence, the model's answer, rule or character text the turn shows)
-    ("radura", (), (), (), "ciao draghetto", {"verbo": "parla", "bersaglio": "draghetto", "con": "nessuno"},
-     lambda w: w.characters["draghetto"].greeting),
     ("radura", (), (), (), "come posso aiutarti?", {"verbo": "parla", "bersaglio": "draghetto", "con": "nessuno"},
      lambda w: w.characters["draghetto"].greeting),
     ("radura", (), (), (), "dai un'occhiata al draghetto",
@@ -392,3 +390,11 @@ def test_kids_sentences_get_their_answer_at_once(dragon, room, carried, flags, s
     assert shown.startswith("(") and shown.endswith(")")
     assert answer.startswith(expected(dragon))
     assert game.pending is None
+
+
+def test_greeting_the_dragon_needs_no_llm(dragon):
+    # «ciao draghetto» went to the model; the parser knows the greetings now.
+    llm = FakeLLMClient()
+
+    assert Game(Engine(dragon), llm).turn("ciao draghetto") == dragon.characters["draghetto"].greeting
+    assert llm.calls == []

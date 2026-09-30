@@ -396,6 +396,70 @@ def test_sayings_with_dai_are_left_to_the_llm(keeper, text):
     assert parse_giving(keeper, text) is None
 
 
+# --- Gestures -----------------------------------------------------------------------------------------
+
+
+@pytest.fixture
+def with_cook(keeper_world) -> World:
+    keeper_world["characters"]["cuoca"] = {
+        "name": "cuoca", "gender": "f", "description": "-", "location": "atrio",
+        "greeting": "«Ciao.»", "unknown": "«Boh.»",
+    }  # fmt: skip
+    return World.model_validate(keeper_world)
+
+
+def two_here(world: World, last_speaker: str | None = None, text: str = "grazie"):
+    """The custode, who can be asked about the cell, and the cook in the atrium."""
+    custode = world.characters["custode"]
+    return parse(text, world, [], (), [(custode, [custode.topics["cella"]]), (world.characters["cuoca"], [])], last_speaker)
+
+
+@pytest.mark.parametrize(
+    ("text", "gesture"),
+    [
+        ("grazie", "grazie"), ("grazie mille!", "grazie"), ("vi ringrazio", "grazie"), ("grazie, custode", "grazie"),
+        ("custode, grazie", "grazie"), ("arrivederci", "congedo"), ("a dopo", "congedo"), ("buonanotte", "congedo"),
+        ("scusate", "scuse"), ("perdonatemi", "scuse"), ("mi dispiace", "scuse"), ("come state?", "come_stai"),
+        ("tutto bene?", "come_stai"), ("chi siete?", "chi_sei"), ("come vi chiamate?", "chi_sei"),
+        ("stupido!", "scortesia"), ("andate al diavolo", "scortesia"), ("vai al diavolo", "scortesia"),
+        ("ciao", None), ("buongiorno, custode", None), ("salve", None),
+    ],
+)  # fmt: skip
+def test_social_formulas_are_gestures(keeper, text, gesture):
+    assert parse_near_keeper(keeper, text) == Action(verb="parla", target="custode", gesture=gesture)
+
+
+def test_a_formula_that_is_a_topic_is_a_question(keeper_world):
+    # The pilgrim's «chi sei» was a topic: a topic the formula names wins over the gesture.
+    keeper_world["characters"]["custode"]["topics"]["leva"]["aliases"] = ["come va"]
+    keeper = World.model_validate(keeper_world)
+
+    assert parse_near_keeper(keeper, "come va?") == Action(verb="chiedi", target="custode", topic="leva")
+    assert parse_near_keeper(keeper, "grazie per la leva") is None  # no formula: the LLM decides
+
+
+def test_social_formulas_do_not_steal_commands(keeper):
+    assert parse_near_keeper(keeper, "vai a nord") == Action(verb="vai", direction="nord")
+    assert parse_near_keeper(keeper, "parla con il custode") == Action(verb="parla", target="custode")
+    assert parse("vai al diavolo", keeper, [], (), []) is None  # with nobody here, no move either
+
+
+def test_with_nobody_here_a_formula_is_left_to_the_llm(keeper):
+    assert parse("grazie", keeper, [], (), []) is None
+
+
+def test_a_gesture_without_a_name_goes_to_the_last_one_spoken_to(with_cook):
+    assert two_here(with_cook) is None
+    assert two_here(with_cook, "cuoca") == Action(verb="parla", target="cuoca", gesture="grazie")
+    assert two_here(with_cook, "pellegrino") is None  # the last one spoken to isn't here
+    assert two_here(with_cook, "cuoca", "grazie, custode") == Action(verb="parla", target="custode", gesture="grazie")
+
+
+def test_a_question_without_a_name_goes_to_the_last_one_spoken_to(with_cook):
+    assert two_here(with_cook, None, "chiedi della cella") is None
+    assert two_here(with_cook, "custode", "chiedi della cella") == Action(verb="chiedi", target="custode", topic="cella")
+
+
 # --- Whether a sentence names a thing (to check the LLM's answers) ------------------------------
 
 
