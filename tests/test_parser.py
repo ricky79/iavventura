@@ -441,11 +441,24 @@ def test_a_formula_that_is_a_topic_is_a_question(keeper_world):
 def test_social_formulas_do_not_steal_commands(keeper):
     assert parse_near_keeper(keeper, "vai a nord") == Action(verb="vai", direction="nord")
     assert parse_near_keeper(keeper, "parla con il custode") == Action(verb="parla", target="custode")
-    assert parse("vai al diavolo", keeper, [], (), []) is None  # with nobody here, no move either
+    assert parse("vai al diavolo", keeper, [], (), []) == ToWhom(())  # with nobody here, no move either
 
 
-def test_with_nobody_here_a_formula_is_left_to_the_llm(keeper):
-    assert parse("grazie", keeper, [], (), []) is None
+@pytest.mark.parametrize(
+    ("text", "gesture"), [("chiedi al custode del suo nome", "chi_sei"), ("chiedi scusa al custode", "scuse")]
+)
+def test_a_question_that_names_no_topic_but_says_a_gesture_is_that_gesture(keeper, text, gesture):
+    # «chiedi al pellegrino del suo nome» was «Non ho capito.» once «nome» was no topic of his.
+    assert parse_near_keeper(keeper, text) == Action(verb="parla", target="custode", gesture=gesture)
+
+
+def test_a_question_nearly_naming_a_topic_is_left_to_the_llm_even_with_a_gesture(keeper):
+    assert parse_near_keeper(keeper, "chiedi al custode delle prigioni e del suo nome") is None
+
+
+def test_with_nobody_here_a_formula_is_said_to_nobody(keeper):
+    # The game answers «Qui non c'è nessuno con cui parlare.» without asking the LLM.
+    assert parse("grazie", keeper, [], (), []) == ToWhom(())
 
 
 def test_a_gesture_without_a_name_goes_to_the_last_one_spoken_to(with_cook):
@@ -471,6 +484,7 @@ def test_a_question_without_a_name_goes_to_the_last_one_spoken_to(with_cook):
         ("vi ringrazio tanto, signora", "grazie"), ("mille grazie davvero", "grazie"), ("chiedo scusa", "scuse"),
         ("mi dispiace tanto", "scuse"), ("ci vediamo più tardi", "congedo"), ("a presto, amico", "congedo"),
         ("come ti senti?", "come_stai"), ("tutto bene, vecchio?", "come_stai"), ("e tu come ti chiami?", "chi_sei"),
+        ("e voi come vi chiamate?", "chi_sei"), ("qual è il tuo nome?", "chi_sei"), ("il vostro nome?", "chi_sei"),
         ("sei un drago cattivo", "scortesia"), ("siete una strega", "scortesia"), ("che antipatica!", "scortesia"),
         ("stupido!", "scortesia"), ("grazie e addio", "congedo"),  # the last one said
     ],
@@ -485,7 +499,8 @@ def test_the_words_of_a_gesture_in_a_free_sentence(text, gesture):
      "che diavolo è questo?", "vado a nord",
      # Found by the final review: an unkind word said to nobody is no rudeness.
      "i draghi cattivi sputano fuoco?", "che tempo cattivo stasera, eh?", "streghe e fantasmi esistono?",
-     "questa storia è scioccante"],
+     "questa storia è scioccante",
+     "chiamate il dottore", "lo chiamano Tobia"],  # «chiamare» is no «chi sei» without «ti»/«vi»
 )  # fmt: skip
 def test_no_gesture_in_other_sentences(text):
     # Not the greeting: the model already answers it when it knows no better.

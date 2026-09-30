@@ -180,6 +180,9 @@ characters:
         text: «Ciao, ciao. Se trovi qualcosa di buono, torna!»
       grazie:
         text: «Mmh. Prego. Ma tra amici si porta sempre qualcosa da mangiare.»
+        variants:
+          - when: {flag: miele_dato}
+            text: "«Grazie a te, piuttosto: quelle more erano squisite!»"
       scuse:
         text: «Grrr… va bene, va bene.»
       come_stai:
@@ -189,6 +192,9 @@ characters:
             text: «Pieno di more! Benissimo!»
       chi_sei:
         text: «Sono l'orso Tobia, e questa è la mia tana. E il mio miele.»
+        variants:
+          - when: {flag: miele_dato}
+            text: «Sono l'orso Tobia, e questa è la mia tana. Il miele? L'ho scambiato con le more più buone del bosco.»
       scortesia:
         text: "L'orso brontola: «Grrr!» Poi sbadiglia. «Troppa fatica arrabbiarsi. Ti perdono.»"
     topics:

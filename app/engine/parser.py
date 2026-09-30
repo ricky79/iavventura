@@ -140,7 +140,6 @@ _GESTURE_WORDS = {
     "grazie": Gesture.THANKS,
     "dispiace": Gesture.APOLOGY,
     **dict.fromkeys(["arrivederci", "addio", "buonanotte"], Gesture.FAREWELL),
-    **dict.fromkeys(["chiami", "chiamate"], Gesture.WHO_ARE_YOU),
 }
 _GESTURE_STEMS = {
     "ringrazi": Gesture.THANKS,
@@ -157,8 +156,13 @@ _GESTURE_PAIRS = {
         [("come", "stai"), ("come", "state"), ("come", "va"), ("ti", "senti"), ("vi", "sentite"), ("tutto", "bene")],
         Gesture.HOW_ARE_YOU,
     ),
-    **dict.fromkeys([("chi", "sei"), ("chi", "siete")], Gesture.WHO_ARE_YOU),
-}
+    # «chiamate il dottore» is no «chi sei»: only with «ti» or «vi».
+    **dict.fromkeys(
+        [("chi", "sei"), ("chi", "siete"), ("ti", "chiami"), ("vi", "chiamate"), ("tuo", "nome"), ("vostro", "nome"),
+         ("suo", "nome")],
+        Gesture.WHO_ARE_YOU,
+    ),
+}  # fmt: skip
 _YOU_ARE = frozenset({"sei", "siete", "sii", "siate"})
 
 
@@ -170,7 +174,8 @@ class Ambiguous(NamedTuple):
 
 class ToWhom(NamedTuple):
     """A gesture or a question without a name, with several characters here and none of them spoken to
-    last: the player has to say to whom («A chi?»)."""
+    last: the player has to say to whom («A chi?»). Without anyone, a formula said to nobody («grazie»
+    in an empty room)."""
 
     people: tuple[Character, ...]
 
@@ -254,8 +259,9 @@ def _conversation(
 ) -> Action | Ambiguous | ToWhom | None:
     """"parla con X", "saluta X", "chiedi a X di Y"; without X, the only character here or the one spoken
     to last.
-    A question about an item or another character of the world that names none of X's topics, not even
-    nearly, gets X's `unknown`; anything else that is no topic the player knows goes to the LLM."""
+    A question that names none of X's topics, not even nearly, is the gesture it says («chiedi scusa»),
+    or about an item or another character of the world it gets X's `unknown`; anything else that is no
+    topic the player knows goes to the LLM."""
     people = [character for character, _ in characters]
     found = _longest(words, 0, _phrases(people)) if words else None
     if found is None and words:
@@ -278,8 +284,12 @@ def _conversation(
     topic = find_topic(words, topics) if words else None
     if topic is not None:
         return Action(verb=Conversation.ASK, target=character.id, topic=topic.id)
+    named = topics_named(character, topics, words) if words else []
+    if words and not named and (gesture := gesture_said(words)) is not None:
+        # «chiedi al pellegrino del suo nome», «chiedi scusa al custode»: no topic, a gesture.
+        return Action(verb=Conversation.TALK, target=character.id, gesture=gesture)
     others = [person for person in world.characters.values() if person.id != character.id]
-    if words and not topics_named(character, topics, words) and tuple(words) in _phrases([*world.items.values(), *others]):
+    if words and not named and tuple(words) in _phrases([*world.items.values(), *others]):
         # «chiedi a Livia della meridiana»: something of the game she has no topic about. «della
         # chiave», nearly her «chiavi», is left to the LLM.
         return Action(verb=Conversation.ASK, target=character.id)
@@ -300,7 +310,7 @@ def _gesture(
 ) -> Action | ToWhom | None:
     """«grazie», «arrivederci, Livia», «Livia, come state?»: a gesture, if the words are a formula with
     at most the name of someone here at the start or at the end; «A chi?» if nobody is named and several
-    could be meant."""
+    could be meant; said to nobody if nobody is here."""
     said = tuple(word for word in words if word not in STOPWORDS)
     for person, topics in characters:
         for phrase in {significant_words(name) for name in (person.name, *person.aliases)} - {()}:
@@ -311,7 +321,7 @@ def _gesture(
     if said not in GESTURE_FORMULAS:
         return None
     if (addressee := _addressee(characters, last_speaker)) is None:
-        return ToWhom(tuple(person for person, _ in characters)) if len(characters) > 1 else None
+        return ToWhom(tuple(person for person, _ in characters))
     return _said_to(*addressee, said)
 
 

@@ -515,6 +515,16 @@ def test_talking_with_nobody_around_says_so(castle):
     assert say(game, "ciao, come va?") == NOBODY_TO_TALK_TO
 
 
+@pytest.mark.parametrize("sentence", ["grazie", "addio", "scusa"])
+def test_a_formula_with_nobody_around_needs_no_llm(castle, sentence):
+    # Found by the review of the dialogues: without the LLM it was «Non ho capito.».
+    llm = FakeLLMClient()
+
+    assert say(Game(Engine(castle), llm), sentence) == NOBODY_TO_TALK_TO
+    assert say(Game(Engine(castle)), sentence) == NOBODY_TO_TALK_TO
+    assert llm.calls == []
+
+
 def test_greeting_a_character_who_is_elsewhere_says_nobody_like_that_is_here(dragon):
     # "ciao orso" at the brook: the game answered "Non sembra un'azione del gioco."
     game = Game(Engine(dragon), talking({"verbo": "parla", "bersaglio": "nessuno", "con": "nessuno"}))
@@ -684,7 +694,7 @@ def test_asking_who_he_is_needs_no_llm(castle, sentence):
     assert llm.calls == []
 
 
-@pytest.mark.parametrize("sentence", ["chi sei?", "vecchio, come ti chiami?"])
+@pytest.mark.parametrize("sentence", ["chi sei?", "vecchio, come ti chiami?", "chiedi al pellegrino del suo nome"])
 def test_the_pilgrim_says_who_he_is(castle, sentence):
     # «chi sei?» was a topic of the pilgrim's; now it is the gesture every character answers.
     answer = say(in_the_stable(castle), sentence)
@@ -811,6 +821,14 @@ def test_a_sentence_the_model_calls_no_game_action_is_left_alone(dragon):
     game = Game(Engine(dragon), talking({"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}))
 
     assert say(game, "che stupido questo bosco") == NOT_A_GAME_ACTION
+
+
+def test_the_guess_comes_before_the_gesture_the_sentence_says(keeper_world):
+    # «scusate» is also an apology, but the sentence names two items: the guess is asked first.
+    reply = {"verbo": "spingi", "bersaglio": "moneta", "con": "custode"}
+    game = Game(Engine(World.model_validate(keeper_world)), talking(reply))
+
+    assert say(game, "scusate, spingo la moneta contro la leva") == "Vuoi spingere la moneta con la leva?"
 
 
 def test_no_thanks_answers_the_question_even_with_someone_here(castle):
