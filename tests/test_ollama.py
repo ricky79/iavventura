@@ -447,9 +447,8 @@ VALDIMORA_CASES = [
      lambda a, g: g.state.item_locations["chiavetta"] == "inventory" or "nessuno ti impedirebbe" in a),
     ("dispensa", ("chiavetta",), (), "apro l'armadietto dei medicinali con la chiavetta",
      lambda a, g: g.state.item_locations["registro"] == "inventory"),
-    # «chi sei?» to Agnese: her greeting or her answer to what she doesn't know; no action may start.
-    ("cappella", (), (), "chi sei?", says(VALDIMORA.characters["agnese"].greeting,
-                                          VALDIMORA.characters["agnese"].unknown)),
+    # «chi sei?» to Agnese: her own answer; no action may start.
+    ("cappella", (), (), "chi sei?", says(VALDIMORA.characters["agnese"].gestures["chi_sei"].text)),
 ]  # fmt: skip
 
 
