@@ -684,6 +684,14 @@ def test_asking_who_he_is_needs_no_llm(castle, sentence):
     assert llm.calls == []
 
 
+@pytest.mark.parametrize("sentence", ["chi sei?", "vecchio, come ti chiami?"])
+def test_the_pilgrim_says_who_he_is(castle, sentence):
+    # «chi sei?» was a topic of the pilgrim's; now it is the gesture every character answers.
+    answer = say(in_the_stable(castle), sentence)
+
+    assert answer == castle.characters["pellegrino"].gestures["chi_sei"].text
+
+
 @pytest.mark.parametrize(
     "sentence", ["chiedo al vecchio come si esce da qui", "come faccio a uscire?", "come si fa a usire"]
 )
