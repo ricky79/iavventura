@@ -161,7 +161,8 @@ def _conversation(
     asking: bool, words: list[str], world: World, characters: Sequence[tuple[Character, Sequence[Topic]]]
 ) -> Action | Ambiguous | None:
     """"parla con X", "saluta X", "chiedi a X di Y"; without X, the only character here.
-    A question about something that is no topic the player knows goes to the LLM."""
+    A question about an item or another character of the world that names none of X's topics, not even
+    nearly, gets X's `unknown`; anything else that is no topic the player knows goes to the LLM."""
     people = [character for character, _ in characters]
     found = _longest(words, 0, _phrases(people)) if words else None
     if found is None and words:
@@ -182,7 +183,14 @@ def _conversation(
         return Action(verb=Conversation.TALK, target=character.id) if not words else None
     topics = next((topics for person, topics in characters if person.id == character.id), ())
     topic = find_topic(words, topics) if words else None
-    return Action(verb=Conversation.ASK, target=character.id, topic=topic.id) if topic else None
+    if topic is not None:
+        return Action(verb=Conversation.ASK, target=character.id, topic=topic.id)
+    others = [person for person in world.characters.values() if person.id != character.id]
+    if words and not topics_named(character, topics, words) and tuple(words) in _phrases([*world.items.values(), *others]):
+        # «chiedi a Livia della meridiana»: something of the game she has no topic about. «della
+        # chiave», nearly her «chiavi», is left to the LLM.
+        return Action(verb=Conversation.ASK, target=character.id)
+    return None
 
 
 def words_of(text: str) -> list[str]:

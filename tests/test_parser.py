@@ -302,7 +302,6 @@ def test_asking_a_character_about_a_topic(keeper, text, topic):
 @pytest.mark.parametrize(
     "text",
     [
-        "chiedi al custode della chiave",  # a topic the player can't ask about yet
         "chiedi al custode del tempo",  # the LLM decides: unknown topic, or a way of naming a known one
         "chiedi al custode",
         "parla con il custode della cella",
@@ -310,6 +309,22 @@ def test_asking_a_character_about_a_topic(keeper, text, topic):
 )
 def test_questions_without_a_known_topic_are_left_to_the_llm(keeper, text):
     assert parse_near_keeper(keeper, text) is None
+
+
+@pytest.mark.parametrize("text", ["chiedi al custode della chiave", "chiedi al custode della moneta"])
+def test_a_question_about_something_the_character_has_no_topic_for(keeper, text):
+    # «chiedi a Livia di Corrado»: something of the game, but no topic of hers (the key not yet).
+    assert parse_near_keeper(keeper, text) == Action(verb="chiedi", target="custode")
+
+
+def test_a_topic_named_nearly_is_left_to_the_llm(keeper_world):
+    # «chiedi a Livia della chiave»: the key is an item, but «chiave» nearly names her topic «chiavi».
+    keeper_world["characters"]["custode"]["topics"]["monete"] = {
+        "name": "monete", "gender": "f", "plural": True, "text": "«Ne ho viste tante.»",
+    }  # fmt: skip
+    keeper = World.model_validate(keeper_world)
+
+    assert parse_near_keeper(keeper, "chiedi al custode della moneta", ("cella", "leva", "monete")) is None
 
 
 def test_with_nobody_here_there_is_no_one_to_talk_to(keeper):

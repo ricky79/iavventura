@@ -617,6 +617,27 @@ def test_the_guessed_tool_is_used_after_yes():
     assert "Per Livia" in answer
 
 
+def test_a_topic_the_sentence_does_not_name_gives_way_to_what_it_names():
+    # «chiedi a Livia di Corrado» answered about Ettore: the model picked one of her topics at
+    # random. Asked about something she has no topic for, she answers her `unknown`.
+    valdimora = load_world(WORLDS_DIR / "valdimora")
+    game = Game(Engine(valdimora), talking({"verbo": "chiedi", "bersaglio": "Livia", "con": "Ettore"}))
+    game.state.current_room = "ufficio_governante"
+
+    answer = say(game, "domando a Livia cosa sa della meridiana")
+
+    assert answer.endswith(valdimora.characters["livia"].unknown)
+
+
+def test_a_name_within_the_chosen_topic_does_not_count(keeper_world):
+    # «chiave» is an item of the world, but also in «chiave della cella»: the model's pick stands.
+    keeper_world["characters"]["custode"]["topics"]["cella"]["aliases"].append("chiave della cella")
+    reply = {"verbo": "chiedi", "bersaglio": "custode", "con": "cella"}
+    game = Game(Engine(World.model_validate(keeper_world)), talking(reply))
+
+    assert say(game, "custode, a cosa serve la chiave?").endswith("«La cella è a nord.»")
+
+
 @pytest.mark.parametrize(
     ("room", "sentence", "character", "topic"),
     [("radura", "mi dai il miele?", "draghetto", "miele"), ("tana", "mi dai il tuo miele?", "orso", "miele")],

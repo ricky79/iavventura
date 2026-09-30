@@ -29,7 +29,16 @@ from app.engine.models import (
     Verb,
     World,
 )
-from app.engine.parser import Ambiguous, is_named, names_said, names_the_way, parse, topics_named, words_of
+from app.engine.parser import (
+    Ambiguous,
+    is_named,
+    names_said,
+    names_the_way,
+    parse,
+    significant_words,
+    topics_named,
+    words_of,
+)
 from app.engine.text import action_text, confirmation, render, which_one
 from app.llm.client import LLMClient
 from app.llm.interpreter import JUMP_WORDS, NotUnderstood, describe, interpret
@@ -237,6 +246,11 @@ class Game:
         if person is None:
             return action
         topics = next(topics for someone, topics in characters if someone is person)
+        if action.verb is Conversation.ASK and action.topic is not None and not topics_named(person, topics, words):
+            chosen = next((topic for topic in topics if topic.id == action.topic), None)
+            if chosen is not None and self._names_something_else(person, chosen, words):
+                # «chiedi a Livia di Corrado»: no topic of hers is named, and the model picked one (Ettore).
+                return Action(verb=Conversation.ASK, target=person.id)
         if action.verb is Conversation.TALK and asking and (question := _topic_asked(words, [(person, topics)])):
             return question
         someone_elsewhere = not is_named(person, words) and self._names_one_elsewhere(
@@ -260,6 +274,17 @@ class Game:
 
     def _names_one_here(self, words: list[str], here: set[str]) -> bool:
         return any(is_named(self.world.thing(thing_id), words) for thing_id in here)
+
+    def _names_something_else(self, person: Character, topic: Topic, words: list[str]) -> bool:
+        """Whether the words name another character or an item of the world, by words that are not in
+        the names of the topic ("chiave" is also in «chiave dello scalone»)."""
+        topic_words = {word for name in (topic.name, *topic.aliases) for word in significant_words(name)}
+        others = [character for character in self.world.characters.values() if character.id != person.id]
+        return any(
+            not set(name) & topic_words
+            for thing in [*others, *self.world.items.values()]
+            for name in names_said(thing, words)
+        )
 
     def _foreseen(self, action: Action, words: list[str], exits: list[tuple[Direction, Room | None]]) -> bool:
         """Whether the world foresees an interpreted action (Engine.expects). A move must also name
