@@ -70,11 +70,12 @@ def test_texts_may_change_without_breaking_a_saved_state(world_data):
         (lambda s: s["item_locations"].update(moneta="cantina"), "cantina"),
         (lambda s: s.update(visited=["atrio", "soffitta"]), "soffitta"),
         (lambda s: s.update(seen=["drago"]), "drago"),
+        (lambda s: s.update(last_speaker="maggiordomo"), "unknown last speaker 'maggiordomo'"),
         (lambda s: s.update(turns="molti"), "turns"),
         (lambda s: s.update(punteggio=10), "punteggio"),
     ],
     ids=["unknown room", "missing item", "unknown item", "item in unknown room", "unknown visited room",
-         "unknown seen item", "wrong type", "unknown field"],
+         "unknown seen item", "unknown last speaker", "wrong type", "unknown field"],
 )  # fmt: skip
 def test_a_state_that_does_not_fit_the_world_is_refused_with_the_reason(world_data, change, problem):
     data = saved(world_data)
@@ -151,3 +152,13 @@ def test_a_state_saved_before_acts_existed_is_restored(world_data):
     state = Engine(World.model_validate(world_data)).restore(data)
 
     assert (state.lost, state.act, state.checkpoint) == (False, 0, None)
+
+
+def test_a_state_saved_before_the_dialogues_is_restored(world_data):
+    data = saved(world_data)
+    for field in ("asked", "last_speaker"):
+        data.pop(field, None)
+
+    state = Engine(World.model_validate(world_data)).restore(data)
+
+    assert (state.asked, state.last_speaker) == (set(), None)

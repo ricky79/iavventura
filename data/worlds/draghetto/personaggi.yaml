@@ -28,12 +28,32 @@ characters:
           «Ciao!» Il draghetto ti viene incontro agitando la coda. «Grazie al
           miele la gola non mi brucia più. Adesso mi manca solo uno starnuto bello
           forte, per far ripartire il fuoco…»
+    greeting_again: «Eccoti di nuovo! Etciù! Chiedimi del mio raffreddore, e ti spiego cosa mi serve.»
     unknown: >
       Il draghetto piega la testa di lato: «Questo non lo so. Però so tante cose
       sul bosco, sul miele e sul mio raffreddore!»
     refuses: >
       Il draghetto annusa e scuote la testa: «Grazie, ma non è questo che mi
       serve.»
+    gestures:
+      congedo:
+        text: «Ciao ciao! Torna presto, eh? Etciù!»
+      grazie:
+        text: «Grazie a te, invece!» Il draghetto sventola la coda.
+      scuse:
+        text: «Non fa niente!»
+      come_stai:
+        text: "«Etciù! Così così: ho il naso che cola e la pancia fredda.»"
+        variants:
+          - when: {flag: gola_guarita}
+            text: «Molto meglio! Adesso mi manca solo uno starnuto…»
+      chi_sei:
+        text: >
+          «Sono un draghetto della Montagna Rossa! Di solito sputo fuoco… di solito.»
+      scortesia:
+        text: >
+          Il draghetto mette il muso e si gira dall'altra parte. Poi ci ripensa: «Va bene, ti perdono.
+          Ma solo perché ho bisogno di aiuto.»
     topics:
       raffreddore:
         name: raffreddore
@@ -152,8 +172,25 @@ characters:
         text: >
           «Ah, sei tu!» L'orso Tobia si lecca il muso, ancora tutto viola di
           more. «Squisite, quelle more. Se ne trovi ancora, sai dove abito.»
+    greeting_again: «Ancora tu? Hai portato qualcosa da mangiare?»
     unknown: "L'orso si gratta la pancia: «Mah. Io penso solo a mangiare.»"
     refuses: "L'orso annusa e sbuffa: «Non è una cosa da mangiare.»"
+    gestures:
+      congedo:
+        text: «Ciao, ciao. Se trovi qualcosa di buono, torna!»
+      grazie:
+        text: «Mmh. Prego. Ma tra amici si porta sempre qualcosa da mangiare.»
+      scuse:
+        text: «Grrr… va bene, va bene.»
+      come_stai:
+        text: «Ho fame. Ho sempre fame.»
+        variants:
+          - when: {flag: miele_dato}
+            text: «Pieno di more! Benissimo!»
+      chi_sei:
+        text: «Sono l'orso Tobia, e questa è la mia tana. E il mio miele.»
+      scortesia:
+        text: "L'orso brontola: «Grrr!» Poi sbadiglia. «Troppa fatica arrabbiarsi. Ti perdono.»"
     topics:
       miele:
         name: miele

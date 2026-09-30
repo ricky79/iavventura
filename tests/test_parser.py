@@ -3,7 +3,7 @@
 import pytest
 
 from app.engine.models import Action, Direction, World
-from app.engine.parser import Ambiguous, is_named, parse, words_of
+from app.engine.parser import Ambiguous, ToWhom, gesture_said, is_named, parse, words_of
 
 
 @pytest.fixture
@@ -302,7 +302,6 @@ def test_asking_a_character_about_a_topic(keeper, text, topic):
 @pytest.mark.parametrize(
     "text",
     [
-        "chiedi al custode della chiave",  # a topic the player can't ask about yet
         "chiedi al custode del tempo",  # the LLM decides: unknown topic, or a way of naming a known one
         "chiedi al custode",
         "parla con il custode della cella",
@@ -310,6 +309,22 @@ def test_asking_a_character_about_a_topic(keeper, text, topic):
 )
 def test_questions_without_a_known_topic_are_left_to_the_llm(keeper, text):
     assert parse_near_keeper(keeper, text) is None
+
+
+@pytest.mark.parametrize("text", ["chiedi al custode della chiave", "chiedi al custode della moneta"])
+def test_a_question_about_something_the_character_has_no_topic_for(keeper, text):
+    # «chiedi a Livia di Corrado»: something of the game, but no topic of hers (the key not yet).
+    assert parse_near_keeper(keeper, text) == Action(verb="chiedi", target="custode")
+
+
+def test_a_topic_named_nearly_is_left_to_the_llm(keeper_world):
+    # «chiedi a Livia della chiave»: the key is an item, but «chiave» nearly names her topic «chiavi».
+    keeper_world["characters"]["custode"]["topics"]["monete"] = {
+        "name": "monete", "gender": "f", "plural": True, "text": "«Ne ho viste tante.»",
+    }  # fmt: skip
+    keeper = World.model_validate(keeper_world)
+
+    assert parse_near_keeper(keeper, "chiedi al custode della moneta", ("cella", "leva", "monete")) is None
 
 
 def test_with_nobody_here_there_is_no_one_to_talk_to(keeper):
@@ -379,6 +394,102 @@ def test_giving_without_naming_the_character_reaches_the_engine(keeper):
 @pytest.mark.parametrize("text", ["dai un'occhiata alla leva", "dai una spinta alla moneta"])
 def test_sayings_with_dai_are_left_to_the_llm(keeper, text):
     assert parse_giving(keeper, text) is None
+
+
+# --- Gestures -----------------------------------------------------------------------------------------
+
+
+@pytest.fixture
+def with_cook(keeper_world) -> World:
+    keeper_world["characters"]["cuoca"] = {
+        "name": "cuoca", "gender": "f", "description": "-", "location": "atrio",
+        "greeting": "«Ciao.»", "unknown": "«Boh.»",
+    }  # fmt: skip
+    return World.model_validate(keeper_world)
+
+
+def two_here(world: World, last_speaker: str | None = None, text: str = "grazie"):
+    """The custode, who can be asked about the cell, and the cook in the atrium."""
+    custode = world.characters["custode"]
+    return parse(text, world, [], (), [(custode, [custode.topics["cella"]]), (world.characters["cuoca"], [])], last_speaker)
+
+
+@pytest.mark.parametrize(
+    ("text", "gesture"),
+    [
+        ("grazie", "grazie"), ("grazie mille!", "grazie"), ("vi ringrazio", "grazie"), ("grazie, custode", "grazie"),
+        ("custode, grazie", "grazie"), ("arrivederci", "congedo"), ("a dopo", "congedo"), ("buonanotte", "congedo"),
+        ("scusate", "scuse"), ("perdonatemi", "scuse"), ("mi dispiace", "scuse"), ("come state?", "come_stai"),
+        ("tutto bene?", "come_stai"), ("chi siete?", "chi_sei"), ("come vi chiamate?", "chi_sei"),
+        ("stupido!", "scortesia"), ("andate al diavolo", "scortesia"), ("vai al diavolo", "scortesia"),
+        ("ciao", None), ("buongiorno, custode", None), ("salve", None),
+    ],
+)  # fmt: skip
+def test_social_formulas_are_gestures(keeper, text, gesture):
+    assert parse_near_keeper(keeper, text) == Action(verb="parla", target="custode", gesture=gesture)
+
+
+def test_a_formula_that_is_a_topic_is_a_question(keeper_world):
+    # The pilgrim's «chi sei» was a topic: a topic the formula names wins over the gesture.
+    keeper_world["characters"]["custode"]["topics"]["leva"]["aliases"] = ["come va"]
+    keeper = World.model_validate(keeper_world)
+
+    assert parse_near_keeper(keeper, "come va?") == Action(verb="chiedi", target="custode", topic="leva")
+    assert parse_near_keeper(keeper, "grazie per la leva") is None  # no formula: the LLM decides
+
+
+def test_social_formulas_do_not_steal_commands(keeper):
+    assert parse_near_keeper(keeper, "vai a nord") == Action(verb="vai", direction="nord")
+    assert parse_near_keeper(keeper, "parla con il custode") == Action(verb="parla", target="custode")
+    assert parse("vai al diavolo", keeper, [], (), []) is None  # with nobody here, no move either
+
+
+def test_with_nobody_here_a_formula_is_left_to_the_llm(keeper):
+    assert parse("grazie", keeper, [], (), []) is None
+
+
+def test_a_gesture_without_a_name_goes_to_the_last_one_spoken_to(with_cook):
+    both = ToWhom((with_cook.characters["custode"], with_cook.characters["cuoca"]))
+
+    assert two_here(with_cook) == both  # «A chi?»
+    assert two_here(with_cook, "cuoca") == Action(verb="parla", target="cuoca", gesture="grazie")
+    assert two_here(with_cook, "pellegrino") == both  # the last one spoken to isn't here
+    assert two_here(with_cook, "cuoca", "grazie, custode") == Action(verb="parla", target="custode", gesture="grazie")
+
+
+def test_a_question_without_a_name_goes_to_the_last_one_spoken_to(with_cook):
+    both = ToWhom((with_cook.characters["custode"], with_cook.characters["cuoca"]))
+
+    assert two_here(with_cook, None, "chiedi della cella") == both
+    assert two_here(with_cook, None, "parla") == both
+    assert two_here(with_cook, "custode", "chiedi della cella") == Action(verb="chiedi", target="custode", topic="cella")
+
+
+@pytest.mark.parametrize(
+    ("text", "gesture"),
+    [
+        ("vi ringrazio tanto, signora", "grazie"), ("mille grazie davvero", "grazie"), ("chiedo scusa", "scuse"),
+        ("mi dispiace tanto", "scuse"), ("ci vediamo più tardi", "congedo"), ("a presto, amico", "congedo"),
+        ("come ti senti?", "come_stai"), ("tutto bene, vecchio?", "come_stai"), ("e tu come ti chiami?", "chi_sei"),
+        ("sei un drago cattivo", "scortesia"), ("siete una strega", "scortesia"), ("che antipatica!", "scortesia"),
+        ("stupido!", "scortesia"), ("grazie e addio", "congedo"),  # the last one said
+    ],
+)  # fmt: skip
+def test_the_words_of_a_gesture_in_a_free_sentence(text, gesture):
+    assert gesture_said(words_of(text)) == gesture
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["ciao", "come si esce da qui?", "chi era il castellano?", "come sta la contessa?", "che graziosa stanza",
+     "che diavolo è questo?", "vado a nord",
+     # Found by the final review: an unkind word said to nobody is no rudeness.
+     "i draghi cattivi sputano fuoco?", "che tempo cattivo stasera, eh?", "streghe e fantasmi esistono?",
+     "questa storia è scioccante"],
+)  # fmt: skip
+def test_no_gesture_in_other_sentences(text):
+    # Not the greeting: the model already answers it when it knows no better.
+    assert gesture_said(words_of(text)) is None
 
 
 # --- Whether a sentence names a thing (to check the LLM's answers) ------------------------------

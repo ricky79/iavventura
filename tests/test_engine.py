@@ -32,8 +32,9 @@ def start(data: dict) -> tuple[Engine, GameState]:
 
 
 def snapshot(state: GameState) -> dict:
-    """What an action may change, apart from the turn counter."""
-    return state.model_dump(exclude={"turns"})
+    """What an action may change, apart from the turn counter and the memory of the dialogue: what the
+    player has said to whom, and to whom last."""
+    return state.model_dump(exclude={"turns", "asked", "last_speaker"})
 
 
 # --- Start, reach, look, inventory ---------------------------------------------
@@ -1069,6 +1070,89 @@ def test_the_answer_follows_the_variants_of_the_topic(keeper):
     assert outcome.text == "«L'hai tirata, eh?»"
 
 
+def test_the_second_time_a_topic_answers_with_its_again_text(keeper_world):
+    keeper_world["characters"]["custode"]["topics"]["cella"]["again"] = "«Ve l'ho già detto: a nord.»"
+    engine, state = start(keeper_world)
+    ask = Action(verb="chiedi", target="custode", topic="cella")
+
+    first, second = engine.execute(state, ask).text, engine.execute(state, ask).text
+
+    assert (first, second) == ("«La cella è a nord.»", "«Ve l'ho già detto: a nord.»")
+
+
+def test_without_again_a_topic_answers_the_same(keeper):
+    engine, state = keeper
+    ask = Action(verb="chiedi", target="custode", topic="cella")
+
+    assert engine.execute(state, ask).text == engine.execute(state, ask).text == "«La cella è a nord.»"
+
+
+def test_a_variant_that_holds_wins_over_again(keeper_world):
+    keeper_world["characters"]["custode"]["topics"]["leva"]["again"] = "«Ancora la leva?»"
+    engine, state = start(keeper_world)
+    ask = Action(verb="chiedi", target="custode", topic="leva")
+    engine.execute(state, ask)
+    state.flags.add("porta_aperta")
+
+    assert engine.execute(state, ask).text == "«L'hai tirata, eh?»"
+
+
+def test_the_greeting_has_its_again_text(keeper_world):
+    keeper_world["characters"]["custode"]["greeting_again"] = "«Ancora voi?»"
+    engine, state = start(keeper_world)
+    talk = Action(verb="parla", target="custode")
+
+    assert [engine.execute(state, talk).text for _ in range(2)] == ["«Buongiorno», dice il custode.", "«Ancora voi?»"]
+
+
+@pytest.fixture
+def polite_keeper(keeper_world) -> dict:
+    keeper_world["characters"]["custode"]["gestures"] = {
+        "grazie": {"text": "«Prego.»", "again": "«Basta, basta.»"},
+        "come_stai": {"text": "«Bene.»", "variants": [{"when": {"flag": "porta_aperta"}, "text": "«Benissimo!»"}]},
+    }
+    return keeper_world
+
+
+def test_a_gesture_gets_the_character_answer(polite_keeper):
+    engine, state = start(polite_keeper)
+    thanks = Action(verb="parla", target="custode", gesture="grazie")
+    how = Action(verb="parla", target="custode", gesture="come_stai")
+
+    answers = [engine.execute(state, thanks).text, engine.execute(state, thanks).text, engine.execute(state, how).text]
+    state.flags.add("porta_aperta")
+
+    assert answers == ["«Prego.»", "«Basta, basta.»", "«Bene.»"]
+    assert engine.execute(state, how).text == "«Benissimo!»"
+
+
+@pytest.mark.parametrize(
+    ("gesture", "answer"),
+    [
+        ("congedo", "Il custode ti saluta con un cenno."),
+        ("grazie", "Il custode annuisce."),
+        ("scuse", "Il custode fa un gesto vago."),
+        ("come_stai", "Il custode non risponde."),
+        ("chi_sei", "Il custode scuote la testa."),
+        ("scortesia", "Il custode fa finta di non aver sentito."),
+    ],
+)
+def test_a_gesture_without_its_text_gets_a_plain_answer(keeper_world, gesture, answer):
+    # A safety net: the characters of the three adventures have every gesture written.
+    engine, state = start(keeper_world)
+
+    assert engine.execute(state, Action(verb="parla", target="custode", gesture=gesture)).text == answer
+
+
+def test_whoever_is_asked_is_the_last_one_spoken_to(keeper):
+    # Also a question the character can't answer: the player spoke to them.
+    engine, state = keeper
+
+    engine.execute(state, Action(verb="chiedi", target="custode"))
+
+    assert state.last_speaker == "custode"
+
+
 def test_asking_about_a_topic_applies_its_effects(keeper):
     engine, state = keeper
     state.item_locations["chiave"] = "inventory"
@@ -1277,6 +1361,21 @@ def test_with_two_characters_here_the_game_asks_to_whom(keeper_world):
 
     assert not outcome.ok
     assert outcome.text == messages.GIVE_TO_WHOM
+
+
+def test_the_last_one_spoken_to_receives_what_is_given_without_a_name(keeper_world):
+    keeper_world["characters"]["cuoca"] = {
+        "name": "cuoca", "gender": "f", "description": "-", "location": "atrio",
+        "greeting": "«Ciao.»", "unknown": "«Boh.»", "refuses": "«No, grazie.»",
+    }  # fmt: skip
+    engine, state = start(keeper_world)
+
+    before = engine.execute(state, Action(verb="dai", target="moneta")).text
+    engine.execute(state, Action(verb="parla", target="cuoca"))
+    after = engine.execute(state, Action(verb="dai", target="moneta")).text
+
+    assert (before, after) == (messages.GIVE_TO_WHOM, "«No, grazie.»")
+    assert state.last_speaker == "cuoca"
 
 
 def test_using_an_item_with_the_character_needs_it_carried_too(giving):

@@ -259,8 +259,14 @@ characters:
         room: biblioteca
     greeting: Risposta a "parla con il pellegrino".
     greeting_variants: []        # facoltativo, come le variants: il saluto che segue la partita
+    greeting_again: …            # facoltativo: il saluto dalla seconda volta
     unknown: Risposta a una domanda su qualcosa che non conosce.
     refuses: Risposta a "dai X al pellegrino" se nessuna regola lo prevede (facoltativo).
+    gestures:                    # facoltativo: congedo, grazie, scuse, come_stai, chi_sei, scortesia
+      grazie:
+        text: Risposta a «grazie».
+        variants: []             # come per le stanze
+        again: …                 # facoltativo: dalla seconda volta
     topics:
       torre:
         name: torre              # unico tra gli argomenti del personaggio
@@ -269,6 +275,7 @@ characters:
         when: {flag: torre_vista}   # facoltativo: finché è falsa, l'argomento è sconosciuto
         text: Risposta.
         variants: []             # come per le stanze
+        again: …                 # facoltativo: la risposta dalla seconda volta
         effects: []              # facoltativo, come per le regole
 ```
 
@@ -280,16 +287,38 @@ characters:
 - La descrizione della stanza elenca i personaggi presenti: "Qui c'è un pellegrino."
 - `greeting_variants`: la prima con la condizione vera sostituisce `greeting`, così il saluto
   segue la partita (l'orso, dopo lo scambio, non chiede più "chi va là?").
+- **I gesti**: oltre al saluto, il personaggio risponde a congedi, ringraziamenti, scuse, «come
+  stai?», «chi sei?» e scortesie con i testi di `gestures`. Le formule brevi («grazie», «arrivederci,
+  Livia», «come state?») le capisce il parser; le frasi più libere l'interprete, col verbo «parla» e
+  il gesto nel campo `con`. Il modello tende a rispondere «saluto» per qualunque gesto, quindi le
+  parole della frase decidono («perdonatemi se vi disturbo» è una scusa, «grazie e arrivederci» un
+  congedo; un insulto solo se rivolto a qualcuno: «sei un drago cattivo», non «i draghi cattivi
+  sputano fuoco?»), e un'azione senza senso diventa il gesto che la frase dice («ti ringrazio tanto,
+  draghetto»). Un gesto senza testo riceve una risposta neutra col nome del personaggio («Livia
+  annuisce.»); «chi sei?» senza testo risponde `unknown`. Una formula che è proprio il nome o un alias
+  di un argomento resta la domanda su quell'argomento; tra le frasi libere, una domanda che nomina un
+  argomento è quella domanda qualunque sia il gesto («scusate, cosa sapete della contessa?»), e fuori
+  dalle domande solo il saluto che nomina un argomento diventa la domanda su quell'argomento («grazie
+  per la chiave» è un grazie). Un argomento non può chiamarsi come un gesto.
+- **Le risposte ripetute**: il gioco ricorda i gesti e gli argomenti già usati con ciascun
+  personaggio; dalla seconda volta vale `again`, se c'è, a meno che una variante sia vera (una novità
+  della partita vince sempre). Nelle avventure per bambini meglio senza: sentire di nuovo l'indizio
+  aiuta.
+- **A chi, senza nome**: gesti, domande e «dai X» senza personaggio vanno all'unico presente, o a
+  quello con cui si è parlato per ultimo (anche solo una domanda senza risposta o un regalo
+  rifiutato) se è ancora lì; altrimenti «A chi?».
+- «chiedi a X di Y», con Y un oggetto o un altro personaggio che non nomina nessun argomento di X,
+  riceve `unknown`.
 - Un argomento si riconosce dal nome o da un alias. Un alias può ripetere il nome di un oggetto
   ("chiave di ferro"): se l'LLM sceglie l'oggetto per una domanda, la risposta è quella dell'argomento.
 - Nelle frasi libere un argomento nominato vince su quello scelto dall'LLM, e una domanda che il
   modello non capisce ("mi dai il miele?", anche senza "?" se comincia con perché, cosa, come…)
   riceve la risposta dell'argomento che nomina. Così un alias può essere anche una frase breve
-  che i giocatori scrivono davvero: `[chi sei, chiami]` sull'argomento del pellegrino risponde a
-  "chi sei?" e "come ti chiami?", `[serve, successo]` sul raffreddore a "cosa ti serve?". Il nome
+  che i giocatori scrivono davvero: `[serve, successo]` sul raffreddore risponde a "cosa ti serve?"
+  e "cosa ti è successo?". Il nome
   del personaggio non conta come argomento ("pellegrino, cosa sai della torre?" parla della torre).
 - Una domanda su un argomento sconosciuto (con `when` falsa, o che non c'è) riceve `unknown` e
-  non cambia lo stato. Finisce in `logs/comandi.jsonl`: mostra cosa chiedono i giocatori.
+  non cambia la partita. Finisce in `logs/comandi.jsonl`: mostra cosa chiedono i giocatori.
 - `effects` si applicano ogni volta che si chiede dell'argomento; per un effetto solo la prima
   volta, basta un `when` su un flag. Un personaggio che dà solo indizi non ne ha.
 - I personaggi si possono esaminare; "prendi" risponde "Non si può prendere.", gli altri verbi non
@@ -299,9 +328,9 @@ characters:
   solo col passare del tempo. Descrizione della stanza, dialoghi, `dai` e interprete seguono la sua
   posizione.
 - **Dare**: `dai X a Y` (anche porgi, offri, regala, consegna, "ecco X"). Si dà solo ciò che si
-  porta con sé, a un personaggio presente; "dai X" senza nome va all'unico personaggio presente
-  ("A chi?" se sono di più). Una regola `verb: dai` decide cosa succede; senza regola il personaggio
-  risponde `refuses` e lo stato non cambia. "usa X con il personaggio" ricade sulla stessa regola.
+  porta con sé, a un personaggio presente; "dai X" senza nome va all'unico personaggio presente, o
+  a quello con cui si è parlato per ultimo se è lì ("A chi?" altrimenti). Una regola `verb: dai`
+  decide cosa succede; senza regola il personaggio risponde `refuses` e la partita non cambia. "usa X con il personaggio" ricade sulla stessa regola.
   Una frase libera che nomina solo un personaggio che non c'è ("do le more al drago" nella tana)
   riceve "Non vedi nessuno del genere qui.": non va a chi è presente.
 
@@ -352,7 +381,8 @@ Tutti gli errori vengono raccolti e mostrati insieme, ciascuno con il percorso
 ## Stato della partita
 
 `GameState` (in `models.py`) contiene tutto ciò che cambia durante la partita: stanza corrente,
-posizione di ogni oggetto, flag attivi, stanze visitate, oggetti lontani già visti, turni, fine
+posizione di ogni oggetto, flag attivi, stanze visitate, oggetti lontani già visti, gesti e
+argomenti già usati con ciascun personaggio, l'ultimo personaggio con cui si è parlato, turni, fine
 partita; se la partita è persa (una morte), quanti atti sono cominciati e lo stato all'inizio
 dell'ultimo.
 `GameState.new(world)` crea lo stato iniziale, che si salva e rilegge in JSON.

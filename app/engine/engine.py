@@ -1,7 +1,9 @@
 """The game engine: the only code that changes a GameState.
 
 It executes an Action against the world's rules and returns an Outcome, which app/engine/text.py
-turns into text. Every check runs before the state is touched, so a refused action leaves it unchanged.
+turns into text. Every check runs before the state is touched, so a refused action leaves it unchanged,
+apart from the last one spoken to (a question without an answer, a refused gift: the player still
+spoke to that character).
 """
 
 from typing import Any
@@ -23,6 +25,7 @@ from app.engine.models import (
     FlagSet,
     GameState,
     Gender,
+    Gesture,
     Give,
     Has,
     Item,
@@ -41,6 +44,7 @@ from app.engine.models import (
     World,
 )
 from app.engine.parser import significant_words, words_of
+from app.engine.text import definite
 
 # Engine messages. They never name the item, so they need no article; a few agree with a plural
 # item (_PLURAL below).
@@ -64,6 +68,15 @@ NOBODY_TO_GIVE_TO = "Qui non c'è nessuno."
 CANT_GIVE = "Non si può dare."
 
 _NOTHING_WITHOUT_A_RULE = {Verb.OPEN: CANT_OPEN, Verb.CLOSE: CANT_CLOSE, Verb.READ: NOTHING_TO_READ}
+
+# What a character without the text of a gesture does; «chi sei?» gets its `unknown`.
+_PLAIN_GESTURES = {
+    Gesture.FAREWELL: "{} ti saluta con un cenno.",
+    Gesture.THANKS: "{} annuisce.",
+    Gesture.APOLOGY: "{} fa un gesto vago.",
+    Gesture.HOW_ARE_YOU: "{} non risponde.",
+    Gesture.RUDENESS: "{} fa finta di non aver sentito.",
+}
 
 # The messages above for a plural item: "Ce le hai già." for the berries. By gender where the
 # pronoun shows it.
@@ -131,6 +144,8 @@ class Engine:
         problems += [f"unknown seen item '{item_id}'" for item_id in sorted(state.seen) if item_id not in items]
         if state.act > len(self.world.game.acts):
             problems.append(f"act {state.act}, but the world has {len(self.world.game.acts)} acts")
+        if state.last_speaker is not None and state.last_speaker not in self.world.characters:
+            problems.append(f"unknown last speaker '{state.last_speaker}'")
         return problems
 
     def in_reach(self, state: GameState) -> list[Item]:
@@ -253,19 +268,34 @@ class Engine:
         return Outcome(ok=True, room=self._room_view(state, first_visit))
 
     def _talk(self, state: GameState, action: Action) -> Outcome:
-        """The greeting, or the answer about a topic the character knows; about anything else, `unknown`."""
+        """The greeting or another gesture, or the answer about a topic the character knows; about
+        anything else, `unknown`. The character is now the last one spoken to."""
         here = next((pair for pair in self.characters_here(state) if pair[0].id == action.target), None)
         if here is None:
             return Outcome(ok=False, text=NOBODY_HERE)
         character, topics = here
+        state.last_speaker = character.id
         if action.verb is Conversation.TALK:
-            return Outcome(ok=True, text=_first_variant(character.greeting_variants, character.greeting, state))
+            return Outcome(ok=True, text=self._answer_to(state, character, action.gesture))
         topic = next((topic for topic in topics if topic.id == action.topic), None)
         if topic is None:
             return Outcome(ok=False, text=character.unknown)
         for effect in topic.effects:
             _apply(effect, state)
-        return Outcome(ok=True, text=_first_variant(topic.variants, topic.text, state))
+        return Outcome(ok=True, text=_said(state, f"{character.id}:topic:{topic.id}", topic.variants, topic.text, topic.again))
+
+    def _answer_to(self, state: GameState, character: Character, gesture: Gesture | None) -> str:
+        """The character's answer to the greeting (None) or another gesture; without its text, a plain one."""
+        if gesture is None:
+            key = f"{character.id}:gesture:saluto"
+            return _said(state, key, character.greeting_variants, character.greeting, character.greeting_again)
+        line = character.gestures.get(gesture)
+        if line is not None:
+            return _said(state, f"{character.id}:gesture:{gesture}", line.variants, line.text, line.again)
+        if gesture is Gesture.WHO_ARE_YOU:
+            return character.unknown
+        name = definite(character)
+        return _PLAIN_GESTURES[gesture].format(name[:1].upper() + name[1:])
 
     def _act_on_items(self, state: GameState, action: Action) -> Outcome:
         in_reach = {item.id for item in self.in_reach(state)} | {person.id for person, _ in self.characters_here(state)}
@@ -287,8 +317,9 @@ class Engine:
 
     def _give(self, state: GameState, action: Action) -> Outcome:
         """"dai X a Y": a character here receives an item the player carries. The two may come in
-        either order ("dai al pellegrino la corda"); without a character, the only one here takes it.
-        With no rule for it the character refuses (`refuses`), and nothing changes."""
+        either order ("dai al pellegrino la corda"); without a character, the only one here takes it,
+        or the one spoken to last. With no rule for it the character refuses (`refuses`), and nothing
+        changes but the last one spoken to."""
         named = [thing_id for thing_id in (action.target, action.with_) if thing_id is not None]
         people = [thing_id for thing_id in named if thing_id in self.world.characters]
         items = [thing_id for thing_id in named if thing_id in self.world.items]
@@ -296,11 +327,15 @@ class Engine:
             return Outcome(ok=False, text=CANT_GIVE)
         here = [character.id for character, _ in self.characters_here(state)]
         if not people:
-            if len(here) != 1:
+            if len(here) == 1:
+                people = here
+            elif state.last_speaker in here:
+                people = [state.last_speaker]
+            else:
                 return Outcome(ok=False, text=GIVE_TO_WHOM if here else NOBODY_TO_GIVE_TO)
-            people = here
         if people[0] not in here:
             return Outcome(ok=False, text=NOBODY_HERE)
+        state.last_speaker = people[0]
         if state.item_locations[items[0]] != INVENTORY:
             return Outcome(ok=False, text=_said_of(self.world.items[items[0]], DONT_HAVE))
         rule = self._find_rule(Action(verb=Verb.GIVE, target=items[0], with_=people[0]))
@@ -425,3 +460,11 @@ def _description(thing: Room | Item | Character, state: GameState) -> str:
 
 def _first_variant(variants: tuple[TextVariant, ...], text: str, state: GameState) -> str:
     return next((variant.text for variant in variants if holds(variant.when, state)), text)
+
+
+def _said(state: GameState, key: str, variants: tuple[TextVariant, ...], text: str, again: str | None) -> str:
+    """What a character says: the first variant that holds; else, from the second time on, `again` if
+    there is one; else the text. From now on it counts as said."""
+    line = _first_variant(variants, again if again is not None and key in state.asked else text, state)
+    state.asked.add(key)
+    return line

@@ -14,7 +14,7 @@ logger "app.commands", which the front ends write to logs/comandi.jsonl (app/con
 import logging
 from collections.abc import Iterable
 
-from app.engine.engine import GAME_OVER, NOBODY_HERE, NOT_HERE, Engine
+from app.engine.engine import GAME_OVER, GIVE_TO_WHOM, NOBODY_HERE, NOT_HERE, Engine
 from app.engine.models import (
     INVENTORY,
     Action,
@@ -29,7 +29,18 @@ from app.engine.models import (
     Verb,
     World,
 )
-from app.engine.parser import Ambiguous, is_named, names_said, names_the_way, parse, topics_named, words_of
+from app.engine.parser import (
+    Ambiguous,
+    ToWhom,
+    gesture_said,
+    is_named,
+    names_said,
+    names_the_way,
+    parse,
+    significant_words,
+    topics_named,
+    words_of,
+)
 from app.engine.text import action_text, confirmation, render, which_one
 from app.llm.client import LLMClient
 from app.llm.interpreter import JUMP_WORDS, NotUnderstood, describe, interpret
@@ -131,19 +142,23 @@ class Game:
         near = self.engine.in_reach(self.state) + self.engine.visible(self.state)
         exits = self.engine.known_exits(self.state)
         characters = self.engine.characters_here(self.state)
-        parsed = parse(line, self.world, near, exits, characters)
+        parsed = parse(line, self.world, near, exits, characters, self.state.last_speaker)
         if isinstance(parsed, Ambiguous):
             return which_one(parsed.candidates)
+        if isinstance(parsed, ToWhom):
+            return GIVE_TO_WHOM
         if parsed is not None:
             return self._execute(parsed, "parser")
         if self.llm is None:
             self._log("parser", None, "non capito", "il parser non la capisce e l'LLM è spento")
             return NOT_UNDERSTOOD
-        interpreted = interpret(self.llm, line, near, exits, characters, self.world.game.examples)
+        interpreted = interpret(self.llm, line, near, exits, characters, self.world.game.examples, self.state.last_speaker)
         here = {item.id for item in near} | {person.id for person, _ in characters}
         asking = _is_question(line, words)
         if isinstance(interpreted, NotUnderstood):
             asked = _topic_asked(words, characters) if asking else None
+            if asked is None and not interpreted.not_an_action:
+                asked = self._gesture_said(words, characters, here)
             if asked is None and interpreted.guess is not None:
                 # What the sentence names in place of the model's pick: asked about, done after a yes.
                 self.pending = self._carried_first(interpreted.guess)
@@ -153,7 +168,7 @@ class Game:
             if asked is not None:
                 answer = f"({action_text(asked, self.world)})\n" + self._execute(asked, "llm")
             else:
-                answer = self._not_understood(interpreted, words, here)
+                answer = self._not_understood(interpreted, words, here, len(characters))
             # What the game answered instead, if it isn't the usual: the log is for finding sentences to fix.
             detail = interpreted.reason
             if answer not in (NOT_UNDERSTOOD, NOT_A_GAME_ACTION):
@@ -178,9 +193,10 @@ class Game:
         # Show how the sentence was understood: if the model got it wrong, the player sees why.
         return f"({action_text(interpreted, self.world)})\n" + self._execute(interpreted, "llm")
 
-    def _not_understood(self, result: NotUnderstood, words: list[str], here: set[str]) -> str:
+    def _not_understood(self, result: NotUnderstood, words: list[str], here: set[str], people_here: int) -> str:
         """Why nothing is done: better than "Non ho capito" when the sentence names someone or something
-        that isn't here ("ciao orso" at the brook, "mangio una mora" in the glade)."""
+        that isn't here ("ciao orso" at the brook, "mangio una mora" in the glade), or is said to nobody
+        by name among several ("grazie" to Corrado and the doctor: «A chi?»)."""
         someone_elsewhere = self._names_one_elsewhere(self.world.characters.values(), words, here)
         if result.talking and someone_elsewhere:
             return NOBODY_HERE
@@ -191,6 +207,9 @@ class Game:
         # Not for a word that is also an adjective ("il vecchio pozzo"): only if nothing here is named.
         if someone_elsewhere and not self._names_one_here(words, here):
             return NOBODY_HERE
+        said_to_nobody = not result.not_an_action and gesture_said(words) is not None and people_here > 1
+        if result.to_whom or said_to_nobody:
+            return GIVE_TO_WHOM
         return NOT_A_GAME_ACTION if result.not_an_action else NOT_UNDERSTOOD
 
     def _place_instead(self, direction: Direction, words: list[str]) -> str | None:
@@ -232,22 +251,49 @@ class Game:
         naming only someone elsewhere is "Non vedi nessuno del genere qui." ("ciao orso", or "do le
         more al drago" in the den, where the model gave them to the bear)."""
         person = next((person for person, _ in characters if person.id in (action.target, action.with_)), None)
-        if person is None and action.verb is Verb.GIVE and len(characters) == 1:
-            person = characters[0][0]  # "dai le more" goes to the only one here
+        if person is None and action.verb is Verb.GIVE:
+            # "dai le more" goes to the only one here, or to the one spoken to last
+            people = [someone for someone, _ in characters]
+            person = people[0] if len(people) == 1 else next((p for p in people if p.id == self.state.last_speaker), None)
         if person is None:
             return action
         topics = next(topics for someone, topics in characters if someone is person)
+        if action.verb is Conversation.ASK and action.topic is not None and not topics_named(person, topics, words):
+            chosen = next((topic for topic in topics if topic.id == action.topic), None)
+            if chosen is not None and self._names_something_else(person, chosen, words):
+                # «chiedi a Livia di Corrado»: no topic of hers is named, and the model picked one (Ettore).
+                return Action(verb=Conversation.ASK, target=person.id)
+        # A question naming a topic is that question, whatever the gesture ("scusate, cosa sapete della
+        # contessa?", "come va con Livia?"); otherwise only a greeting may be a question in disguise:
+        # "grazie per la storia della torre" stays a thanks.
         if action.verb is Conversation.TALK and asking and (question := _topic_asked(words, [(person, topics)])):
             return question
+        greeting = action.verb is Conversation.TALK and action.gesture is None
         someone_elsewhere = not is_named(person, words) and self._names_one_elsewhere(
             self.world.characters.values(), words, here
         )
         if someone_elsewhere and (action.verb is not Conversation.ASK or action.topic is None):
             return NOBODY_HERE
-        if action.verb is Conversation.TALK and (named := topics_named(person, topics, words)):
+        if greeting and (named := topics_named(person, topics, words)):
             # A greeting naming a topic: "com'è andato il viaggio" is about the journey.
             return Action(verb=Conversation.ASK, target=person.id, topic=named[0].id)
         return action
+
+    def _gesture_said(
+        self, words: list[str], characters: list[tuple[Character, list[Topic]]], here: set[str]
+    ) -> Action | None:
+        """The gesture the sentence says, when the model's answer made no sense ("ti ringrazio tanto,
+        draghetto" came back as "dai" with no item): to the one here it names, the only one here or the
+        one spoken to last; to nobody if it names only someone who isn't here."""
+        gesture = gesture_said(words)
+        if gesture is None:
+            return None
+        named = [person for person, _ in characters if is_named(person, words)]
+        if not named and self._names_one_elsewhere(self.world.characters.values(), words, here):
+            return None
+        people = named or [person for person, _ in characters]
+        person = people[0] if len(people) == 1 else next((p for p in people if p.id == self.state.last_speaker), None)
+        return None if person is None else Action(verb=Conversation.TALK, target=person.id, gesture=gesture)
 
     def _names_one_elsewhere(self, things: Iterable[Item | Character], words: list[str], here: set[str]) -> bool:
         """A name within one said of something here doesn't count: "corda" is also the grapple, and
@@ -260,6 +306,17 @@ class Game:
 
     def _names_one_here(self, words: list[str], here: set[str]) -> bool:
         return any(is_named(self.world.thing(thing_id), words) for thing_id in here)
+
+    def _names_something_else(self, person: Character, topic: Topic, words: list[str]) -> bool:
+        """Whether the words name another character or an item of the world, by words that are not in
+        the names of the topic ("chiave" is also in «chiave dello scalone»)."""
+        topic_words = {word for name in (topic.name, *topic.aliases) for word in significant_words(name)}
+        others = [character for character in self.world.characters.values() if character.id != person.id]
+        return any(
+            not set(name) & topic_words
+            for thing in [*others, *self.world.items.values()]
+            for name in names_said(thing, words)
+        )
 
     def _foreseen(self, action: Action, words: list[str], exits: list[tuple[Direction, Room | None]]) -> bool:
         """Whether the world foresees an interpreted action (Engine.expects). A move must also name

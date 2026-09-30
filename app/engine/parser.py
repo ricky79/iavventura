@@ -9,7 +9,19 @@ import re
 from collections.abc import Iterable, Sequence
 from typing import NamedTuple
 
-from app.engine.models import Action, Character, Command, Conversation, Direction, Item, Room, Topic, Verb, World
+from app.engine.models import (
+    Action,
+    Character,
+    Command,
+    Conversation,
+    Direction,
+    Gesture,
+    Item,
+    Room,
+    Topic,
+    Verb,
+    World,
+)
 from app.engine.text import Named, plain
 
 STOPWORDS = frozenset(
@@ -87,11 +99,80 @@ ITEM_VERBS = {
     "lanciati": Verb.JUMP,
 }
 
+# Short social formulas, as significant words (articles and prepositions dropped): a gesture to the
+# character named at the start or at the end, the only one here, or the one spoken to last. None is the
+# greeting. Longer or freer sentences go to the LLM.
+GESTURE_FORMULAS: dict[tuple[str, ...], Gesture | None] = {
+    **dict.fromkeys([("ciao",), ("buongiorno",), ("buonasera",), ("salve",)], None),
+    **dict.fromkeys(
+        [("grazie",), ("grazie", "mille"), ("grazie", "tante"), ("molte", "grazie"), ("grazie", "tutto"),
+         ("vi", "ringrazio"), ("ti", "ringrazio")],
+        Gesture.THANKS,
+    ),
+    **dict.fromkeys(
+        [("arrivederci",), ("addio",), ("dopo",), ("presto",), ("buonanotte",), ("buona", "notte"), ("ci", "vediamo")],
+        Gesture.FAREWELL,
+    ),
+    **dict.fromkeys(
+        [("scusate",), ("scusa",), ("scusami",), ("scusatemi",), ("perdonatemi",), ("perdonami",), ("mi", "dispiace"),
+         ("chiedo", "scusa")],
+        Gesture.APOLOGY,
+    ),
+    **dict.fromkeys(
+        [("come", "state"), ("come", "stai"), ("come", "va"), ("tutto", "bene"), ("state", "bene"), ("stai", "bene")],
+        Gesture.HOW_ARE_YOU,
+    ),
+    **dict.fromkeys(
+        [("chi", "siete"), ("chi", "sei"), ("come", "vi", "chiamate"), ("come", "ti", "chiami")], Gesture.WHO_ARE_YOU
+    ),
+    **dict.fromkeys(
+        [("stupido",), ("stupida",), ("idiota",), ("cretino",), ("cretina",), ("antipatico",), ("antipatica",),
+         ("maleducato",), ("maleducata",), ("andate", "diavolo"), ("vai", "diavolo"), ("va", "diavolo")],
+        Gesture.RUDENESS,
+    ),
+}  # fmt: skip
+
+# The words that say a gesture in a free sentence, to check the LLM's answer: with "parla" the model
+# answers "saluto" for almost any of them. Words, beginnings of words (every ending: "perdonatemi",
+# "stupida") and pairs of words. Not the greeting, which the model says when it knows no better; not
+# «diavolo» either, which is also an exclamation.
+_GESTURE_WORDS = {
+    "grazie": Gesture.THANKS,
+    "dispiace": Gesture.APOLOGY,
+    **dict.fromkeys(["arrivederci", "addio", "buonanotte"], Gesture.FAREWELL),
+    **dict.fromkeys(["chiami", "chiamate"], Gesture.WHO_ARE_YOU),
+}
+_GESTURE_STEMS = {
+    "ringrazi": Gesture.THANKS,
+    **dict.fromkeys(["scus", "perdon"], Gesture.APOLOGY),
+    **dict.fromkeys(
+        ["stupid", "idiot", "cretin", "scem", "imbecill", "antipatic", "maleducat", "streg", "meger", "brontolon",
+         "cattiv", "scioc"],
+        Gesture.RUDENESS,
+    ),
+}  # fmt: skip
+_GESTURE_PAIRS = {
+    **dict.fromkeys([("ci", "vediamo"), ("a", "presto"), ("a", "dopo")], Gesture.FAREWELL),
+    **dict.fromkeys(
+        [("come", "stai"), ("come", "state"), ("come", "va"), ("ti", "senti"), ("vi", "sentite"), ("tutto", "bene")],
+        Gesture.HOW_ARE_YOU,
+    ),
+    **dict.fromkeys([("chi", "sei"), ("chi", "siete")], Gesture.WHO_ARE_YOU),
+}
+_YOU_ARE = frozenset({"sei", "siete", "sii", "siate"})
+
 
 class Ambiguous(NamedTuple):
     """Several items or characters in reach answer to the same words: the player has to say which one."""
 
     candidates: tuple[Item | Character, ...]
+
+
+class ToWhom(NamedTuple):
+    """A gesture or a question without a name, with several characters here and none of them spoken to
+    last: the player has to say to whom («A chi?»)."""
+
+    people: tuple[Character, ...]
 
 
 def parse(
@@ -100,17 +181,22 @@ def parse(
     in_reach: Sequence[Item],
     exits: Sequence[tuple[Direction, Room | None]] = (),
     characters: Sequence[tuple[Character, Sequence[Topic]]] = (),
-) -> Action | Ambiguous | None:
+    last_speaker: str | None = None,
+) -> Action | Ambiguous | ToWhom | None:
     """None when the sentence isn't a simple command made only of known words.
 
     `in_reach` also holds the items in sight (Engine.visible): the parser prefers them all alike.
     `exits` are the current room's exits with the destinations the player knows (Engine.known_exits):
     they let "vai in cucina" go through the exit that leads there.
     `characters` are those in the room, with the topics the player can ask about (Engine.characters_here).
+    `last_speaker` receives gestures and questions without a name when several are here.
     """
     words = words_of(text)
     if not words:
         return None
+    gesture = _gesture(words, characters, last_speaker)
+    if gesture is not None:
+        return gesture
     first, rest = words[0], words[1:]
 
     if first in DIRECTIONS and not rest:
@@ -129,7 +215,9 @@ def parse(
     if first in LOOK_WORDS and not rest:
         return Action(verb=Command.LOOK)
     if first in TALK_WORDS or first in ASK_WORDS:
-        return _conversation(first in ASK_WORDS, [word for word in rest if word not in STOPWORDS], world, characters)
+        return _conversation(
+            first in ASK_WORDS, [word for word in rest if word not in STOPWORDS], world, characters, last_speaker
+        )
 
     verb = Verb.EXAMINE if first in LOOK_WORDS else ITEM_VERBS.get(first)
     if verb is None:
@@ -158,10 +246,16 @@ def find_topic(words: Sequence[str], topics: Iterable[Topic]) -> Topic | None:
 
 
 def _conversation(
-    asking: bool, words: list[str], world: World, characters: Sequence[tuple[Character, Sequence[Topic]]]
-) -> Action | Ambiguous | None:
-    """"parla con X", "saluta X", "chiedi a X di Y"; without X, the only character here.
-    A question about something that is no topic the player knows goes to the LLM."""
+    asking: bool,
+    words: list[str],
+    world: World,
+    characters: Sequence[tuple[Character, Sequence[Topic]]],
+    last_speaker: str | None,
+) -> Action | Ambiguous | ToWhom | None:
+    """"parla con X", "saluta X", "chiedi a X di Y"; without X, the only character here or the one spoken
+    to last.
+    A question about an item or another character of the world that names none of X's topics, not even
+    nearly, gets X's `unknown`; anything else that is no topic the player knows goes to the LLM."""
     people = [character for character, _ in characters]
     found = _longest(words, 0, _phrases(people)) if words else None
     if found is None and words:
@@ -174,15 +268,77 @@ def _conversation(
         if len(candidates) > 1:
             return Ambiguous(candidates)
         character, words = candidates[0], words[length:]
-    elif len(people) == 1:
-        character = people[0]
+    elif (addressee := _addressee(characters, last_speaker)) is not None:
+        character = addressee[0]
     else:
-        return None
+        return ToWhom(tuple(people)) if len(people) > 1 else None
     if not asking:
         return Action(verb=Conversation.TALK, target=character.id) if not words else None
     topics = next((topics for person, topics in characters if person.id == character.id), ())
     topic = find_topic(words, topics) if words else None
-    return Action(verb=Conversation.ASK, target=character.id, topic=topic.id) if topic else None
+    if topic is not None:
+        return Action(verb=Conversation.ASK, target=character.id, topic=topic.id)
+    others = [person for person in world.characters.values() if person.id != character.id]
+    if words and not topics_named(character, topics, words) and tuple(words) in _phrases([*world.items.values(), *others]):
+        # «chiedi a Livia della meridiana»: something of the game she has no topic about. «della
+        # chiave», nearly her «chiavi», is left to the LLM.
+        return Action(verb=Conversation.ASK, target=character.id)
+    return None
+
+
+def _addressee(
+    characters: Sequence[tuple[Character, Sequence[Topic]]], last_speaker: str | None
+) -> tuple[Character, Sequence[Topic]] | None:
+    """Who a sentence without a name is for: the only one here, or the one spoken to last if here."""
+    if len(characters) == 1:
+        return characters[0]
+    return next((pair for pair in characters if pair[0].id == last_speaker), None)
+
+
+def _gesture(
+    words: list[str], characters: Sequence[tuple[Character, Sequence[Topic]]], last_speaker: str | None
+) -> Action | ToWhom | None:
+    """«grazie», «arrivederci, Livia», «Livia, come state?»: a gesture, if the words are a formula with
+    at most the name of someone here at the start or at the end; «A chi?» if nobody is named and several
+    could be meant."""
+    said = tuple(word for word in words if word not in STOPWORDS)
+    for person, topics in characters:
+        for phrase in {significant_words(name) for name in (person.name, *person.aliases)} - {()}:
+            size = len(phrase)
+            for rest in (said[size:] if said[:size] == phrase else None, said[:-size] if said[-size:] == phrase else None):
+                if rest is not None and rest in GESTURE_FORMULAS:
+                    return _said_to(person, topics, rest)
+    if said not in GESTURE_FORMULAS:
+        return None
+    if (addressee := _addressee(characters, last_speaker)) is None:
+        return ToWhom(tuple(person for person, _ in characters)) if len(characters) > 1 else None
+    return _said_to(*addressee, said)
+
+
+def _said_to(person: Character, topics: Sequence[Topic], formula: tuple[str, ...]) -> Action:
+    """The gesture of a formula; the question, if the formula is the name of one of the character's
+    topics (the pilgrim's «chi sei»)."""
+    topic = find_topic(formula, topics)
+    if topic is not None:
+        return Action(verb=Conversation.ASK, target=person.id, topic=topic.id)
+    return Action(verb=Conversation.TALK, target=person.id, gesture=GESTURE_FORMULAS[formula])
+
+
+def gesture_said(words: Sequence[str]) -> Gesture | None:
+    """The gesture a free sentence says, by its words ("perdonatemi se vi disturbo": an apology); the
+    last one said if several ("grazie e arrivederci"). An unkind word is rude only said to someone ("sei
+    un drago cattivo", "che antipatica!"), not in "i draghi cattivi sputano fuoco?". None for anything
+    else, the greeting too."""
+    to_someone = bool(_YOU_ARE.intersection(words)) or len([word for word in words if word not in STOPWORDS]) <= 2
+    said = None
+    for position, word in enumerate(words):
+        gesture = _GESTURE_PAIRS.get(tuple(words[position - 1 : position + 1])) if position else None
+        gesture = gesture or _GESTURE_WORDS.get(word)
+        gesture = gesture or next((g for stem, g in _GESTURE_STEMS.items() if word.startswith(stem)), None)
+        if gesture is Gesture.RUDENESS and not to_someone:
+            gesture = None
+        said = gesture or said
+    return said
 
 
 def words_of(text: str) -> list[str]:

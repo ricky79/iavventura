@@ -9,6 +9,7 @@ from app.engine.models import (
     Direction,
     FlagSet,
     Gender,
+    Gesture,
     Has,
     Not,
     SetFlag,
@@ -221,6 +222,12 @@ def test_action_verbs_are_parsed_into_their_enums():
     assert Action(verb="vai", direction="giù").verb is Command.GO
     assert Action(verb="leggi", target="libro").verb is Verb.READ
     assert Action(verb="chiedi", target="custode").verb is Conversation.ASK
+
+
+def test_only_talking_has_a_gesture():
+    assert Action(verb="parla", target="custode", gesture="grazie").gesture is Gesture.THANKS
+    with pytest.raises(ValidationError):
+        Action(verb="chiedi", target="custode", gesture="grazie")
 
 
 # --- Characters -------------------------------------------------------------------

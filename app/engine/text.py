@@ -13,6 +13,7 @@ from app.engine.models import (
     Conversation,
     Direction,
     Gender,
+    Gesture,
     Item,
     Outcome,
     RoomView,
@@ -45,7 +46,19 @@ _ARTICULATED = {
     "a": {"il ": "al ", "lo ": "allo ", "l'": "all'", "la ": "alla ", "i ": "ai ", "gli ": "agli ", "le ": "alle "},
     "di": {"il ": "del ", "lo ": "dello ", "l'": "dell'", "la ": "della ", "i ": "dei ", "gli ": "degli ", "le ": "delle "},
     "in": {"il ": "nel ", "lo ": "nello ", "l'": "nell'", "la ": "nella ", "i ": "nei ", "gli ": "negli ", "le ": "nelle "},
+    "da": {"il ": "dal ", "lo ": "dallo ", "l'": "dall'", "la ": "dalla ", "i ": "dai ", "gli ": "dagli ", "le ": "dalle "},
 }  # fmt: skip
+# A gesture as a command and as what the player wants ("ringrazia Livia", "ringraziare Livia"); {the}
+# is the character with its article, {to} and {from_} the same after «a» and «da».
+_GESTURES = {
+    None: ("parla con {the}", "parlare con {the}"),
+    Gesture.FAREWELL: ("congedati {from_}", "congedarti {from_}"),
+    Gesture.THANKS: ("ringrazia {the}", "ringraziare {the}"),
+    Gesture.APOLOGY: ("scusati con {the}", "scusarti con {the}"),
+    Gesture.HOW_ARE_YOU: ("chiedi {to} come sta", "chiedere {to} come sta"),
+    Gesture.WHO_ARE_YOU: ("chiedi {to} chi è", "chiedere {to} chi è"),
+    Gesture.RUDENESS: ("sii scortese con {the}", "essere scortese con {the}"),
+}
 
 
 def definite(item: Named) -> str:
@@ -57,10 +70,12 @@ def definite(item: Named) -> str:
 
 
 def articulated(preposition: str, item: Named) -> str:
-    """The name after "a", "di" or "in", joined to its article: al pellegrino, della torre, nel pozzo;
-    a first name keeps the preposition apart: a Ettore, di Livia."""
+    """The name after "a", "di", "in" or "da", joined to its article: al pellegrino, della torre, nel
+    pozzo; a first name keeps the preposition apart: a Ettore, di Livia, ad Agnese."""
     if item.article is Article.NONE:
-        return f"{preposition} {item.name}"
+        # «ad Agnese»: «a» before a name starting with «a» takes a «d».
+        joined = "ad" if preposition == "a" and plain(item.name).startswith("a") else preposition
+        return f"{joined} {item.name}"
     return _ARTICULATED[preposition][_definite_article(item)] + item.name
 
 
@@ -99,6 +114,8 @@ def action_text(action: Action, world: World) -> str:
     """The action as a command: "usa la corda con il gancio", "vai a nord", "chiedi al pellegrino della torre"."""
     if action.direction is not None:
         return f"vai {_to(action.direction)}"
+    if action.verb is Conversation.TALK:
+        return _gesture(action, world, infinitive=False)
     return " ".join([action.verb, *_complements(action, world)])
 
 
@@ -107,6 +124,8 @@ def confirmation(action: Action, world: World) -> str:
     "Vuoi usare la corda con il gancio?", "Vuoi andare a ovest?"."""
     if action.direction is not None:
         return f"Vuoi andare {_to(action.direction)}?"
+    if action.verb is Conversation.TALK:
+        return f"Vuoi {_gesture(action, world, infinitive=True)}?"
     return " ".join(["Vuoi", _INFINITIVES[action.verb], *_complements(action, world)]) + "?"
 
 
@@ -131,10 +150,8 @@ def plain(text: str) -> str:
 
 
 def _complements(action: Action, world: World) -> list[str]:
-    """What follows the verb: "la corda con il gancio", "con il pellegrino", "al pellegrino della torre",
-    "la moneta al custode", "nel pozzo"."""
-    if action.verb is Conversation.TALK:
-        return ["con", definite(world.thing(action.target))]
+    """What follows the verb: "la corda con il gancio", "al pellegrino della torre", "la moneta al
+    custode", "nel pozzo"."""
     if action.verb is Conversation.ASK:
         character = world.characters[action.target]
         words = [articulated("a", character)]
@@ -155,6 +172,12 @@ def _complements(action: Action, world: World) -> list[str]:
     if action.with_ is not None:
         words += ["con", definite(world.thing(action.with_))]
     return words
+
+
+def _gesture(action: Action, world: World, infinitive: bool) -> str:
+    character = world.characters[action.target]
+    words = _GESTURES[action.gesture][1 if infinitive else 0]
+    return words.format(the=definite(character), to=articulated("a", character), from_=articulated("da", character))
 
 
 def _to(direction: Direction) -> str:

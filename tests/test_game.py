@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.engine.engine import NO_EXIT, NOBODY_HERE, NOT_HERE, Engine
+from app.engine.engine import GIVE_TO_WHOM, NO_EXIT, NOBODY_HERE, NOT_HERE, Engine
 from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import World
 from app.engine.models import Action
@@ -617,6 +617,27 @@ def test_the_guessed_tool_is_used_after_yes():
     assert "Per Livia" in answer
 
 
+def test_a_topic_the_sentence_does_not_name_gives_way_to_what_it_names():
+    # «chiedi a Livia di Corrado» answered about Ettore: the model picked one of her topics at
+    # random. Asked about something she has no topic for, she answers her `unknown`.
+    valdimora = load_world(WORLDS_DIR / "valdimora")
+    game = Game(Engine(valdimora), talking({"verbo": "chiedi", "bersaglio": "Livia", "con": "Ettore"}))
+    game.state.current_room = "ufficio_governante"
+
+    answer = say(game, "domando a Livia cosa sa della meridiana")
+
+    assert answer.endswith(valdimora.characters["livia"].unknown)
+
+
+def test_a_name_within_the_chosen_topic_does_not_count(keeper_world):
+    # «chiave» is an item of the world, but also in «chiave della cella»: the model's pick stands.
+    keeper_world["characters"]["custode"]["topics"]["cella"]["aliases"].append("chiave della cella")
+    reply = {"verbo": "chiedi", "bersaglio": "custode", "con": "cella"}
+    game = Game(Engine(World.model_validate(keeper_world)), talking(reply))
+
+    assert say(game, "custode, a cosa serve la chiave?").endswith("«La cella è a nord.»")
+
+
 @pytest.mark.parametrize(
     ("room", "sentence", "character", "topic"),
     [("radura", "mi dai il miele?", "draghetto", "miele"), ("tana", "mi dai il tuo miele?", "orso", "miele")],
@@ -644,17 +665,31 @@ def test_a_question_without_its_question_mark_is_asked_too(dragon, sentence):
     assert output == f"(chiedi al draghetto del solletico)\n{dragon.characters['draghetto'].topics['solletico'].text}"
 
 
-@pytest.mark.parametrize(
-    ("sentence", "topic"),
-    [("chi sei?", "pellegrino"), ("vecchio, come ti chiami?", "pellegrino"), ("com'è andato il viaggio?", "pellegrino")],
-)
+@pytest.mark.parametrize(("sentence", "topic"), [("com'è andato il viaggio?", "pellegrino")])
 def test_talking_about_a_topic_is_asking_about_it(castle, sentence, topic):
-    # "chi sei?": the model answered "parla", and the pilgrim only greeted.
+    # "com'è andato il viaggio?": the model answered "parla", and the pilgrim only greeted.
     game = in_the_stable(castle, talking({"verbo": "parla", "bersaglio": "pellegrino", "con": "nessuno"}))
 
     output = say(game, sentence)
 
     assert output == f"(chiedi al pellegrino del pellegrino)\n{castle.characters['pellegrino'].topics[topic].text}"
+
+
+@pytest.mark.parametrize("sentence", ["chi sei?", "vecchio, come ti chiami?"])
+def test_asking_who_he_is_needs_no_llm(castle, sentence):
+    llm = FakeLLMClient()
+
+    say(in_the_stable(castle, llm), sentence)
+
+    assert llm.calls == []
+
+
+@pytest.mark.parametrize("sentence", ["chi sei?", "vecchio, come ti chiami?"])
+def test_the_pilgrim_says_who_he_is(castle, sentence):
+    # «chi sei?» was a topic of the pilgrim's; now it is the gesture every character answers.
+    answer = say(in_the_stable(castle), sentence)
+
+    assert answer == castle.characters["pellegrino"].gestures["chi_sei"].text
 
 
 @pytest.mark.parametrize(
@@ -673,6 +708,130 @@ def test_greeting_the_character_by_name_is_still_greeting(castle):
     game = in_the_stable(castle, talking({"verbo": "parla", "bersaglio": "pellegrino", "con": "nessuno"}))
 
     assert say(game, "salve, pellegrino!").endswith(castle.characters["pellegrino"].greeting)
+
+
+def test_a_gesture_without_a_name_goes_to_the_last_one_spoken_to(keeper_world):
+    keeper_world["characters"]["cuoca"] = {
+        "name": "cuoca", "gender": "f", "description": "-", "location": "atrio",
+        "greeting": "«Ciao.»", "unknown": "«Boh.»",
+    }  # fmt: skip
+    game = Game(Engine(World.model_validate(keeper_world)))
+
+    say(game, "parla con la cuoca")
+    answer = say(game, "come state?")
+
+    assert game.state.last_speaker == "cuoca"
+    assert answer == "La cuoca non risponde."
+
+
+def test_thanks_naming_a_topic_are_still_thanks(castle):
+    # Only a greeting becomes a question about the topic it names.
+    game = in_the_stable(castle, talking({"verbo": "parla", "bersaglio": "pellegrino", "con": "grazie"}))
+
+    answer = say(game, "vi ringrazio tanto per la storia della torre")
+
+    assert answer.startswith("(ringrazia il pellegrino)\n")
+
+
+@pytest.mark.parametrize(
+    ("sentence", "reply", "shown"),
+    [
+        ("ti ringrazio tanto, draghetto", {"verbo": "dai", "bersaglio": "draghetto", "con": "nessuno"},
+         "(ringrazia il draghetto)"),
+        ("sei un drago cattivo", {"verbo": "usa", "bersaglio": "draghetto", "con": "more"},
+         "(sii scortese con il draghetto)"),
+        ("adesso vado, ci vediamo più tardi", {"verbo": "vai", "bersaglio": "sud", "con": "nessuno"},
+         "(congedati dal draghetto)"),
+    ],
+)  # fmt: skip
+def test_a_gesture_the_model_turns_into_nonsense_is_still_said(dragon, sentence, reply, shown):
+    # With the real model: "dai" or "usa" with no item, and the game answered "Non ho capito.".
+    game = Game(Engine(dragon), talking(reply))
+
+    assert say(game, sentence).startswith(f"{shown}\n")
+
+
+def test_a_gesture_for_someone_elsewhere_is_not_said_to_the_one_here():
+    # Ettore is not in Livia's office: she doesn't take his thanks.
+    valdimora = load_world(WORLDS_DIR / "valdimora")
+    game = Game(Engine(valdimora), talking({"verbo": "dai", "bersaglio": "Livia", "con": "nessuno"}))
+    game.state.current_room = "ufficio_governante"
+
+    assert say(game, "ti ringrazio di cuore, Ettore") == NOBODY_HERE
+
+
+@pytest.mark.parametrize(
+    ("world_id", "room", "sentence", "reply", "shown"),
+    [
+        ("valdimora", "stanza_maggiordomo", "scusate, cosa sapete della contessa?",
+         {"verbo": "parla", "bersaglio": "Ettore", "con": "saluto"}, "(chiedi a Ettore della contessa)"),
+        ("valdimora", "stanza_maggiordomo", "come va con Livia?",
+         {"verbo": "parla", "bersaglio": "Ettore", "con": "come stai"}, "(chiedi a Ettore di Livia)"),
+        ("rocca", "scuderia", "scusa, sai qualcosa della torre?",
+         {"verbo": "parla", "bersaglio": "pellegrino", "con": "saluto"}, "(chiedi al pellegrino della torre)"),
+        ("draghetto", "radura", "i draghi cattivi sputano fuoco?",
+         {"verbo": "parla", "bersaglio": "draghetto", "con": "saluto"}, "(chiedi al draghetto del raffreddore)"),
+        ("valdimora", "stanza_maggiordomo", "che tempo cattivo stasera, eh?",
+         {"verbo": "parla", "bersaglio": "Ettore", "con": "saluto"}, "(parla con Ettore)"),
+    ],
+)  # fmt: skip
+def test_a_question_naming_a_topic_is_that_question_whatever_the_gesture(world_id, room, sentence, reply, shown):
+    # Found by the final review: the words of a gesture («scusate», «cattivi») hid the question.
+    game = Game(Engine(load_world(WORLDS_DIR / world_id)), talking(reply))
+    game.state.current_room = room
+
+    assert say(game, sentence).startswith(f"{shown}\n")
+
+
+@pytest.mark.parametrize("sentence", ["grazie", "come state?", "chiedi della contessa", "parla"])
+def test_with_two_here_and_nobody_named_the_game_asks_to_whom(sentence):
+    # Corrado and the doctor in the billiard room, nobody spoken to yet (found by the final review).
+    game = Game(Engine(load_world(WORLDS_DIR / "valdimora")))
+    game.state.current_room = "biliardo"
+
+    assert say(game, sentence) == GIVE_TO_WHOM
+
+
+@pytest.mark.parametrize(
+    ("sentence", "reply"),
+    [
+        ("grazie mille, siete gentili", {"verbo": "parla", "bersaglio": "nessuno", "con": "grazie"}),
+        ("vi ringrazio tanto", {"verbo": "prendi", "bersaglio": "nessuno", "con": "nessuno"}),
+    ],
+)
+def test_with_two_here_the_model_naming_nobody_gets_to_whom(sentence, reply):
+    game = Game(Engine(load_world(WORLDS_DIR / "valdimora")), talking(reply))
+    game.state.current_room = "biliardo"
+
+    assert say(game, sentence) == GIVE_TO_WHOM
+
+
+def test_a_sentence_the_model_calls_no_game_action_is_left_alone(dragon):
+    # Only a broken action is replaced by the gesture the sentence says: "altro" stays "altro".
+    game = Game(Engine(dragon), talking({"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}))
+
+    assert say(game, "che stupido questo bosco") == NOT_A_GAME_ACTION
+
+
+def test_no_thanks_answers_the_question_even_with_someone_here(castle):
+    # «no, grazie» is also a formula: the answer to «Vuoi…?» comes first.
+    game = in_the_stable(castle)
+    game.pending = Action(verb="vai", direction="nord")
+
+    assert say(game, "no, grazie") == ALL_RIGHT
+    assert game.pending is None
+
+
+def test_giving_to_someone_elsewhere_gives_nothing_to_the_last_one_spoken_to():
+    # Two here, and the model gives to nobody: the grappa would go to the doctor, spoken to last.
+    valdimora = load_world(WORLDS_DIR / "valdimora")
+    game = Game(Engine(valdimora), talking({"verbo": "dai", "bersaglio": "bottiglia di grappa", "con": "nessuno"}))
+    game.state.current_room = "biliardo"
+    game.state.item_locations["grappa"] = "inventory"
+    game.state.last_speaker = "ferri"
+
+    assert say(game, "porto la grappa ad Agnese") == NOBODY_HERE
+    assert game.state.item_locations["grappa"] == "inventory"
 
 
 @pytest.mark.parametrize(

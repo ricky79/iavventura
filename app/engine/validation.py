@@ -7,6 +7,7 @@ refer to each other. Every problem is collected, so the author sees them all at 
 from collections.abc import Iterator
 
 from app.engine.models import (
+    GESTURE_LABELS,
     INVENTORY,
     AllOf,
     AnyOf,
@@ -135,6 +136,8 @@ def find_problems(world: World) -> list[str]:
     for character in world.characters.values():
         topic_of_name: dict[str, str] = {}
         for topic in character.topics.values():
+            if topic.name.casefold() in GESTURE_LABELS:
+                report(f"characters.{character.id}.topics.{topic.id}.name", f"'{topic.name}' is the name of a gesture")
             key = topic.name.casefold()
             if key in topic_of_name:
                 report(
@@ -201,6 +204,9 @@ def _conditions(world: World) -> Iterator[tuple[str, Condition]]:
             yield f"{path}.variants.{index}.when", variant.when
         for index, variant in enumerate(character.greeting_variants):
             yield f"{path}.greeting_variants.{index}.when", variant.when
+        for gesture, line in character.gestures.items():
+            for index, variant in enumerate(line.variants):
+                yield f"{path}.gestures.{gesture}.variants.{index}.when", variant.when
         for index, move in enumerate(character.moves):
             yield f"{path}.moves.{index}.when", move.when
         for topic in character.topics.values():

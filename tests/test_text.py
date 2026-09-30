@@ -280,3 +280,27 @@ def test_a_title_is_always_definite(keeper_world):
 def room_with(world: World, *characters: str) -> RoomView:
     return RoomView(id="atrio", name="Atrio", description="Un atrio.", items=(), exits=(), first_visit=True,
                     characters=characters)  # fmt: skip
+
+
+@pytest.mark.parametrize(
+    ("gesture", "command", "question"),
+    [
+        (None, "parla con il custode", "Vuoi parlare con il custode?"),
+        ("congedo", "congedati dal custode", "Vuoi congedarti dal custode?"),
+        ("grazie", "ringrazia il custode", "Vuoi ringraziare il custode?"),
+        ("scuse", "scusati con il custode", "Vuoi scusarti con il custode?"),
+        ("come_stai", "chiedi al custode come sta", "Vuoi chiedere al custode come sta?"),
+        ("chi_sei", "chiedi al custode chi è", "Vuoi chiedere al custode chi è?"),
+        ("scortesia", "sii scortese con il custode", "Vuoi essere scortese con il custode?"),
+    ],
+)
+def test_gestures_read_as_commands_and_questions(keeper, gesture, command, question):
+    action = Action(verb="parla", target="custode", gesture=gesture)
+
+    assert (action_text(action, keeper), confirmation(action, keeper)) == (command, question)
+
+
+def test_a_first_name_starting_with_a_takes_ad():
+    agnese = Item(id="agnese", name="Agnese", gender="f", article=Article.NONE, description="-", location=None)
+
+    assert articulated("a", agnese) == "ad Agnese"

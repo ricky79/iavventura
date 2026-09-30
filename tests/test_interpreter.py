@@ -7,7 +7,7 @@ import pytest
 from app.engine.loader import WORLDS_DIR, load_world
 from app.engine.models import Action, Direction, Item, World
 from app.llm.client import FakeLLMClient
-from app.llm.interpreter import NotUnderstood, interpret, interpreter_schema
+from app.llm.interpreter import NotUnderstood, describe, interpret, interpreter_schema
 from app.llm.prompts import interpreter_system
 
 
@@ -342,8 +342,91 @@ def test_the_schema_adds_the_characters_here_and_their_topics(keeper):
     assert properties["bersaglio"]["enum"] == [
         "leva", "moneta", "custode", "nord", "sud", "est", "ovest", "su", "giù", "nessuno",
     ]  # fmt: skip
-    # "leva" is both an item and a topic: it is offered once.
-    assert properties["con"]["enum"] == ["leva", "moneta", "custode", "cella", "nessuno"]
+    # "leva" is both an item and a topic: it is offered once. With someone here, the gestures too.
+    assert properties["con"]["enum"] == [
+        "leva", "moneta", "custode", "cella", "saluto", "congedo", "grazie", "scuse", "come stai", "chi sei", "scortesia",
+        "nessuno",
+    ]  # fmt: skip
+
+
+def test_the_gestures_are_offered_only_with_someone_here(keeper):
+    items, _ = near_keeper(keeper)
+
+    assert interpreter_schema(items)["properties"]["con"]["enum"] == ["leva", "moneta", "nessuno"]
+
+
+@pytest.mark.parametrize(
+    ("verb", "tool", "gesture"),
+    [("parla", "grazie", "grazie"), ("parla", "come stai", "come_stai"), ("parla", "saluto", None),
+     ("parla", "nessuno", None), ("chiedi", "grazie", "grazie")],
+    ids=["thanks", "how are you", "greeting", "nothing is the greeting", "a gesture asked is said"],
+)  # fmt: skip
+def test_talking_comes_back_with_its_gesture(keeper, verb, tool, gesture):
+    items, characters = near_keeper(keeper)
+    reply = {"verbo": verb, "bersaglio": "custode", "con": tool}
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), "vi sono grata, custode", items, (), characters)
+
+    assert action == Action(verb="parla", target="custode", gesture=gesture)
+
+
+def test_with_two_here_nobody_named_is_the_last_one_spoken_to(keeper_world):
+    keeper_world["characters"]["cuoca"] = {
+        "name": "cuoca", "gender": "f", "description": "-", "location": "atrio",
+        "greeting": "«Ciao.»", "unknown": "«Boh.»",
+    }  # fmt: skip
+    world = World.model_validate(keeper_world)
+    characters = [(world.characters["custode"], []), (world.characters["cuoca"], [])]
+    reply = {"verbo": "parla", "bersaglio": "nessuno", "con": "grazie"}
+
+    def heard(last_speaker):
+        return interpret(FakeLLMClient(json_replies=[reply]), "vi sono grata", [], (), characters, last_speaker=last_speaker)
+
+    assert heard("cuoca") == Action(verb="parla", target="cuoca", gesture="grazie")
+    # Nobody to say it to: the game asks «A chi?».
+    assert heard(None) == heard("pellegrino") == NotUnderstood("più personaggi e nessuno nominato", to_whom=True)
+
+
+def test_a_gesture_is_logged_with_the_action():
+    assert describe(Action(verb="parla", target="custode", gesture="come_stai")) == "parla custode: come_stai"
+    assert describe(Action(verb="parla", target="custode")) == "parla custode"
+
+
+def test_the_prompt_explains_the_gestures():
+    system = interpreter_system()
+
+    assert "- parla: rivolgersi a un personaggio:" in system
+    assert 'con "parla", il gesto' in system
+    assert '{"verbo": "parla", "bersaglio": "cuoca", "con": "grazie"}' in system
+
+
+@pytest.mark.parametrize(
+    ("sentence", "gesture"),
+    [
+        ("come vi sentite, oggi?", "come_stai"), ("e voi chi siete, di preciso?", "chi_sei"),
+        ("perdonatemi se vi disturbo", "scuse"), ("addio, e buona fortuna", "congedo"),
+        ("sei proprio un vecchio brontolone", "scortesia"), ("vi ringrazio tanto, custode", "grazie"),
+        ("grazie di tutto e arrivederci", "congedo"),  # the last one said
+    ],
+)  # fmt: skip
+def test_the_gesture_the_sentence_says_wins_over_the_model(keeper, sentence, gesture):
+    # With the real model, "parla" came back with "saluto" for almost any gesture.
+    items, characters = near_keeper(keeper)
+    reply = {"verbo": "parla", "bersaglio": "custode", "con": "saluto"}
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), sentence, items, (), characters)
+
+    assert action == Action(verb="parla", target="custode", gesture=gesture)
+
+
+@pytest.mark.parametrize("sentence", ["com'è andato il viaggio?", "chi era il castellano?", "come si esce da qui?"])
+def test_a_sentence_without_the_words_of_a_gesture_keeps_the_model_answer(keeper, sentence):
+    items, characters = near_keeper(keeper)
+    reply = {"verbo": "parla", "bersaglio": "custode", "con": "saluto"}
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), sentence, items, (), characters)
+
+    assert action == Action(verb="parla", target="custode")
 
 
 def test_the_model_is_told_about_the_characters_only_when_someone_is_here(keeper):
@@ -597,6 +680,20 @@ def test_a_move_the_sentence_does_not_ask_for_is_not_understood(in_reach, senten
 
     assert result == NotUnderstood("la frase non chiede di spostarsi")
     assert caplog.records[-1].getMessage() == "=== non capito: la frase non chiede di spostarsi"
+
+
+@pytest.mark.parametrize(
+    ("sentence", "expected"),
+    [
+        ("adesso vado, ci vediamo più tardi", NotUnderstood("la frase si congeda, non chiede di spostarsi")),
+        ("vado a nord, arrivederci", Action(verb="vai", direction="nord")),
+    ],
+)
+def test_a_farewell_is_no_move_unless_it_names_the_way(in_reach, sentence, expected):
+    # With the real model «adesso vado, ci vediamo più tardi» became «Vuoi andare a sud?».
+    reply = {"verbo": "vai", "bersaglio": "nord", "con": "nessuno"}
+
+    assert interpret(FakeLLMClient(json_replies=[reply]), sentence, in_reach, [(Direction.NORTH, None)]) == expected
 
 
 def test_a_move_goes_the_only_way_the_sentence_names(castle):

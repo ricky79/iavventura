@@ -370,3 +370,61 @@ def test_more_of_what_a_room_describes_can_be_examined(valdimora, room, thing):
     answer = game.turn(f"esamina {thing}")
 
     assert answer not in ("Non vedi niente del genere qui.", "Non ho capito.")
+
+
+# --- The dialogues -------------------------------------------------------------------------------------
+
+
+def test_livia_has_something_to_say_about_corrado(valdimora):
+    # The first feedback: «chiedi a Livia di Corrado» answered about Ettore.
+    game = new_game(valdimora)
+    game.state.current_room = "ufficio_governante"
+
+    assert "avvoltoio" in game.turn("chiedi a Livia di Corrado")
+
+
+def test_asked_again_livia_does_not_repeat_herself(valdimora):
+    game = new_game(valdimora)
+    game.state.current_room = "ufficio_governante"
+
+    first, second = game.turn("chiedi a Livia della contessa"), game.turn("chiedi a Livia della contessa")
+
+    assert "Trent'anni" in first and second == "«Ho detto che non ne parlo.»"
+
+
+def test_agnese_and_corrado_defend_each_other(valdimora):
+    game = new_game(valdimora)
+    game.state.current_room = "cappella"
+    agnese = game.turn("chiedi ad Agnese di Corrado")
+    game.state.current_room = "biliardo"
+    corrado = game.turn("chiedi a Corrado di Agnese")
+
+    assert "Tutti lo giudicano male" in agnese
+    assert "Parliamo d'altro" in corrado
+
+
+def test_the_sleeping_doctor_only_snores_at_gestures_too(valdimora):
+    game = new_game(valdimora)
+    game.state.current_room = "biliardo"
+    game.state.flags.add("ferri_addormentato")
+
+    answers = play(game, "grazie, dottore", "dottore, come state?", "chiedi al dottore di Agnese")
+
+    assert all("russa" in answer for answer in answers)
+
+
+def test_how_are_you_goes_to_the_last_one_spoken_to(valdimora):
+    game = new_game(valdimora)
+    game.state.current_room = "biliardo"
+
+    play(game, "parla con Corrado")
+
+    assert game.turn("come state?").startswith("«Come uno che aspetta un'eredità")
+
+
+def test_the_doctor_wants_the_grappa_he_sees(valdimora):
+    game = new_game(valdimora)
+    game.state.current_room = "biliardo"
+    game.state.item_locations["grappa"] = "inventory"
+
+    assert "non fatemi soffrire" in game.turn("chiedi al dottore della grappa")

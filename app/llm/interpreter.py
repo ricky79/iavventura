@@ -14,12 +14,25 @@ import logging
 from collections.abc import Sequence
 from typing import Any, NamedTuple
 
-from app.engine.models import Action, Character, Command, Conversation, Direction, Item, Room, Topic, Verb
+from app.engine.models import (
+    GESTURE_LABELS,
+    Action,
+    Character,
+    Command,
+    Conversation,
+    Direction,
+    Gesture,
+    Item,
+    Room,
+    Topic,
+    Verb,
+)
 from app.engine.parser import (
     DIRECTIONS,
     GO_WORDS,
     ITEM_VERBS,
     find_topic,
+    gesture_said,
     is_named,
     names_said,
     names_the_way,
@@ -71,8 +84,11 @@ def interpreter_schema(in_reach: Sequence[Item], characters: Characters = ()) ->
         "properties": {
             "verbo": {"type": "string", "enum": [*_VERBS, *_CONVERSATION, *_COMMANDS, NOT_AN_ACTION]},
             "bersaglio": {"type": "string", "enum": [*names, *_DIRECTIONS, NOTHING]},
-            # With "chiedi" the topic; a topic named like an item is offered once.
-            "con": {"type": "string", "enum": list(dict.fromkeys([*names, *topics, NOTHING]))},
+            # With "chiedi" the topic, with "parla" the gesture; a topic named like an item is offered once.
+            "con": {
+                "type": "string",
+                "enum": list(dict.fromkeys([*names, *topics, *(GESTURE_LABELS if characters else ()), NOTHING])),
+            },
         },
         "required": ["verbo", "bersaglio", "con"],
     }
@@ -82,12 +98,14 @@ class NotUnderstood(NamedTuple):
     """No action came out of the sentence. `reason` says why, for the logs; `not_an_action` is set
     when the model judged that the sentence isn't a game action at all ("altro"), `talking` when the
     player talks to someone and nobody is here. `guess` is what the sentence names in place of the
-    model's pick: the game asks about it, and does it only after a yes."""
+    model's pick: the game asks about it, and does it only after a yes. `to_whom` when several are here
+    and the model names none of them: the game asks «A chi?»."""
 
     reason: str
     not_an_action: bool = False
     talking: bool = False
     guess: Action | None = None
+    to_whom: bool = False
 
 
 def interpret(
@@ -97,6 +115,7 @@ def interpret(
     exits: Sequence[tuple[Direction, Room | None]] = (),
     characters: Characters = (),
     examples: str | None = None,
+    last_speaker: str | None = None,
 ) -> Action | NotUnderstood:
     """The action in the sentence, or why there is none: the model is unavailable, or its answer
     isn't an action on what the player can name.
@@ -104,6 +123,7 @@ def interpret(
     `exits` (Engine.known_exits) tell the model where each exit leads, for "torno nella scuderia".
     `characters` are those here, with their topics: the model is told about them only if there are any.
     `examples` are the world's own (`game.examples`), for the system prompt.
+    `last_speaker` is who the model means by nobody, when several are here.
     """
     try:
         reply = llm.complete_json(
@@ -115,7 +135,7 @@ def interpret(
         )
         ids_by_name = _ids_by_name([*in_reach, *(character for character, _ in characters)])
         reply = _examining_not_inventory(reply, in_reach, words_of(sentence))
-        result = _to_action(reply, ids_by_name, characters)
+        result = _to_action(reply, ids_by_name, characters, last_speaker)
         if isinstance(result, Action):
             result = _checked(result, words_of(sentence), in_reach, exits, characters)
     except LLMError:
@@ -150,12 +170,14 @@ def _ids_by_name(things: Sequence[Item | Character]) -> dict[str, str]:
     return ids
 
 
-def _to_action(reply: dict[str, Any], ids_by_name: dict[str, str], characters: Characters) -> Action | NotUnderstood:
+def _to_action(
+    reply: dict[str, Any], ids_by_name: dict[str, str], characters: Characters, last_speaker: str | None
+) -> Action | NotUnderstood:
     verb, target, tool = (str(reply.get(key, "")) for key in ("verbo", "bersaglio", "con"))
     if verb == NOT_AN_ACTION:
         return NotUnderstood("la frase non è un'azione di gioco", not_an_action=True)
     if verb in _CONVERSATION:
-        return _to_conversation(verb, target, tool, characters)
+        return _to_conversation(verb, target, tool, characters, last_speaker)
     if verb == Command.GO:
         if target not in _DIRECTIONS:
             return NotUnderstood(f"direzione non valida {target!r}")
@@ -179,21 +201,29 @@ def _to_action(reply: dict[str, Any], ids_by_name: dict[str, str], characters: C
     return Action(verb=verb, target=ids_by_name[target], with_=with_)
 
 
-def _to_conversation(verb: str, target: str, tool: str, characters: Characters) -> Action | NotUnderstood:
-    """"parla"/"chiedi" to a character here, the only one if the model names none ("salutalo").
-    The topic is looked up among those the character knows, also by alias ("chiave di ferro" for the
-    key the pilgrim talks about); anything else is a topic it doesn't know."""
+def _to_conversation(
+    verb: str, target: str, tool: str, characters: Characters, last_speaker: str | None
+) -> Action | NotUnderstood:
+    """"parla"/"chiedi" to a character here; without a name, the only one here or the one spoken to last
+    ("salutalo"). With a gesture, it is said to them. The topic is looked up among those the character
+    knows, also by alias ("chiave di ferro" for the key the pilgrim talks about); anything else is a
+    topic it doesn't know."""
     if not characters:
         # "ciao, come stai?" with nobody around
         return NotUnderstood("non c'è nessuno con cui parlare", not_an_action=True, talking=True)
     found = next(((person, topics) for person, topics in characters if person.name == target), None)
-    if found is None and target == NOTHING and len(characters) == 1:
-        found = characters[0]
+    if found is None and target == NOTHING:
+        found = characters[0] if len(characters) == 1 else next(
+            ((person, topics) for person, topics in characters if person.id == last_speaker), None
+        )
+        if found is None:
+            return NotUnderstood("più personaggi e nessuno nominato", to_whom=True)
     if found is None:
         return NotUnderstood(f"nessun personaggio {target!r} qui")
     character, topics = found
-    if verb == Conversation.TALK:
-        return Action(verb=Conversation.TALK, target=character.id)
+    if verb == Conversation.TALK or tool in GESTURE_LABELS:
+        # "chiedi" with a gesture ("come stai") is saying it: no topic is named like a gesture.
+        return Action(verb=Conversation.TALK, target=character.id, gesture=GESTURE_LABELS.get(tool))
     topic = find_topic(significant_words(tool), topics)
     return Action(verb=Conversation.ASK, target=character.id, topic=topic.id if topic else None)
 
@@ -205,11 +235,15 @@ def _checked(
     exits: Sequence[tuple[Direction, Room | None]],
     characters: Characters,
 ) -> Action | NotUnderstood:
-    """The action, if the sentence asks for it; a question about a topic the sentence names."""
+    """The action, if the sentence asks for it; a question about a topic the sentence names, the
+    gesture it says."""
     if action.verb is Command.GO:
         return _checked_move(action, words, exits)
     if action.verb is Conversation.ASK:
         return _about_the_topic_named(action, words, characters)
+    if action.verb is Conversation.TALK and (said := gesture_said(words)) is not None:
+        # "perdonatemi se vi disturbo": the model said "saluto", as for almost any gesture.
+        return Action(verb=Conversation.TALK, target=action.target, gesture=said)
     if not isinstance(action.verb, Verb):
         return action
     if action.verb is Verb.JUMP:
@@ -269,6 +303,9 @@ def _checked_move(
     model's: its direction ("salgo sul sasso": up), or the only exit it names ("attraverso il ponte")."""
     said = _directions_said(words)
     places = [room for _, room in exits if room is not None and significant_words(room.name) in names_said(room, words)]
+    if not (said or places) and gesture_said(words) is Gesture.FAREWELL:
+        # "adesso vado, ci vediamo più tardi": leaving the conversation, not the room
+        return NotUnderstood("la frase si congeda, non chiede di spostarsi")
     if not (said or places or MOVE_WORDS.intersection(words)):
         return NotUnderstood("la frase non chiede di spostarsi")
     if names_the_way(action.direction, words, exits):
@@ -295,11 +332,13 @@ def _about_the_topic_named(action: Action, words: list[str], characters: Charact
 
 
 def describe(action: Action) -> str:
-    """The action with ids, as the engine receives it: "usa corda_con_gancio con pozzo", "chiedi pellegrino di torre"."""
+    """The action with ids, as the engine receives it: "usa corda_con_gancio con pozzo", "chiedi pellegrino
+    di torre", "parla livia: grazie"."""
     words = [
         action.verb,
         action.direction or action.target or "",
         f"con {action.with_}" if action.with_ else "",
         f"di {action.topic}" if action.topic else "",
     ]
-    return " ".join(word for word in words if word)
+    described = " ".join(word for word in words if word)
+    return f"{described}: {action.gesture}" if action.gesture else described

@@ -144,7 +144,6 @@ DIALOGUE = [
     ("salve, pellegrino!", PILGRIM.greeting),
     ("pellegrino, cosa sai della torre?", ANSWER["torre"]),
     ("gli chiedo del pozzo", ANSWER["pozzo"]),
-    ("chi era il castellano?", ANSWER["rocca"]),
     ("chiedo al vecchio come si esce da qui", ANSWER["portone"]),
     ("gli chiedo se ha fame", PILGRIM.unknown),
 ]
@@ -314,12 +313,15 @@ PLAYED = [
      lambda a, g: g.state.item_locations["corda_con_gancio"] is None and g.pending is None),
     (CASTLE, "scuderia", (), (), (), "come si fa a usire",
      says(ANSWER["portone"], PILGRIM.unknown, PILGRIM.greeting, *NOTHING_DONE)),
-    (CASTLE, "scuderia", (), (), (), "chi sei?", says(ANSWER["pellegrino"])),
-    (CASTLE, "scuderia", (), (), (), "vecchio, come ti chiami?", says(ANSWER["pellegrino"])),
+    (CASTLE, "scuderia", (), (), (), "chi sei?", says(PILGRIM.gestures["chi_sei"].text)),
+    (CASTLE, "scuderia", (), (), (), "vecchio, come ti chiami?", says(PILGRIM.gestures["chi_sei"].text)),
     (CASTLE, "cortile", (), (), (), "ma non c'è la chiave nel pozzo",
      says(CASTLE.items["pozzo"].description, NOT_HERE, *NOTHING_DONE)),
-    (CASTLE, "scuderia", (), (), (), "grazie mille", says(PILGRIM.greeting, *NOTHING_DONE)),
-    (CASTLE, "scuderia", (), (), (), "arrivederci", says(PILGRIM.greeting, *NOTHING_DONE)),
+    # With the gestures in the prompt the model says "esamina il pellegrino" (2026-09-30): the question
+    # names the castellano, and the game asks about the rocca.
+    (CASTLE, "scuderia", (), (), (), "chi era il castellano?", says(ANSWER["rocca"])),
+    (CASTLE, "scuderia", (), (), (), "grazie mille", says(PILGRIM.gestures["grazie"].text)),
+    (CASTLE, "scuderia", (), (), (), "arrivederci", says(PILGRIM.gestures["congedo"].text)),
     # Something that isn't here: the model picked anything ("apri il pellegrino").
     (CASTLE, "scuderia", (), (), (), "apro la porta di ferro", says(NOT_HERE)),
     (CASTLE, "cortile", (), (), (), "scavalco le mura", stays_in("cortile")),
@@ -383,6 +385,8 @@ KNOWN_LIMITS = {
     "afferra la ciave nel pozzo": "the well comes back as the tool: 'Vuoi prendere la chiave di ferro con il pozzo?'",
     "ti faccio il solletico sul naso con la piuma": "with 'ti' the model loses the dragon: 'Vuoi usare la piuma?'",
     "guardo su nell'albero": "'guarda su' is looking around, not at the oak",
+    # Found with the dialogues (2026-09-30).
+    "siete una vecchia strega": "'vecchia' is nearly 'vecchio', Ettore's alias: 'Non vedi nessuno del genere qui.'",
 }
 
 
@@ -447,9 +451,8 @@ VALDIMORA_CASES = [
      lambda a, g: g.state.item_locations["chiavetta"] == "inventory" or "nessuno ti impedirebbe" in a),
     ("dispensa", ("chiavetta",), (), "apro l'armadietto dei medicinali con la chiavetta",
      lambda a, g: g.state.item_locations["registro"] == "inventory"),
-    # «chi sei?» to Agnese: her greeting or her answer to what she doesn't know; no action may start.
-    ("cappella", (), (), "chi sei?", says(VALDIMORA.characters["agnese"].greeting,
-                                          VALDIMORA.characters["agnese"].unknown)),
+    # «chi sei?» to Agnese: her own answer; no action may start.
+    ("cappella", (), (), "chi sei?", says(VALDIMORA.characters["agnese"].gestures["chi_sei"].text)),
 ]  # fmt: skip
 
 
@@ -459,6 +462,62 @@ VALDIMORA_CASES = [
 )
 def test_valdimora_free_sentences(llm, room, carried, flags, sentence, check):
     game = playing(llm, VALDIMORA, room, carried, flags, ())
+
+    answer = game.turn(sentence)
+    print(f"\n  {sentence!r} -> {answer.splitlines()[0]!r}")
+
+    assert check(answer, game)
+
+
+# --- Dialogues: gestures said freely -------------------------------------------------------------
+
+LIVIA = VALDIMORA.characters["livia"]
+AGNESE = VALDIMORA.characters["agnese"]
+
+
+def gesture_of(character, gesture: str):
+    return says(character.gestures[gesture].text)
+
+
+GESTURE_CASES = [
+    # (world, room, sentence, check on (answer, game)). None of them is a formula of the parser: they go to the model.
+    (VALDIMORA, "ufficio_governante", "vi ringrazio tanto, signora", gesture_of(LIVIA, "grazie")),
+    (VALDIMORA, "ufficio_governante", "come vi sentite, oggi?", gesture_of(LIVIA, "come_stai")),
+    (VALDIMORA, "ufficio_governante", "e voi chi siete, di preciso?", gesture_of(LIVIA, "chi_sei")),
+    (VALDIMORA, "ufficio_governante", "siete una vecchia strega", gesture_of(LIVIA, "scortesia")),
+    (VALDIMORA, "ufficio_governante", "chiedo a Livia di Corrado", says(LIVIA.topics["corrado"].text)),
+    (VALDIMORA, "ufficio_governante", "chiedo a Livia della meridiana", says(LIVIA.unknown)),
+    (VALDIMORA, "cappella", "perdonatemi se vi disturbo", gesture_of(AGNESE, "scuse")),
+    (VALDIMORA, "cappella", "mi dispiace tanto per la contessa", says(AGNESE.topics["contessa"].text, AGNESE.gestures["scuse"].text)),
+    (VALDIMORA, "cappella", "adesso vado, ci vediamo più tardi", gesture_of(AGNESE, "congedo")),
+    (CASTLE, "scuderia", "grazie mille, buon uomo", gesture_of(PILGRIM, "grazie")),
+    (CASTLE, "scuderia", "come ti senti, vecchio?", gesture_of(PILGRIM, "come_stai")),
+    (CASTLE, "scuderia", "sei proprio un vecchio brontolone", gesture_of(PILGRIM, "scortesia")),
+    (CASTLE, "scuderia", "addio, e buona fortuna", gesture_of(PILGRIM, "congedo")),
+    (DRAGON, "radura", "ti ringrazio tanto, draghetto", gesture_of(DRAGONET, "grazie")),
+    (DRAGON, "radura", "come stai oggi?", gesture_of(DRAGONET, "come_stai")),
+    (DRAGON, "radura", "sei un drago cattivo", gesture_of(DRAGONET, "scortesia")),
+    (DRAGON, "tana", "chi sei tu?", gesture_of(BEAR, "chi_sei")),
+    (DRAGON, "tana", "scusami tanto, orso", gesture_of(BEAR, "scuse")),
+    # Found by the final review: a question behind the words of a gesture is still the question.
+    (VALDIMORA, "stanza_maggiordomo", "scusate, cosa sapete della contessa?", says(ETTORE.topics["contessa"].text)),
+    (DRAGON, "radura", "i draghi cattivi sputano fuoco?", says(*DRAGON_SAYS)),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(
+    ("world", "room", "sentence", "check"),
+    [
+        pytest.param(
+            *case,
+            id=f"{case[1]}: {case[2]}",
+            marks=pytest.mark.xfail(reason=KNOWN_LIMITS[case[2]], strict=False) if case[2] in KNOWN_LIMITS else (),
+        )
+        for case in GESTURE_CASES
+    ],
+)
+def test_gestures_said_freely(llm, world, room, sentence, check):
+    game = playing(llm, world, room)
 
     answer = game.turn(sentence)
     print(f"\n  {sentence!r} -> {answer.splitlines()[0]!r}")
