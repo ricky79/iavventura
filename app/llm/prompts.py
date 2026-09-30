@@ -17,7 +17,7 @@ Verbi:
 - usa: usare un oggetto con un altro, legarli, calarne uno in un altro
 - apri, chiudi, spingi, tira
 - leggi: leggere uno scritto
-- parla: salutare un personaggio, ringraziarlo, rivolgergli la parola
+- parla: rivolgersi a un personaggio: salutarlo, ringraziarlo, scusarsi, congedarsi, chiedergli come sta o chi è, offenderlo
 - chiedi: fare una domanda a un personaggio
 - dai: dare, porgere, offrire un oggetto a un personaggio (anche "ecco", "tieni")
 - salta: saltare, tuffarsi o buttarsi dentro qualcosa
@@ -28,7 +28,8 @@ Verbi:
 bersaglio: l'oggetto o il personaggio su cui si agisce; con "vai", la direzione dell'uscita, \
 oppure "nessuno" se il luogo non è tra le uscite.
 con: l'oggetto usato per compiere l'azione, altrimenti "nessuno"; con "chiedi", l'argomento \
-della domanda, oppure "nessuno" se non è tra gli argomenti.
+della domanda, oppure "nessuno" se non è tra gli argomenti; con "parla", il gesto (saluto, \
+congedo, grazie, scuse, come stai, chi sei, scortesia).
 Scegli solo tra gli oggetti, i personaggi e gli argomenti elencati; tra parentesi ci sono gli \
 altri nomi con cui si chiamano.
 Per le uscite, tra parentesi c'è il luogo in cui portano, se è noto.
@@ -59,7 +60,9 @@ Personaggi: cuoca (donna)
 Argomenti: cantina (scantinato); cena
 Uscite: est
 Frase: buongiorno, signora
-{"verbo": "parla", "bersaglio": "cuoca", "con": "nessuno"}
+{"verbo": "parla", "bersaglio": "cuoca", "con": "saluto"}
+Frase: grazie mille, siete gentile
+{"verbo": "parla", "bersaglio": "cuoca", "con": "grazie"}
 Frase: cosa sai dello scantinato?
 {"verbo": "chiedi", "bersaglio": "cuoca", "con": "cantina"}
 Frase: le chiedo se ha visto il re

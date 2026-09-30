@@ -148,7 +148,7 @@ class Game:
         if self.llm is None:
             self._log("parser", None, "non capito", "il parser non la capisce e l'LLM è spento")
             return NOT_UNDERSTOOD
-        interpreted = interpret(self.llm, line, near, exits, characters, self.world.game.examples)
+        interpreted = interpret(self.llm, line, near, exits, characters, self.world.game.examples, self.state.last_speaker)
         here = {item.id for item in near} | {person.id for person, _ in characters}
         asking = _is_question(line, words)
         if isinstance(interpreted, NotUnderstood):
@@ -253,14 +253,16 @@ class Game:
             if chosen is not None and self._names_something_else(person, chosen, words):
                 # «chiedi a Livia di Corrado»: no topic of hers is named, and the model picked one (Ettore).
                 return Action(verb=Conversation.ASK, target=person.id)
-        if action.verb is Conversation.TALK and asking and (question := _topic_asked(words, [(person, topics)])):
+        # Only a greeting may be a question in disguise: "grazie per la storia della torre" stays a thanks.
+        greeting = action.verb is Conversation.TALK and action.gesture is None
+        if greeting and asking and (question := _topic_asked(words, [(person, topics)])):
             return question
         someone_elsewhere = not is_named(person, words) and self._names_one_elsewhere(
             self.world.characters.values(), words, here
         )
         if someone_elsewhere and (action.verb is not Conversation.ASK or action.topic is None):
             return NOBODY_HERE
-        if action.verb is Conversation.TALK and (named := topics_named(person, topics, words)):
+        if greeting and (named := topics_named(person, topics, words)):
             # A greeting naming a topic: "com'è andato il viaggio" is about the journey.
             return Action(verb=Conversation.ASK, target=person.id, topic=named[0].id)
         return action

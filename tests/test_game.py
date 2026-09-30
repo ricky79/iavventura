@@ -716,6 +716,15 @@ def test_a_gesture_without_a_name_goes_to_the_last_one_spoken_to(keeper_world):
     assert answer == "La cuoca non risponde."
 
 
+def test_thanks_naming_a_topic_are_still_thanks(castle):
+    # Only a greeting becomes a question about the topic it names.
+    game = in_the_stable(castle, talking({"verbo": "parla", "bersaglio": "pellegrino", "con": "grazie"}))
+
+    answer = say(game, "vi ringrazio tanto per la storia della torre")
+
+    assert answer.startswith("(ringrazia il pellegrino)\n")
+
+
 def test_no_thanks_answers_the_question_even_with_someone_here(castle):
     # «no, grazie» is also a formula: the answer to «Vuoi…?» comes first.
     game = in_the_stable(castle)
