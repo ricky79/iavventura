@@ -387,6 +387,11 @@ KNOWN_LIMITS = {
     "guardo su nell'albero": "'guarda su' is looking around, not at the oak",
     # Found with the dialogues (2026-09-30).
     "siete una vecchia strega": "'vecchia' is nearly 'vecchio', Ettore's alias: 'Non vedi nessuno del genere qui.'",
+    # Found with the second act of Valdimora (2026-09-30).
+    "infilo il medaglione nella cornice": (
+        "unstable: the model answers 'inventario' (the game shows the inventory) or 'prendi il medaglione' "
+        "(the game asks 'Vuoi usare il medaglione con il ritratto?')"
+    ),
 }
 
 
@@ -416,6 +421,7 @@ def test_sentences_found_while_playing(llm, world, room, carried, flags, seen, s
 VALDIMORA = load_world(WORLDS_DIR / "valdimora")
 VALDIMORA_RULE = {rule_id: rule.text for rule_id, rule in VALDIMORA.rules.items()}
 ETTORE = VALDIMORA.characters["ettore"]
+LIVIA = VALDIMORA.characters["livia"]
 
 VALDIMORA_CASES = [
     # (room, carried, flags, sentence, check on (answer, game))
@@ -453,12 +459,58 @@ VALDIMORA_CASES = [
      lambda a, g: g.state.item_locations["registro"] == "inventory"),
     # «chi sei?» to Agnese: her own answer; no action may start.
     ("cappella", (), (), "chi sei?", says(VALDIMORA.characters["agnese"].gestures["chi_sei"].text)),
+    # The second act (2026-09-30): the flags say how far the player has got.
+    ("galleria", (), ("atto_due",), "tolgo il drappo dal quadro", lambda a, g: "ritratto_scoperto" in g.state.flags),
+    ("galleria", ("fotografia",), ("atto_due", "ritratto_scoperto"), "guardo bene il ritratto della ragazza",
+     says("È tua madre")),
+    ("galleria", (), ("atto_due", "ritratto_scoperto"), "infilo il medaglione nella cornice",
+     lambda a, g: g.state.item_locations["cilindro"] == "inventory"
+     or g.pending == Action(verb="usa", target="medaglione", with_="ritratto")),
+    ("galleria", (), ("atto_due",), "chiedo a Ettore del quadro coperto", says(ETTORE.topics["ritratto"].text)),
+    ("camera_contessa", (), ("atto_due",), "chiedo a Livia delle rose", says(LIVIA.topics["rose"].text)),
+    ("serra", ("forbici",), ("atto_due",), "taglio una rosa con le forbici",
+     lambda a, g: g.state.item_locations["rosa_bianca"] == "inventory"),
+    ("camera_contessa", ("rosa_bianca",), ("atto_due",), "regalo la rosa alla governante",
+     lambda a, g: "livia_permette" in g.state.flags),
+    ("camera_contessa", (), ("atto_due", "livia_permette"), "entro nel boudoir",
+     lambda a, g: g.state.current_room == "boudoir" or g.pending == Action(verb="vai", direction="ovest")),
+    ("boudoir", (), ("atto_due", "livia_permette"), "apro il portagioie della contessa",
+     lambda a, g: g.state.item_locations["chiavetta_carica"] == "inventory"),
+    ("salone_musica", ("cilindro",), ("atto_due",), "metto il cilindro nel carillon",
+     lambda a, g: "cilindro_messo" in g.state.flags),
+    # The model takes the key already in hand: the game asks whether to use it with the music box.
+    ("salone_musica", ("chiavetta_carica",), ("atto_due", "cilindro_messo"), "carico il carillon con la chiavetta",
+     lambda a, g: "carillon_suonato" in g.state.flags
+     or g.pending == Action(verb="usa", target="chiavetta_carica", with_="carillon")),
+    ("pianerottolo_servizio", ("chiave_servizio",), ("atto_due",), "apro la porta di servizio con la chiave",
+     lambda a, g: "atto_tre" in g.state.flags),
+    ("studio_conte", (), ("atto_due",), "prendo il bastone del conte",
+     lambda a, g: g.state.item_locations["bastone"] == "inventory"),
+    ("studio_conte", (), ("atto_due",), "chiedo a Corrado se posso prendere il bastone",
+     says(VALDIMORA.characters["corrado"].topics["bastone"].text, VALDIMORA.characters["corrado"].topics["studio"].text)),
+    ("balcone", ("bastone",), ("atto_due",), "aggancio il vaso con il bastone",
+     lambda a, g: g.state.item_locations["flacone"] == "inventory"),
+    # Nobody dies without asking for it.
+    ("balcone", (), ("atto_due",), "guardo giù dal balcone", lambda a, g: not g.finished),
+    ("loggia", (), ("atto_due",), "faccio vedere il medaglione ad Agnese",
+     says("Che strana stella", VALDIMORA.characters["agnese"].topics["medaglione"].text)),
+    ("camera_contessa", (), ("atto_due",), "chi ha tagliato il cordone del campanello?",
+     says(LIVIA.topics["campanello"].text)),
+    ("atrio", (), ("atto_due",), "salgo al piano nobile", lambda a, g: g.state.current_room == "loggia"),
+    ("atrio", (), ("atto_due",), "vado su per lo scalone", lambda a, g: g.state.current_room == "loggia"),
 ]  # fmt: skip
 
 
 @pytest.mark.parametrize(
     ("room", "carried", "flags", "sentence", "check"),
-    [pytest.param(*case, id=f"{case[0]}: {case[3]}") for case in VALDIMORA_CASES],
+    [
+        pytest.param(
+            *case,
+            id=f"{case[0]}: {case[3]}",
+            marks=pytest.mark.xfail(reason=KNOWN_LIMITS[case[3]], strict=False) if case[3] in KNOWN_LIMITS else (),
+        )
+        for case in VALDIMORA_CASES
+    ],
 )
 def test_valdimora_free_sentences(llm, room, carried, flags, sentence, check):
     game = playing(llm, VALDIMORA, room, carried, flags, ())
@@ -471,7 +523,6 @@ def test_valdimora_free_sentences(llm, room, carried, flags, sentence, check):
 
 # --- Dialogues: gestures said freely -------------------------------------------------------------
 
-LIVIA = VALDIMORA.characters["livia"]
 AGNESE = VALDIMORA.characters["agnese"]
 
 

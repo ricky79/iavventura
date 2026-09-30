@@ -311,6 +311,17 @@ def test_an_item_the_model_calls_by_another_name_is_found(valdimora):
     assert action == Action(verb="dai", target="ferri", with_="grappa")
 
 
+def test_the_same_item_by_its_name_and_by_an_alias_is_one_item(valdimora):
+    # «prendo il bastone del conte»: the model answered the stick's name and one of its aliases, and the
+    # game crashed on an action with the same item twice (Valdimora, act 2).
+    reply = {"verbo": "prendi", "bersaglio": "bottiglia di grappa", "con": "grappa"}
+    in_reach = valdimora_items(valdimora, "lettera", "medaglione", "grappa")
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), "prendo la grappa", in_reach)
+
+    assert action == Action(verb="prendi", target="grappa")
+
+
 def test_nobody_can_be_jumped_into(keeper):
     items, characters = near_keeper(keeper)
     fake = FakeLLMClient(json_replies=[{"verbo": "salta", "bersaglio": "custode", "con": "nessuno"}])

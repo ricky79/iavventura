@@ -831,6 +831,30 @@ def test_the_guess_comes_before_the_gesture_the_sentence_says(keeper_world):
     assert say(game, "scusate, spingo la moneta contro la leva") == "Vuoi spingere la moneta con la leva?"
 
 
+def in_the_music_room(reply: dict) -> Game:
+    """Valdimora, act 2: the cylinder is in the music box, and the winding key in Irene's hand."""
+    game = Game(Engine(load_world(WORLDS_DIR / "valdimora")), talking(reply))
+    game.state.current_room = "salone_musica"
+    game.state.flags.update({"atto_due", "busta_data", "cilindro_messo"})
+    game.state.act = 1
+    game.state.item_locations["chiavetta_carica"] = "inventory"
+    return game
+
+
+def test_taking_what_is_in_hand_while_naming_something_else_is_asked_as_using_them():
+    # «carico il carillon con la chiavetta»: the model said «prendi la chiavetta», already in hand.
+    game = in_the_music_room({"verbo": "prendi", "bersaglio": "chiavetta di carica", "con": "nessuno"})
+
+    assert say(game, "carico il carillon con la chiavetta") == "Vuoi usare la chiavetta di carica con il carillon?"
+    assert "ninna nanna" in say(game, "sì")
+
+
+def test_taking_what_is_in_hand_alone_is_still_taking_it():
+    game = in_the_music_room({"verbo": "prendi", "bersaglio": "chiavetta di carica", "con": "nessuno"})
+
+    assert say(game, "riprendo in mano la chiavetta") == "(prendi la chiavetta di carica)\nCe l'hai già."
+
+
 def test_no_thanks_answers_the_question_even_with_someone_here(castle):
     # «no, grazie» is also a formula: the answer to «Vuoi…?» comes first.
     game = in_the_stable(castle)
