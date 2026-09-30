@@ -400,6 +400,35 @@ def test_the_prompt_explains_the_gestures():
     assert '{"verbo": "parla", "bersaglio": "cuoca", "con": "grazie"}' in system
 
 
+@pytest.mark.parametrize(
+    ("sentence", "gesture"),
+    [
+        ("come vi sentite, oggi?", "come_stai"), ("e voi chi siete, di preciso?", "chi_sei"),
+        ("perdonatemi se vi disturbo", "scuse"), ("addio, e buona fortuna", "congedo"),
+        ("sei proprio un vecchio brontolone", "scortesia"), ("vi ringrazio tanto, custode", "grazie"),
+        ("grazie di tutto e arrivederci", "congedo"),  # the last one said
+    ],
+)  # fmt: skip
+def test_the_gesture_the_sentence_says_wins_over_the_model(keeper, sentence, gesture):
+    # With the real model, "parla" came back with "saluto" for almost any gesture.
+    items, characters = near_keeper(keeper)
+    reply = {"verbo": "parla", "bersaglio": "custode", "con": "saluto"}
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), sentence, items, (), characters)
+
+    assert action == Action(verb="parla", target="custode", gesture=gesture)
+
+
+@pytest.mark.parametrize("sentence", ["com'è andato il viaggio?", "chi era il castellano?", "come si esce da qui?"])
+def test_a_sentence_without_the_words_of_a_gesture_keeps_the_model_answer(keeper, sentence):
+    items, characters = near_keeper(keeper)
+    reply = {"verbo": "parla", "bersaglio": "custode", "con": "saluto"}
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), sentence, items, (), characters)
+
+    assert action == Action(verb="parla", target="custode")
+
+
 def test_the_model_is_told_about_the_characters_only_when_someone_is_here(keeper):
     items, characters = near_keeper(keeper)
     fake = FakeLLMClient(json_replies=[{"verbo": "altro"}, {"verbo": "altro"}])
@@ -651,6 +680,20 @@ def test_a_move_the_sentence_does_not_ask_for_is_not_understood(in_reach, senten
 
     assert result == NotUnderstood("la frase non chiede di spostarsi")
     assert caplog.records[-1].getMessage() == "=== non capito: la frase non chiede di spostarsi"
+
+
+@pytest.mark.parametrize(
+    ("sentence", "expected"),
+    [
+        ("adesso vado, ci vediamo più tardi", NotUnderstood("la frase si congeda, non chiede di spostarsi")),
+        ("vado a nord, arrivederci", Action(verb="vai", direction="nord")),
+    ],
+)
+def test_a_farewell_is_no_move_unless_it_names_the_way(in_reach, sentence, expected):
+    # With the real model «adesso vado, ci vediamo più tardi» became «Vuoi andare a sud?».
+    reply = {"verbo": "vai", "bersaglio": "nord", "con": "nessuno"}
+
+    assert interpret(FakeLLMClient(json_replies=[reply]), sentence, in_reach, [(Direction.NORTH, None)]) == expected
 
 
 def test_a_move_goes_the_only_way_the_sentence_names(castle):

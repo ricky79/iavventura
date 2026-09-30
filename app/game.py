@@ -31,6 +31,7 @@ from app.engine.models import (
 )
 from app.engine.parser import (
     Ambiguous,
+    gesture_said,
     is_named,
     names_said,
     names_the_way,
@@ -153,6 +154,8 @@ class Game:
         asking = _is_question(line, words)
         if isinstance(interpreted, NotUnderstood):
             asked = _topic_asked(words, characters) if asking else None
+            if asked is None and not interpreted.not_an_action:
+                asked = self._gesture_said(words, characters, here)
             if asked is None and interpreted.guess is not None:
                 # What the sentence names in place of the model's pick: asked about, done after a yes.
                 self.pending = self._carried_first(interpreted.guess)
@@ -266,6 +269,22 @@ class Game:
             # A greeting naming a topic: "com'è andato il viaggio" is about the journey.
             return Action(verb=Conversation.ASK, target=person.id, topic=named[0].id)
         return action
+
+    def _gesture_said(
+        self, words: list[str], characters: list[tuple[Character, list[Topic]]], here: set[str]
+    ) -> Action | None:
+        """The gesture the sentence says, when the model's answer made no sense ("ti ringrazio tanto,
+        draghetto" came back as "dai" with no item): to the one here it names, the only one here or the
+        one spoken to last; to nobody if it names only someone who isn't here."""
+        gesture = gesture_said(words)
+        if gesture is None:
+            return None
+        named = [person for person, _ in characters if is_named(person, words)]
+        if not named and self._names_one_elsewhere(self.world.characters.values(), words, here):
+            return None
+        people = named or [person for person, _ in characters]
+        person = people[0] if len(people) == 1 else next((p for p in people if p.id == self.state.last_speaker), None)
+        return None if person is None else Action(verb=Conversation.TALK, target=person.id, gesture=gesture)
 
     def _names_one_elsewhere(self, things: Iterable[Item | Character], words: list[str], here: set[str]) -> bool:
         """A name within one said of something here doesn't count: "corda" is also the grapple, and

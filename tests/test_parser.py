@@ -3,7 +3,7 @@
 import pytest
 
 from app.engine.models import Action, Direction, World
-from app.engine.parser import Ambiguous, is_named, parse, words_of
+from app.engine.parser import Ambiguous, gesture_said, is_named, parse, words_of
 
 
 @pytest.fixture
@@ -458,6 +458,30 @@ def test_a_gesture_without_a_name_goes_to_the_last_one_spoken_to(with_cook):
 def test_a_question_without_a_name_goes_to_the_last_one_spoken_to(with_cook):
     assert two_here(with_cook, None, "chiedi della cella") is None
     assert two_here(with_cook, "custode", "chiedi della cella") == Action(verb="chiedi", target="custode", topic="cella")
+
+
+@pytest.mark.parametrize(
+    ("text", "gesture"),
+    [
+        ("vi ringrazio tanto, signora", "grazie"), ("mille grazie davvero", "grazie"), ("chiedo scusa", "scuse"),
+        ("mi dispiace tanto", "scuse"), ("ci vediamo più tardi", "congedo"), ("a presto, amico", "congedo"),
+        ("come ti senti?", "come_stai"), ("tutto bene, vecchio?", "come_stai"), ("e tu come ti chiami?", "chi_sei"),
+        ("sei un drago cattivo", "scortesia"), ("siete una strega", "scortesia"),
+        ("grazie e addio", "congedo"),  # the last one said
+    ],
+)  # fmt: skip
+def test_the_words_of_a_gesture_in_a_free_sentence(text, gesture):
+    assert gesture_said(words_of(text)) == gesture
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["ciao", "come si esce da qui?", "chi era il castellano?", "come sta la contessa?", "che graziosa stanza",
+     "che diavolo è questo?", "vado a nord"],
+)  # fmt: skip
+def test_no_gesture_in_other_sentences(text):
+    # Not the greeting: the model already answers it when it knows no better.
+    assert gesture_said(words_of(text)) is None
 
 
 # --- Whether a sentence names a thing (to check the LLM's answers) ------------------------------

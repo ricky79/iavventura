@@ -21,6 +21,7 @@ from app.engine.models import (
     Command,
     Conversation,
     Direction,
+    Gesture,
     Item,
     Room,
     Topic,
@@ -31,6 +32,7 @@ from app.engine.parser import (
     GO_WORDS,
     ITEM_VERBS,
     find_topic,
+    gesture_said,
     is_named,
     names_said,
     names_the_way,
@@ -229,11 +231,15 @@ def _checked(
     exits: Sequence[tuple[Direction, Room | None]],
     characters: Characters,
 ) -> Action | NotUnderstood:
-    """The action, if the sentence asks for it; a question about a topic the sentence names."""
+    """The action, if the sentence asks for it; a question about a topic the sentence names, the
+    gesture it says."""
     if action.verb is Command.GO:
         return _checked_move(action, words, exits)
     if action.verb is Conversation.ASK:
         return _about_the_topic_named(action, words, characters)
+    if action.verb is Conversation.TALK and (said := gesture_said(words)) is not None:
+        # "perdonatemi se vi disturbo": the model said "saluto", as for almost any gesture.
+        return Action(verb=Conversation.TALK, target=action.target, gesture=said)
     if not isinstance(action.verb, Verb):
         return action
     if action.verb is Verb.JUMP:
@@ -293,6 +299,9 @@ def _checked_move(
     model's: its direction ("salgo sul sasso": up), or the only exit it names ("attraverso il ponte")."""
     said = _directions_said(words)
     places = [room for _, room in exits if room is not None and significant_words(room.name) in names_said(room, words)]
+    if not (said or places) and gesture_said(words) is Gesture.FAREWELL:
+        # "adesso vado, ci vediamo più tardi": leaving the conversation, not the room
+        return NotUnderstood("la frase si congeda, non chiede di spostarsi")
     if not (said or places or MOVE_WORDS.intersection(words)):
         return NotUnderstood("la frase non chiede di spostarsi")
     if names_the_way(action.direction, words, exits):

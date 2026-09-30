@@ -733,6 +733,40 @@ def test_thanks_naming_a_topic_are_still_thanks(castle):
     assert answer.startswith("(ringrazia il pellegrino)\n")
 
 
+@pytest.mark.parametrize(
+    ("sentence", "reply", "shown"),
+    [
+        ("ti ringrazio tanto, draghetto", {"verbo": "dai", "bersaglio": "draghetto", "con": "nessuno"},
+         "(ringrazia il draghetto)"),
+        ("sei un drago cattivo", {"verbo": "usa", "bersaglio": "draghetto", "con": "more"},
+         "(sii scortese con il draghetto)"),
+        ("adesso vado, ci vediamo più tardi", {"verbo": "vai", "bersaglio": "sud", "con": "nessuno"},
+         "(congedati dal draghetto)"),
+    ],
+)  # fmt: skip
+def test_a_gesture_the_model_turns_into_nonsense_is_still_said(dragon, sentence, reply, shown):
+    # With the real model: "dai" or "usa" with no item, and the game answered "Non ho capito.".
+    game = Game(Engine(dragon), talking(reply))
+
+    assert say(game, sentence).startswith(f"{shown}\n")
+
+
+def test_a_gesture_for_someone_elsewhere_is_not_said_to_the_one_here():
+    # Ettore is not in Livia's office: she doesn't take his thanks.
+    valdimora = load_world(WORLDS_DIR / "valdimora")
+    game = Game(Engine(valdimora), talking({"verbo": "dai", "bersaglio": "Livia", "con": "nessuno"}))
+    game.state.current_room = "ufficio_governante"
+
+    assert say(game, "ti ringrazio di cuore, Ettore") == NOBODY_HERE
+
+
+def test_a_sentence_the_model_calls_no_game_action_is_left_alone(dragon):
+    # Only a broken action is replaced by the gesture the sentence says: "altro" stays "altro".
+    game = Game(Engine(dragon), talking({"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}))
+
+    assert say(game, "che stupido questo bosco") == NOT_A_GAME_ACTION
+
+
 def test_no_thanks_answers_the_question_even_with_someone_here(castle):
     # «no, grazie» is also a formula: the answer to «Vuoi…?» comes first.
     game = in_the_stable(castle)

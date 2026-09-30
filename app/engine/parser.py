@@ -132,6 +132,34 @@ GESTURE_FORMULAS: dict[tuple[str, ...], Gesture | None] = {
     ),
 }  # fmt: skip
 
+# The words that say a gesture in a free sentence, to check the LLM's answer: with "parla" the model
+# answers "saluto" for almost any of them. Words, beginnings of words (every ending: "perdonatemi",
+# "stupida") and pairs of words. Not the greeting, which the model says when it knows no better; not
+# «diavolo» either, which is also an exclamation.
+_GESTURE_WORDS = {
+    "grazie": Gesture.THANKS,
+    "dispiace": Gesture.APOLOGY,
+    **dict.fromkeys(["arrivederci", "addio", "buonanotte"], Gesture.FAREWELL),
+    **dict.fromkeys(["chiami", "chiamate"], Gesture.WHO_ARE_YOU),
+}
+_GESTURE_STEMS = {
+    "ringrazi": Gesture.THANKS,
+    **dict.fromkeys(["scus", "perdon"], Gesture.APOLOGY),
+    **dict.fromkeys(
+        ["stupid", "idiot", "cretin", "scem", "imbecill", "antipatic", "maleducat", "streg", "meger", "brontolon",
+         "cattiv", "scioc"],
+        Gesture.RUDENESS,
+    ),
+}  # fmt: skip
+_GESTURE_PAIRS = {
+    **dict.fromkeys([("ci", "vediamo"), ("a", "presto"), ("a", "dopo")], Gesture.FAREWELL),
+    **dict.fromkeys(
+        [("come", "stai"), ("come", "state"), ("come", "va"), ("ti", "senti"), ("vi", "sentite"), ("tutto", "bene")],
+        Gesture.HOW_ARE_YOU,
+    ),
+    **dict.fromkeys([("chi", "sei"), ("chi", "siete")], Gesture.WHO_ARE_YOU),
+}
+
 
 class Ambiguous(NamedTuple):
     """Several items or characters in reach answer to the same words: the player has to say which one."""
@@ -283,6 +311,18 @@ def _said_to(person: Character, topics: Sequence[Topic], formula: tuple[str, ...
     if topic is not None:
         return Action(verb=Conversation.ASK, target=person.id, topic=topic.id)
     return Action(verb=Conversation.TALK, target=person.id, gesture=GESTURE_FORMULAS[formula])
+
+
+def gesture_said(words: Sequence[str]) -> Gesture | None:
+    """The gesture a free sentence says, by its words ("perdonatemi se vi disturbo": an apology); the
+    last one said if several ("grazie e arrivederci"). None for anything else, the greeting too."""
+    said = None
+    for position, word in enumerate(words):
+        gesture = _GESTURE_PAIRS.get(tuple(words[position - 1 : position + 1])) if position else None
+        gesture = gesture or _GESTURE_WORDS.get(word)
+        gesture = gesture or next((g for stem, g in _GESTURE_STEMS.items() if word.startswith(stem)), None)
+        said = gesture or said
+    return said
 
 
 def words_of(text: str) -> list[str]:
