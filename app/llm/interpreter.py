@@ -240,7 +240,11 @@ def _checked(
     if action.verb is Command.GO:
         return _checked_move(action, words, exits)
     if action.verb is Conversation.ASK:
-        return _about_the_topic_named(action, words, characters)
+        action = _about_the_topic_named(action, words, characters)
+        if action.topic is None and (said := gesture_said(words)) is not None:
+            # «gli chiedo il suo nome», «gli chiedo scusa»: no topic, a gesture.
+            return Action(verb=Conversation.TALK, target=action.target, gesture=said)
+        return action
     if action.verb is Conversation.TALK and (said := gesture_said(words)) is not None:
         # "perdonatemi se vi disturbo": the model said "saluto", as for almost any gesture.
         return Action(verb=Conversation.TALK, target=action.target, gesture=said)

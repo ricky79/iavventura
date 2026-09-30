@@ -157,8 +157,12 @@ _GESTURE_PAIRS = {
         Gesture.HOW_ARE_YOU,
     ),
     # «chiamate il dottore» is no «chi sei»: only with «ti» or «vi».
-    **dict.fromkeys([("chi", "sei"), ("chi", "siete"), ("ti", "chiami"), ("vi", "chiamate")], Gesture.WHO_ARE_YOU),
-}
+    **dict.fromkeys(
+        [("chi", "sei"), ("chi", "siete"), ("ti", "chiami"), ("vi", "chiamate"), ("tuo", "nome"), ("vostro", "nome"),
+         ("suo", "nome")],
+        Gesture.WHO_ARE_YOU,
+    ),
+}  # fmt: skip
 _YOU_ARE = frozenset({"sei", "siete", "sii", "siate"})
 
 
@@ -255,8 +259,9 @@ def _conversation(
 ) -> Action | Ambiguous | ToWhom | None:
     """"parla con X", "saluta X", "chiedi a X di Y"; without X, the only character here or the one spoken
     to last.
-    A question about an item or another character of the world that names none of X's topics, not even
-    nearly, gets X's `unknown`; anything else that is no topic the player knows goes to the LLM."""
+    A question that names none of X's topics, not even nearly, is the gesture it says («chiedi scusa»),
+    or about an item or another character of the world it gets X's `unknown`; anything else that is no
+    topic the player knows goes to the LLM."""
     people = [character for character, _ in characters]
     found = _longest(words, 0, _phrases(people)) if words else None
     if found is None and words:
@@ -279,8 +284,12 @@ def _conversation(
     topic = find_topic(words, topics) if words else None
     if topic is not None:
         return Action(verb=Conversation.ASK, target=character.id, topic=topic.id)
+    named = topics_named(character, topics, words) if words else []
+    if words and not named and (gesture := gesture_said(words)) is not None:
+        # «chiedi al pellegrino del suo nome», «chiedi scusa al custode»: no topic, a gesture.
+        return Action(verb=Conversation.TALK, target=character.id, gesture=gesture)
     others = [person for person in world.characters.values() if person.id != character.id]
-    if words and not topics_named(character, topics, words) and tuple(words) in _phrases([*world.items.values(), *others]):
+    if words and not named and tuple(words) in _phrases([*world.items.values(), *others]):
         # «chiedi a Livia della meridiana»: something of the game she has no topic about. «della
         # chiave», nearly her «chiavi», is left to the LLM.
         return Action(verb=Conversation.ASK, target=character.id)

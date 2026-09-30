@@ -419,6 +419,21 @@ def test_the_gesture_the_sentence_says_wins_over_the_model(keeper, sentence, ges
     assert action == Action(verb="parla", target="custode", gesture=gesture)
 
 
+@pytest.mark.parametrize(
+    ("sentence", "expected"),
+    [
+        ("gli chiedo il suo nome", Action(verb="parla", target="custode", gesture="chi_sei")),
+        ("gli chiedo scusa", Action(verb="parla", target="custode", gesture="scuse")),
+        ("gli chiedo se ha fame", Action(verb="chiedi", target="custode")),
+    ],
+)
+def test_a_question_about_no_topic_that_says_a_gesture_is_that_gesture(keeper, sentence, expected):
+    items, characters = near_keeper(keeper)
+    reply = {"verbo": "chiedi", "bersaglio": "custode", "con": "nessuno"}
+
+    assert interpret(FakeLLMClient(json_replies=[reply]), sentence, items, (), characters) == expected
+
+
 @pytest.mark.parametrize("sentence", ["com'è andato il viaggio?", "chi era il castellano?", "come si esce da qui?"])
 def test_a_sentence_without_the_words_of_a_gesture_keeps_the_model_answer(keeper, sentence):
     items, characters = near_keeper(keeper)
