@@ -471,6 +471,7 @@ def test_a_question_without_a_name_goes_to_the_last_one_spoken_to(with_cook):
         ("vi ringrazio tanto, signora", "grazie"), ("mille grazie davvero", "grazie"), ("chiedo scusa", "scuse"),
         ("mi dispiace tanto", "scuse"), ("ci vediamo più tardi", "congedo"), ("a presto, amico", "congedo"),
         ("come ti senti?", "come_stai"), ("tutto bene, vecchio?", "come_stai"), ("e tu come ti chiami?", "chi_sei"),
+        ("e voi come vi chiamate?", "chi_sei"),
         ("sei un drago cattivo", "scortesia"), ("siete una strega", "scortesia"), ("che antipatica!", "scortesia"),
         ("stupido!", "scortesia"), ("grazie e addio", "congedo"),  # the last one said
     ],
@@ -485,7 +486,8 @@ def test_the_words_of_a_gesture_in_a_free_sentence(text, gesture):
      "che diavolo è questo?", "vado a nord",
      # Found by the final review: an unkind word said to nobody is no rudeness.
      "i draghi cattivi sputano fuoco?", "che tempo cattivo stasera, eh?", "streghe e fantasmi esistono?",
-     "questa storia è scioccante"],
+     "questa storia è scioccante",
+     "chiamate il dottore", "lo chiamano Tobia"],  # «chiamare» is no «chi sei» without «ti»/«vi»
 )  # fmt: skip
 def test_no_gesture_in_other_sentences(text):
     # Not the greeting: the model already answers it when it knows no better.

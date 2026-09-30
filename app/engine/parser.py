@@ -140,7 +140,6 @@ _GESTURE_WORDS = {
     "grazie": Gesture.THANKS,
     "dispiace": Gesture.APOLOGY,
     **dict.fromkeys(["arrivederci", "addio", "buonanotte"], Gesture.FAREWELL),
-    **dict.fromkeys(["chiami", "chiamate"], Gesture.WHO_ARE_YOU),
 }
 _GESTURE_STEMS = {
     "ringrazi": Gesture.THANKS,
@@ -157,7 +156,8 @@ _GESTURE_PAIRS = {
         [("come", "stai"), ("come", "state"), ("come", "va"), ("ti", "senti"), ("vi", "sentite"), ("tutto", "bene")],
         Gesture.HOW_ARE_YOU,
     ),
-    **dict.fromkeys([("chi", "sei"), ("chi", "siete")], Gesture.WHO_ARE_YOU),
+    # «chiamate il dottore» is no «chi sei»: only with «ti» or «vi».
+    **dict.fromkeys([("chi", "sei"), ("chi", "siete"), ("ti", "chiami"), ("vi", "chiamate")], Gesture.WHO_ARE_YOU),
 }
 _YOU_ARE = frozenset({"sei", "siete", "sii", "siate"})
 
