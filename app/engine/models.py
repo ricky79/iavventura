@@ -295,6 +295,7 @@ class Topic(_Frozen):
     when: Condition | None = None
     text: Text
     variants: tuple[TextVariant, ...] = ()
+    again: Text | None = None  # the answer from the second time on, unless a variant holds
     effects: tuple[Effect, ...] = ()
 
 
@@ -320,6 +321,7 @@ class Character(_Frozen):
     moves: tuple[Move, ...] = ()  # the first whose condition holds says where the character is now
     greeting: Text  # "parla con X"
     greeting_variants: tuple[TextVariant, ...] = ()  # the first that holds replaces the greeting
+    greeting_again: Text | None = None  # the greeting from the second time on, unless a variant holds
     unknown: Text  # the answer about anything else
     refuses: Text | None = None  # "dai X" that no rule wants; without it, the engine's own answer
     topics: dict[Id, Topic] = {}
@@ -413,6 +415,8 @@ class GameState(BaseModel):
     visited: set[Id] = Field(default_factory=set)
     # Items out of reach the player has seen (Item.reveals): only these can be named from afar.
     seen: set[Id] = Field(default_factory=set)
+    # What the player has already said to whom: "livia:topic:contessa", "livia:gesture:grazie".
+    asked: set[str] = Field(default_factory=set)
     turns: int = 0
     finished: bool = False
     # The game ended with a death (Ending.death): it can go on from the last act begun, if any.

@@ -151,3 +151,10 @@ def test_a_state_saved_before_acts_existed_is_restored(world_data):
     state = Engine(World.model_validate(world_data)).restore(data)
 
     assert (state.lost, state.act, state.checkpoint) == (False, 0, None)
+
+
+def test_a_state_saved_before_the_dialogues_is_restored(world_data):
+    data = saved(world_data)
+    data.pop("asked", None)
+
+    assert Engine(World.model_validate(world_data)).restore(data).asked == set()

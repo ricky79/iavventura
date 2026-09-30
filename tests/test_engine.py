@@ -32,8 +32,8 @@ def start(data: dict) -> tuple[Engine, GameState]:
 
 
 def snapshot(state: GameState) -> dict:
-    """What an action may change, apart from the turn counter."""
-    return state.model_dump(exclude={"turns"})
+    """What an action may change, apart from the turn counter and what the player has said to whom."""
+    return state.model_dump(exclude={"turns", "asked"})
 
 
 # --- Start, reach, look, inventory ---------------------------------------------
@@ -1067,6 +1067,41 @@ def test_the_answer_follows_the_variants_of_the_topic(keeper):
     outcome = engine.execute(state, Action(verb="chiedi", target="custode", topic="leva"))
 
     assert outcome.text == "«L'hai tirata, eh?»"
+
+
+def test_the_second_time_a_topic_answers_with_its_again_text(keeper_world):
+    keeper_world["characters"]["custode"]["topics"]["cella"]["again"] = "«Ve l'ho già detto: a nord.»"
+    engine, state = start(keeper_world)
+    ask = Action(verb="chiedi", target="custode", topic="cella")
+
+    first, second = engine.execute(state, ask).text, engine.execute(state, ask).text
+
+    assert (first, second) == ("«La cella è a nord.»", "«Ve l'ho già detto: a nord.»")
+
+
+def test_without_again_a_topic_answers_the_same(keeper):
+    engine, state = keeper
+    ask = Action(verb="chiedi", target="custode", topic="cella")
+
+    assert engine.execute(state, ask).text == engine.execute(state, ask).text == "«La cella è a nord.»"
+
+
+def test_a_variant_that_holds_wins_over_again(keeper_world):
+    keeper_world["characters"]["custode"]["topics"]["leva"]["again"] = "«Ancora la leva?»"
+    engine, state = start(keeper_world)
+    ask = Action(verb="chiedi", target="custode", topic="leva")
+    engine.execute(state, ask)
+    state.flags.add("porta_aperta")
+
+    assert engine.execute(state, ask).text == "«L'hai tirata, eh?»"
+
+
+def test_the_greeting_has_its_again_text(keeper_world):
+    keeper_world["characters"]["custode"]["greeting_again"] = "«Ancora voi?»"
+    engine, state = start(keeper_world)
+    talk = Action(verb="parla", target="custode")
+
+    assert [engine.execute(state, talk).text for _ in range(2)] == ["«Buongiorno», dice il custode.", "«Ancora voi?»"]
 
 
 def test_asking_about_a_topic_applies_its_effects(keeper):

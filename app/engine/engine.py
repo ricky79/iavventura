@@ -259,13 +259,17 @@ class Engine:
             return Outcome(ok=False, text=NOBODY_HERE)
         character, topics = here
         if action.verb is Conversation.TALK:
-            return Outcome(ok=True, text=_first_variant(character.greeting_variants, character.greeting, state))
+            key = f"{character.id}:gesture:saluto"
+            return Outcome(
+                ok=True,
+                text=_said(state, key, character.greeting_variants, character.greeting, character.greeting_again),
+            )
         topic = next((topic for topic in topics if topic.id == action.topic), None)
         if topic is None:
             return Outcome(ok=False, text=character.unknown)
         for effect in topic.effects:
             _apply(effect, state)
-        return Outcome(ok=True, text=_first_variant(topic.variants, topic.text, state))
+        return Outcome(ok=True, text=_said(state, f"{character.id}:topic:{topic.id}", topic.variants, topic.text, topic.again))
 
     def _act_on_items(self, state: GameState, action: Action) -> Outcome:
         in_reach = {item.id for item in self.in_reach(state)} | {person.id for person, _ in self.characters_here(state)}
@@ -425,3 +429,11 @@ def _description(thing: Room | Item | Character, state: GameState) -> str:
 
 def _first_variant(variants: tuple[TextVariant, ...], text: str, state: GameState) -> str:
     return next((variant.text for variant in variants if holds(variant.when, state)), text)
+
+
+def _said(state: GameState, key: str, variants: tuple[TextVariant, ...], text: str, again: str | None) -> str:
+    """What a character says: the first variant that holds; else, from the second time on, `again` if
+    there is one; else the text. From now on it counts as said."""
+    line = _first_variant(variants, again if again is not None and key in state.asked else text, state)
+    state.asked.add(key)
+    return line
