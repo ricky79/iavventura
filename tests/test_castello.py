@@ -116,12 +116,12 @@ def test_the_pilgrim_refuses_what_he_is_given(castle):
     state, _ = engine.new_game()
     state.current_room = "scuderia"
     state.item_locations["corda"] = "inventory"
-    before = state.model_dump(exclude={"turns"})
+    before = state.model_dump(exclude={"turns", "last_speaker"})
 
     outcome = engine.execute(state, Action(verb="dai", target="corda", with_="pellegrino"))
 
     assert outcome.text == "Il pellegrino scuote la testa: «Tienilo tu, figliolo: a me basta il bastone.»"
-    assert state.model_dump(exclude={"turns"}) == before
+    assert state.model_dump(exclude={"turns", "last_speaker"}) == before
 
 
 # --- Playing through the engine -------------------------------------------------

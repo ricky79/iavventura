@@ -127,7 +127,9 @@ def test_the_action_asked_about_travels_with_the_state(castle):
     )
 
     assert asked["text"] == "Vuoi spingere il portone?"
-    assert asked["pending"] == {"verb": "spingi", "target": "portone", "with": None, "direction": None, "topic": None}
+    assert asked["pending"] == {
+        "verb": "spingi", "target": "portone", "with": None, "direction": None, "topic": None, "gesture": None,
+    }  # fmt: skip
     assert answered.json()["text"] == "Non succede niente."
     assert answered.json()["pending"] is None
 

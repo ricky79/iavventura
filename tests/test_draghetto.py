@@ -178,12 +178,12 @@ def test_the_wrong_gift_gets_a_hint_and_changes_nothing(dragon, before, gift, ru
     engine, state = start(dragon)
     play(engine, state, before)
     carried = gift.target
-    before_gift = state.model_dump(exclude={"turns"})
+    before_gift = state.model_dump(exclude={"turns", "last_speaker"})
 
     outcome = engine.execute(state, gift)
 
     assert outcome.text == dragon.rules[rule].text
-    assert state.model_dump(exclude={"turns"}) == before_gift
+    assert state.model_dump(exclude={"turns", "last_speaker"}) == before_gift
     assert state.item_locations[carried] == "inventory"
 
 

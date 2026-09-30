@@ -269,6 +269,16 @@ BROKEN_KEEPERS = {
         lambda d: keeper(d).update(moves=[{"when": {"flag": "allarme"}, "room": "cella"}]),
         ["characters.custode.moves.0.when", "allarme"],
     ),
+    "topic named like a gesture": (
+        lambda d: topic(d, "cella").update(name="Grazie"),
+        ["characters.custode.topics.cella.name", "gesture"],
+    ),
+    "gesture variant is checked": (
+        lambda d: keeper(d).update(
+            gestures={"grazie": {"text": "«Prego.»", "variants": [{"when": {"flag": "amici"}, "text": "«Figurati.»"}]}}
+        ),
+        ["characters.custode.gestures.grazie.variants.0.when", "amici"],
+    ),
 }
 
 

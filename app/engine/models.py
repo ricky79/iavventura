@@ -66,6 +66,29 @@ class Conversation(StrEnum):
     ASK = "chiedi"
 
 
+class Gesture(StrEnum):
+    """What the player says to a character besides greeting it and asking about a topic."""
+
+    FAREWELL = "congedo"
+    THANKS = "grazie"
+    APOLOGY = "scuse"
+    HOW_ARE_YOU = "come_stai"
+    WHO_ARE_YOU = "chi_sei"
+    RUDENESS = "scortesia"
+
+
+# The words for the gestures, as the interpreter's model and the authors say them; None is the greeting.
+GESTURE_LABELS: dict[str, Gesture | None] = {
+    "saluto": None,
+    "congedo": Gesture.FAREWELL,
+    "grazie": Gesture.THANKS,
+    "scuse": Gesture.APOLOGY,
+    "come stai": Gesture.HOW_ARE_YOU,
+    "chi sei": Gesture.WHO_ARE_YOU,
+    "scortesia": Gesture.RUDENESS,
+}
+
+
 class Gender(StrEnum):
     """Grammatical gender of a name: it chooses the article (la corda, il gancio)."""
 
@@ -306,6 +329,14 @@ class Move(_Frozen):
     room: Id
 
 
+class Line(_Frozen):
+    """A character's answer to a gesture: the text, variants that follow the game, the second time."""
+
+    text: Text
+    variants: tuple[TextVariant, ...] = ()
+    again: Text | None = None
+
+
 class Character(_Frozen):
     """Someone the player can talk to: it greets, and answers about its topics with fixed texts."""
 
@@ -324,6 +355,7 @@ class Character(_Frozen):
     greeting_again: Text | None = None  # the greeting from the second time on, unless a variant holds
     unknown: Text  # the answer about anything else
     refuses: Text | None = None  # "dai X" that no rule wants; without it, the engine's own answer
+    gestures: dict[Gesture, Line] = {}  # without one, a plain answer with the character's name
     topics: dict[Id, Topic] = {}
 
     @model_validator(mode="before")
@@ -417,6 +449,9 @@ class GameState(BaseModel):
     seen: set[Id] = Field(default_factory=set)
     # What the player has already said to whom: "livia:topic:contessa", "livia:gesture:grazie".
     asked: set[str] = Field(default_factory=set)
+    # The character spoken to, asked or given something last: gestures and questions without a name go
+    # to them, if they are here.
+    last_speaker: Id | None = None
     turns: int = 0
     finished: bool = False
     # The game ended with a death (Ending.death): it can go on from the last act begun, if any.
@@ -447,11 +482,14 @@ class Action(_Frozen):
     with_: Id | None = Field(default=None, alias="with")
     direction: Direction | None = None
     topic: Id | None = None
+    gesture: Gesture | None = None  # only with "parla"; None is the greeting
 
     @model_validator(mode="after")
     def _fields_fit_the_verb(self) -> "Action":
         if self.topic is not None and self.verb is not Conversation.ASK:
             raise ValueError("only 'chiedi' has a topic")
+        if self.gesture is not None and self.verb is not Conversation.TALK:
+            raise ValueError("only 'parla' has a gesture")
         if isinstance(self.verb, Conversation):
             if self.target is None or self.with_ is not None or self.direction is not None:
                 raise ValueError(f"'{self.verb}' needs a character and nothing else")
