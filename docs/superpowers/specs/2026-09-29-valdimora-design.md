@@ -141,7 +141,7 @@ Dove sono i personaggi (con `moves`, sezione 5):
 | Ettore | Stanza del maggiordomo | Galleria dei ritratti | Cucina | Cucina |
 | Livia | Ufficio della governante | Camera della contessa | Camera di Livia | Cucina |
 | Corrado | Sala del biliardo | Studio del conte | Archivio di famiglia | Cucina |
-| Ferri | Sala del biliardo | Biblioteca | Salotto | Salotto |
+| Ferri | Sala del biliardo | Sala del biliardo (vedi «Atto 2: decisioni») | Salotto | Salotto |
 | Agnese | Cappella | Loggia dello scalone | Corridoio della servitù (in Rimessa o in Cucina durante le commissioni) | Scala della cantina («Vi aspetto qui»); Cantina dei vini quando si rivela |
 
 ---
@@ -320,10 +320,30 @@ Nessun pericolo. Corrado è sgarbato e lascia capire che conta sull'eredità.
    **Pericolo:** `prendi vaso`, `spingi balaustra`, `salta balaustra` fanno crollare la balaustra
    (flag, finale di morte). La descrizione del balcone lo avverte.
 
-Indizi senza enigma: Ferri, in biblioteca, sulla morte della contessa («Corrado insisteva per non
-chiamare nessuno da fuori»: falsa pista); Agnese chiede di vedere il medaglione — `dai medaglione
-ad Agnese` negli atti 1-3 non ha effetti: lo rigira e lo rende, «Che strana stella» (è l'`otherwise`
-della regola che nell'atto 4 porta al finale «tradita»).
+Indizi senza enigma: Ferri sulla morte della contessa («Corrado insisteva per non chiamare nessuno
+da fuori»: falsa pista); Agnese chiede di vedere il medaglione — `dai medaglione ad Agnese` negli
+atti 1-3 non ha effetti: lo rigira e lo rende, «Che strana stella» (è l'`otherwise` della regola che
+nell'atto 4 porta al finale «tradita»).
+
+#### Atto 2: decisioni prese al momento di costruirlo (2026-09-30)
+
+- **Ferri resta nella Sala del biliardo** anche nell'atto 2. Il filo facoltativo della grappa si
+  gioca accanto alla sua borsa, che è un arredo del biliardo: se lui salisse in biblioteca, chi non
+  ha fatto il filo nell'atto 1 non potrebbe più farlo, e chi l'ha fatto lo troverebbe addormentato
+  «accanto alla borsa» in un'altra stanza. La sua falsa pista su Corrado è già nell'argomento
+  `contessa`. Dove sta nell'atto 3 si decide col piano dell'atto 3.
+- **I testi dei personaggi che si spostano**: varianti su `atto_due` per ciò che vale solo nel primo
+  atto (il saluto e il congedo di Agnese, accanto alla bara e al primo incontro). Argomenti nuovi solo
+  dove la pista li chiede: Livia la rosa bianca; Ettore il ritratto e Clara, dopo la rivelazione 2;
+  Corrado lo studio e il bastone; Agnese il medaglione. Nessuna nuova opinione reciproca.
+- **Il campanello col filo tagliato** (indizio piantato nell'atto 1): nella camera della contessa si
+  vede l'altro capo, il cordone del campanello tagliato di netto; Livia, se glielo si chiede, non se
+  n'era accorta. La spiegazione resta all'atto 4 (Agnese). Nessun enigma.
+- **Difetti rimandati dall'atto 1**, solo quelli che l'atto 2 tocca: l'alias «rosa» del rosaio (ora
+  c'è la rosa bianca), «fotografia di mia madre» per il parser, «vai sullo scalone». Gli altri in un
+  branch di pulizia a parte.
+- **Il modello vero**: una ventina di frasi libere dell'atto 2 in `tests/test_ollama.py`, poi il
+  giro completo.
 
 ### Atto 3: soffitta
 
