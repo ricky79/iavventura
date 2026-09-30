@@ -342,6 +342,25 @@ tests/
     esamina. Tolto un alias pericoloso: «leggio», che la tolleranza ai refusi faceva nominare da
     «leggo». Nella spec, gli indizi piantati nel primo atto da pagare dopo (il campanello col filo
     tagliato, la luce sotto il tetto, le lenzuola «A. V.»).
+- **Dialoghi più naturali** (2026-09-30, branch `feature/dialoghi`; spec in
+  `docs/superpowers/specs/2026-09-29-dialoghi-design.md`, piano in
+  `docs/superpowers/plans/2026-09-29-dialoghi.md`): l'LLM resta solo interprete (un personaggio
+  interpretato dal modello è stato scartato per gli stessi motivi del narratore; una prova di
+  riformulazione è rimandata). Sette gesti sociali (saluto, congedo, grazie, scuse, come stai, chi
+  sei, scortesia) con testi d'autore per gli otto personaggi (`Character.gestures`, risposte neutre
+  di riserva); il parser riconosce le formule brevi, l'interprete le frasi libere con «parla» e il
+  gesto in `con`. Il gioco ricorda cosa si è chiesto a chi (`GameState.asked`) per `again`, e
+  l'ultimo interlocutore (`last_speaker`), a cui vanno gesti, domande e regali senza nome; è l'unica
+  cosa che cambia anche con un'azione rifiutata. A Valdimora le opinioni reciproche (Agnese e
+  Corrado si difendono a vicenda). «chiedi a Livia di Corrado» non prende più un argomento a caso.
+  - Col modello vero, con «parla» qwen2.5:3b risponde «saluto» a quasi ogni gesto (5 frasi libere
+    su 18 al primo giro). Riparato nel codice, il prompt non cambia più: le parole della frase
+    decidono il gesto (`parser.gesture_said`: «perdonatemi», «chi siete», «addio», un insulto;
+    l'ultimo detto vince), un'azione senza senso («dai» o «usa» senza oggetto) diventa il gesto
+    che la frase dice, un congedo senza direzione né luogo non è uno spostamento («adesso vado, ci
+    vediamo più tardi»). Poi 17 su 18; limite noto «siete una vecchia strega» («vecchia» è quasi
+    «vecchio», alias di Ettore). «chi era il castellano?» ora dà «esamina il pellegrino», ma il
+    turno risponde giusto (la domanda nomina l'argomento): il test è passato sul turno intero.
 
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.
@@ -394,9 +413,9 @@ ollama pull qwen2.5:3b
     (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
     sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
     invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
-    `tests/test_ollama.py` (oggi 100 su 106, ~950 s: i 37 casi di prima, gli 8 dei pericoli e i 17
-    del primo atto di Valdimora tutti, e 38 delle 44 frasi trovate giocando; le altre 6 sono limiti
-    noti).
+    `tests/test_ollama.py` (oggi 117 su 124, ~990 s: i 36 casi di prima, gli 8 dei pericoli e i 17
+    del primo atto di Valdimora tutti, 39 delle 45 frasi trovate giocando e 17 delle 18 frasi dei
+    dialoghi; le altre 7 sono limiti noti).
   - Il modello non è del tutto deterministico: con lo stesso prompt e `temperature: 0`, 2 o 3 frasi
     su 70 cambiano risposta da un giro all'altro (la cache di Ollama?). Un caso che passa una volta
     sola non dimostra niente.
