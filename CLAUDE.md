@@ -418,8 +418,8 @@ ollama pull qwen2.5:3b
     (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
     sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
     invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
-    `tests/test_ollama.py` (oggi 117 su 124, ~990 s: i 36 casi di prima, gli 8 dei pericoli e i 17
-    del primo atto di Valdimora tutti, 39 delle 45 frasi trovate giocando e 17 delle 18 frasi dei
+    `tests/test_ollama.py` (oggi 119 su 126, ~1080 s: i 36 casi di prima, gli 8 dei pericoli e i 17
+    del primo atto di Valdimora tutti, 39 delle 45 frasi trovate giocando e 19 delle 20 frasi dei
     dialoghi; le altre 7 sono limiti noti).
   - Il modello non è del tutto deterministico: con lo stesso prompt e `temperature: 0`, 2 o 3 frasi
     su 70 cambiano risposta da un giro all'altro (la cache di Ollama?). Un caso che passa una volta
