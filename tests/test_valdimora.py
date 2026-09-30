@@ -428,3 +428,26 @@ def test_the_doctor_wants_the_grappa_he_sees(valdimora):
     game.state.item_locations["grappa"] = "inventory"
 
     assert "non fatemi soffrire" in game.turn("chiedi al dottore della grappa")
+
+
+# --- Atto 2: i ritocchi al pianterreno ---------------------------------------------------------------
+
+
+def test_a_key_once_used_stays_in_its_lock(valdimora):
+    # Fewer keys in the pocket, fewer «Quale intendi»: the staircase, the sideboard, the cabinet.
+    upstairs, register = new_game(valdimora), new_game(valdimora)
+
+    play(upstairs, *TO_THE_STAIRCASE)
+    play(register, *TO_THE_REGISTER)
+
+    assert upstairs.state.item_locations["chiave_scalone"] is None
+    assert (register.state.item_locations["chiave_credenza"], register.state.item_locations["chiavetta"]) == (None, None)
+
+
+def test_the_photograph_of_my_mother(valdimora):
+    # A deferred defect of act 1: the parser didn't know «fotografia di mia madre».
+    game = new_game(valdimora)
+    game.state.current_room = "stanza_maggiordomo"
+    game.state.item_locations["fotografia"] = "inventory"
+
+    assert game.turn("dai la fotografia di mia madre a Ettore") == valdimora.characters["ettore"].refuses

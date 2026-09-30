@@ -192,7 +192,7 @@ items:
   fotografia:
     name: fotografia di tua madre
     gender: f
-    aliases: [fotografia, foto]
+    aliases: [fotografia, foto, fotografia di mia madre, foto di mia madre]
     description: >
       Tua madre a trent'anni, in uno studio fotografico di Genova: il vestito scuro, i capelli
       raccolti, il medaglione al collo. Non sorride, ma ha gli occhi buoni.
@@ -824,10 +824,11 @@ rules:
     when: {not: {flag: atto_due}}
     otherwise: La porta dello scalone è già aperta.
     effects:
+      - remove: chiave_scalone
       - set_flag: atto_due
     text: >
-      La chiave gira con un rumore secco. La porta si apre sullo scalone buio, che sale verso il
-      piano nobile.
+      La chiave gira con un rumore secco, e la lasci nella toppa. La porta si apre sullo scalone
+      buio, che sale verso il piano nobile.
 
   apri_scalone_senza_chiave:
     trigger: {verb: apri, target: porta_scalone}
@@ -844,11 +845,12 @@ rules:
     when: {not: {flag: credenza_aperta}}
     otherwise: La credenza è già aperta, e dentro restano solo bicchieri.
     effects:
+      - remove: chiave_credenza
       - give: grappa
       - set_flag: credenza_aperta
     text: >
-      La chiavina gira senza fatica. Tra i bicchieri buoni c'è una bottiglia di grappa ancora
-      sigillata. La prendi.
+      La chiavina gira senza fatica, e la lasci nella serratura. Tra i bicchieri buoni c'è una
+      bottiglia di grappa ancora sigillata. La prendi.
 
   apri_credenza_senza_chiave:
     trigger: {verb: apri, target: credenza}
@@ -892,11 +894,13 @@ rules:
     when: {not: {flag: armadietto_aperto}}
     otherwise: L'armadietto è già aperto.
     effects:
+      - remove: chiavetta
       - give: registro
       - set_flag: armadietto_aperto
     text: >
-      Lo sportello si apre con un cigolio. Bende, sciroppi, flaconi e, sul ripiano più basso, un
-      quaderno nero: il registro delle medicine. Lo prendi.
+      La chiavetta gira, e la lasci nella serratura. Lo sportello si apre con un cigolio. Bende,
+      sciroppi, flaconi e, sul ripiano più basso, un quaderno nero: il registro delle medicine. Lo
+      prendi.
 
   apri_armadietto_senza_chiave:
     trigger: {verb: apri, target: armadietto}
