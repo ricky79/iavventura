@@ -383,8 +383,8 @@ def test_with_two_here_nobody_named_is_the_last_one_spoken_to(keeper_world):
         return interpret(FakeLLMClient(json_replies=[reply]), "vi sono grata", [], (), characters, last_speaker=last_speaker)
 
     assert heard("cuoca") == Action(verb="parla", target="cuoca", gesture="grazie")
-    assert isinstance(heard(None), NotUnderstood)
-    assert isinstance(heard("pellegrino"), NotUnderstood)
+    # Nobody to say it to: the game asks «A chi?».
+    assert heard(None) == heard("pellegrino") == NotUnderstood("più personaggi e nessuno nominato", to_whom=True)
 
 
 def test_a_gesture_is_logged_with_the_action():

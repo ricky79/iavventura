@@ -14,7 +14,7 @@ logger "app.commands", which the front ends write to logs/comandi.jsonl (app/con
 import logging
 from collections.abc import Iterable
 
-from app.engine.engine import GAME_OVER, NOBODY_HERE, NOT_HERE, Engine
+from app.engine.engine import GAME_OVER, GIVE_TO_WHOM, NOBODY_HERE, NOT_HERE, Engine
 from app.engine.models import (
     INVENTORY,
     Action,
@@ -31,6 +31,7 @@ from app.engine.models import (
 )
 from app.engine.parser import (
     Ambiguous,
+    ToWhom,
     gesture_said,
     is_named,
     names_said,
@@ -144,6 +145,8 @@ class Game:
         parsed = parse(line, self.world, near, exits, characters, self.state.last_speaker)
         if isinstance(parsed, Ambiguous):
             return which_one(parsed.candidates)
+        if isinstance(parsed, ToWhom):
+            return GIVE_TO_WHOM
         if parsed is not None:
             return self._execute(parsed, "parser")
         if self.llm is None:
@@ -165,7 +168,7 @@ class Game:
             if asked is not None:
                 answer = f"({action_text(asked, self.world)})\n" + self._execute(asked, "llm")
             else:
-                answer = self._not_understood(interpreted, words, here)
+                answer = self._not_understood(interpreted, words, here, len(characters))
             # What the game answered instead, if it isn't the usual: the log is for finding sentences to fix.
             detail = interpreted.reason
             if answer not in (NOT_UNDERSTOOD, NOT_A_GAME_ACTION):
@@ -190,9 +193,10 @@ class Game:
         # Show how the sentence was understood: if the model got it wrong, the player sees why.
         return f"({action_text(interpreted, self.world)})\n" + self._execute(interpreted, "llm")
 
-    def _not_understood(self, result: NotUnderstood, words: list[str], here: set[str]) -> str:
+    def _not_understood(self, result: NotUnderstood, words: list[str], here: set[str], people_here: int) -> str:
         """Why nothing is done: better than "Non ho capito" when the sentence names someone or something
-        that isn't here ("ciao orso" at the brook, "mangio una mora" in the glade)."""
+        that isn't here ("ciao orso" at the brook, "mangio una mora" in the glade), or is said to nobody
+        by name among several ("grazie" to Corrado and the doctor: «A chi?»)."""
         someone_elsewhere = self._names_one_elsewhere(self.world.characters.values(), words, here)
         if result.talking and someone_elsewhere:
             return NOBODY_HERE
@@ -203,6 +207,9 @@ class Game:
         # Not for a word that is also an adjective ("il vecchio pozzo"): only if nothing here is named.
         if someone_elsewhere and not self._names_one_here(words, here):
             return NOBODY_HERE
+        said_to_nobody = not result.not_an_action and gesture_said(words) is not None and people_here > 1
+        if result.to_whom or said_to_nobody:
+            return GIVE_TO_WHOM
         return NOT_A_GAME_ACTION if result.not_an_action else NOT_UNDERSTOOD
 
     def _place_instead(self, direction: Direction, words: list[str]) -> str | None:
@@ -256,10 +263,12 @@ class Game:
             if chosen is not None and self._names_something_else(person, chosen, words):
                 # «chiedi a Livia di Corrado»: no topic of hers is named, and the model picked one (Ettore).
                 return Action(verb=Conversation.ASK, target=person.id)
-        # Only a greeting may be a question in disguise: "grazie per la storia della torre" stays a thanks.
-        greeting = action.verb is Conversation.TALK and action.gesture is None
-        if greeting and asking and (question := _topic_asked(words, [(person, topics)])):
+        # A question naming a topic is that question, whatever the gesture ("scusate, cosa sapete della
+        # contessa?", "come va con Livia?"); otherwise only a greeting may be a question in disguise:
+        # "grazie per la storia della torre" stays a thanks.
+        if action.verb is Conversation.TALK and asking and (question := _topic_asked(words, [(person, topics)])):
             return question
+        greeting = action.verb is Conversation.TALK and action.gesture is None
         someone_elsewhere = not is_named(person, words) and self._names_one_elsewhere(
             self.world.characters.values(), words, here
         )

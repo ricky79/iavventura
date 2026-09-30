@@ -159,12 +159,20 @@ _GESTURE_PAIRS = {
     ),
     **dict.fromkeys([("chi", "sei"), ("chi", "siete")], Gesture.WHO_ARE_YOU),
 }
+_YOU_ARE = frozenset({"sei", "siete", "sii", "siate"})
 
 
 class Ambiguous(NamedTuple):
     """Several items or characters in reach answer to the same words: the player has to say which one."""
 
     candidates: tuple[Item | Character, ...]
+
+
+class ToWhom(NamedTuple):
+    """A gesture or a question without a name, with several characters here and none of them spoken to
+    last: the player has to say to whom («A chi?»)."""
+
+    people: tuple[Character, ...]
 
 
 def parse(
@@ -174,7 +182,7 @@ def parse(
     exits: Sequence[tuple[Direction, Room | None]] = (),
     characters: Sequence[tuple[Character, Sequence[Topic]]] = (),
     last_speaker: str | None = None,
-) -> Action | Ambiguous | None:
+) -> Action | Ambiguous | ToWhom | None:
     """None when the sentence isn't a simple command made only of known words.
 
     `in_reach` also holds the items in sight (Engine.visible): the parser prefers them all alike.
@@ -243,7 +251,7 @@ def _conversation(
     world: World,
     characters: Sequence[tuple[Character, Sequence[Topic]]],
     last_speaker: str | None,
-) -> Action | Ambiguous | None:
+) -> Action | Ambiguous | ToWhom | None:
     """"parla con X", "saluta X", "chiedi a X di Y"; without X, the only character here or the one spoken
     to last.
     A question about an item or another character of the world that names none of X's topics, not even
@@ -263,7 +271,7 @@ def _conversation(
     elif (addressee := _addressee(characters, last_speaker)) is not None:
         character = addressee[0]
     else:
-        return None
+        return ToWhom(tuple(people)) if len(people) > 1 else None
     if not asking:
         return Action(verb=Conversation.TALK, target=character.id) if not words else None
     topics = next((topics for person, topics in characters if person.id == character.id), ())
@@ -289,9 +297,10 @@ def _addressee(
 
 def _gesture(
     words: list[str], characters: Sequence[tuple[Character, Sequence[Topic]]], last_speaker: str | None
-) -> Action | None:
+) -> Action | ToWhom | None:
     """«grazie», «arrivederci, Livia», «Livia, come state?»: a gesture, if the words are a formula with
-    at most the name of someone here at the start or at the end."""
+    at most the name of someone here at the start or at the end; «A chi?» if nobody is named and several
+    could be meant."""
     said = tuple(word for word in words if word not in STOPWORDS)
     for person, topics in characters:
         for phrase in {significant_words(name) for name in (person.name, *person.aliases)} - {()}:
@@ -299,8 +308,10 @@ def _gesture(
             for rest in (said[size:] if said[:size] == phrase else None, said[:-size] if said[-size:] == phrase else None):
                 if rest is not None and rest in GESTURE_FORMULAS:
                     return _said_to(person, topics, rest)
-    if said not in GESTURE_FORMULAS or (addressee := _addressee(characters, last_speaker)) is None:
+    if said not in GESTURE_FORMULAS:
         return None
+    if (addressee := _addressee(characters, last_speaker)) is None:
+        return ToWhom(tuple(person for person, _ in characters)) if len(characters) > 1 else None
     return _said_to(*addressee, said)
 
 
@@ -315,12 +326,17 @@ def _said_to(person: Character, topics: Sequence[Topic], formula: tuple[str, ...
 
 def gesture_said(words: Sequence[str]) -> Gesture | None:
     """The gesture a free sentence says, by its words ("perdonatemi se vi disturbo": an apology); the
-    last one said if several ("grazie e arrivederci"). None for anything else, the greeting too."""
+    last one said if several ("grazie e arrivederci"). An unkind word is rude only said to someone ("sei
+    un drago cattivo", "che antipatica!"), not in "i draghi cattivi sputano fuoco?". None for anything
+    else, the greeting too."""
+    to_someone = bool(_YOU_ARE.intersection(words)) or len([word for word in words if word not in STOPWORDS]) <= 2
     said = None
     for position, word in enumerate(words):
         gesture = _GESTURE_PAIRS.get(tuple(words[position - 1 : position + 1])) if position else None
         gesture = gesture or _GESTURE_WORDS.get(word)
         gesture = gesture or next((g for stem, g in _GESTURE_STEMS.items() if word.startswith(stem)), None)
+        if gesture is Gesture.RUDENESS and not to_someone:
+            gesture = None
         said = gesture or said
     return said
 

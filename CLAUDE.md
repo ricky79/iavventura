@@ -361,6 +361,11 @@ tests/
     vediamo più tardi»). Poi 17 su 18; limite noto «siete una vecchia strega» («vecchia» è quasi
     «vecchio», alias di Ettore). «chi era il castellano?» ora dà «esamina il pellegrino», ma il
     turno risponde giusto (la domanda nomina l'argomento): il test è passato sul turno intero.
+  - Dalla revisione finale: una domanda che nomina un argomento vince su qualunque gesto («scusate,
+    cosa sapete della contessa?»); un insulto conta solo rivolto a qualcuno («sei…», «siete…», o poco
+    più dell'insulto: «i draghi cattivi sputano fuoco?» è una domanda); con più personaggi e nessun
+    nome né ultimo interlocutore presente, gesti e domande ricevono «A chi?» (`parser.ToWhom`,
+    `NotUnderstood.to_whom`).
 
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.

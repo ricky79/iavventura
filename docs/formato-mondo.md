@@ -292,12 +292,14 @@ characters:
   Livia», «come state?») le capisce il parser; le frasi più libere l'interprete, col verbo «parla» e
   il gesto nel campo `con`. Il modello tende a rispondere «saluto» per qualunque gesto, quindi le
   parole della frase decidono («perdonatemi se vi disturbo» è una scusa, «grazie e arrivederci» un
-  congedo), e un'azione senza senso diventa il gesto che la frase dice («ti ringrazio tanto,
+  congedo; un insulto solo se rivolto a qualcuno: «sei un drago cattivo», non «i draghi cattivi
+  sputano fuoco?»), e un'azione senza senso diventa il gesto che la frase dice («ti ringrazio tanto,
   draghetto»). Un gesto senza testo riceve una risposta neutra col nome del personaggio («Livia
   annuisce.»); «chi sei?» senza testo risponde `unknown`. Una formula che è proprio il nome o un alias
-  di un argomento resta la domanda su quell'argomento; tra le frasi libere, solo il saluto che nomina
-  un argomento diventa la domanda su quell'argomento («grazie per la chiave» è un grazie). Un
-  argomento non può chiamarsi come un gesto.
+  di un argomento resta la domanda su quell'argomento; tra le frasi libere, una domanda che nomina un
+  argomento è quella domanda qualunque sia il gesto («scusate, cosa sapete della contessa?»), e fuori
+  dalle domande solo il saluto che nomina un argomento diventa la domanda su quell'argomento («grazie
+  per la chiave» è un grazie). Un argomento non può chiamarsi come un gesto.
 - **Le risposte ripetute**: il gioco ricorda i gesti e gli argomenti già usati con ciascun
   personaggio; dalla seconda volta vale `again`, se c'è, a meno che una variante sia vera (una novità
   della partita vince sempre). Nelle avventure per bambini meglio senza: sentire di nuovo l'indizio

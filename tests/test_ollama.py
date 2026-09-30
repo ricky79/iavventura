@@ -499,6 +499,9 @@ GESTURE_CASES = [
     (DRAGON, "radura", "sei un drago cattivo", gesture_of(DRAGONET, "scortesia")),
     (DRAGON, "tana", "chi sei tu?", gesture_of(BEAR, "chi_sei")),
     (DRAGON, "tana", "scusami tanto, orso", gesture_of(BEAR, "scuse")),
+    # Found by the final review: a question behind the words of a gesture is still the question.
+    (VALDIMORA, "stanza_maggiordomo", "scusate, cosa sapete della contessa?", says(ETTORE.topics["contessa"].text)),
+    (DRAGON, "radura", "i draghi cattivi sputano fuoco?", says(*DRAGON_SAYS)),
 ]  # fmt: skip
 
 

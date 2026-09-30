@@ -98,12 +98,14 @@ class NotUnderstood(NamedTuple):
     """No action came out of the sentence. `reason` says why, for the logs; `not_an_action` is set
     when the model judged that the sentence isn't a game action at all ("altro"), `talking` when the
     player talks to someone and nobody is here. `guess` is what the sentence names in place of the
-    model's pick: the game asks about it, and does it only after a yes."""
+    model's pick: the game asks about it, and does it only after a yes. `to_whom` when several are here
+    and the model names none of them: the game asks «A chi?»."""
 
     reason: str
     not_an_action: bool = False
     talking: bool = False
     guess: Action | None = None
+    to_whom: bool = False
 
 
 def interpret(
@@ -214,6 +216,8 @@ def _to_conversation(
         found = characters[0] if len(characters) == 1 else next(
             ((person, topics) for person, topics in characters if person.id == last_speaker), None
         )
+        if found is None:
+            return NotUnderstood("più personaggi e nessuno nominato", to_whom=True)
     if found is None:
         return NotUnderstood(f"nessun personaggio {target!r} qui")
     character, topics = found
