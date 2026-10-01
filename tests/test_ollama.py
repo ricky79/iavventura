@@ -385,8 +385,6 @@ KNOWN_LIMITS = {
     "afferra la ciave nel pozzo": "the well comes back as the tool: 'Vuoi prendere la chiave di ferro con il pozzo?'",
     "ti faccio il solletico sul naso con la piuma": "with 'ti' the model loses the dragon: 'Vuoi usare la piuma?'",
     "guardo su nell'albero": "'guarda su' is looking around, not at the oak",
-    # Found with the dialogues (2026-09-30).
-    "siete una vecchia strega": "'vecchia' is nearly 'vecchio', Ettore's alias: 'Non vedi nessuno del genere qui.'",
     # Found with the second act of Valdimora (2026-09-30).
     "infilo il medaglione nella cornice": (
         "unstable: the model answers 'inventario' (the game shows the inventory) or 'prendi il medaglione' "

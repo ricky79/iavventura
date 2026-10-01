@@ -260,6 +260,11 @@ class Game:
             people = [someone for someone, _ in characters]
             person = people[0] if len(people) == 1 else next((p for p in people if p.id == self.state.last_speaker), None)
         if person is None:
+            if action.verb is Verb.EXAMINE and asking:
+                # «Ettore, chi è questa ragazza?»: the girl is also the portrait, but the question is his.
+                addressed = [(someone, topics) for someone, topics in characters if is_named(someone, words)]
+                if len(addressed) == 1 and (question := _topic_asked(words, addressed)):
+                    return question
             return action
         topics = next(topics for someone, topics in characters if someone is person)
         if action.verb is Conversation.ASK and action.topic is not None and not topics_named(person, topics, words):

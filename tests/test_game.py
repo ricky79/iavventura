@@ -921,14 +921,40 @@ def test_a_word_for_something_here_names_nothing_elsewhere(room, sentence, reply
     assert say(game, sentence) == answer
 
 
-def test_who_is_this_girl_is_asking_ettore_about_the_portrait():
-    reply = {"verbo": "chiedi", "bersaglio": "Ettore", "con": "nessuno"}
+@pytest.mark.parametrize(
+    "reply",
+    [
+        {"verbo": "chiedi", "bersaglio": "Ettore", "con": "nessuno"},
+        # The real model examined the portrait, the girl too: but the question is said to Ettore.
+        {"verbo": "esamina", "bersaglio": "ritratto", "con": "nessuno"},
+    ],
+)
+def test_who_is_this_girl_is_asking_ettore_about_the_portrait(reply):
     game = Game(Engine(load_world(WORLDS_DIR / "valdimora")), talking(reply))
     game.state.current_room = "galleria"
     game.state.flags.update({"atto_due", "busta_data", "ritratto_scoperto"})
     game.state.act = 1
 
     assert say(game, "Ettore, chi è questa ragazza?").startswith("(chiedi a Ettore del ritratto)\n«La signorina Clara")
+
+
+def test_an_insult_with_a_common_word_is_said_to_the_one_here():
+    # «vecchia» was nearly «vecchio», Ettore's alias: «Non vedi nessuno del genere qui.»
+    reply = {"verbo": "parla", "bersaglio": "Livia", "con": "scortesia"}
+    game = Game(Engine(load_world(WORLDS_DIR / "valdimora")), talking(reply))
+    game.state.current_room = "ufficio_governante"
+
+    assert say(game, "siete una vecchia strega").startswith("(sii scortese con Livia)\n")
+
+
+def test_a_question_to_nobody_by_name_about_a_thing_is_still_examining_it():
+    reply = {"verbo": "esamina", "bersaglio": "ritratto", "con": "nessuno"}
+    game = Game(Engine(load_world(WORLDS_DIR / "valdimora")), talking(reply))
+    game.state.current_room = "galleria"
+    game.state.flags.update({"atto_due", "busta_data", "ritratto_scoperto"})
+    game.state.act = 1
+
+    assert say(game, "chi è questa ragazza?").startswith("(esamina il ritratto)")
 
 
 def test_no_thanks_answers_the_question_even_with_someone_here(castle):
