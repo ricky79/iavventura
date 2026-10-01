@@ -23,12 +23,15 @@ characters:
     greeting_variants:
       - when: {flag: ritratto_scoperto}
         text: Ettore guarda il ritratto, poi guarda te. «Ora avete visto», dice soltanto.
+        again: Ettore resta accanto al ritratto, in silenzio. «Chiedete, signorina.»
       - when: {flag: atto_due}
         text: >
           Ettore è in piedi davanti al quadro coperto, le mani dietro la schiena. «Signorina. Sapevo
           che prima o poi sareste venuta qui.»
+        again: «Signorina.» Ettore non si muove da davanti al quadro coperto.
       - when: {flag: busta_data}
         text: «Signorina Irene.» Ettore si inchina appena. «Chiedete pure. Quello che so, è vostro.»
+        again: «Ditemi, signorina Irene.»
     greeting_again: «Ancora voi, signorina? Non mi avete detto chi vi manda.»
     unknown: Ettore scuote la testa. «Su questo non so dirvi niente, signorina.»
     refuses: «No, signorina, non posso accettare.»
@@ -198,12 +201,15 @@ characters:
     greeting_variants:
       - when: {flag: livia_permette}
         text: Livia è seduta accanto al letto, e guarda la rosa sul comodino. «Grazie», dice soltanto.
+        again: Livia guarda ancora la rosa sul comodino. Non dice niente, ma non ti manda via.
       - when: {flag: atto_due}
         text: >
           Livia è seduta rigida su una sedia accanto al letto vuoto. «Siete salita, allora. Questa era
           la sua camera, signorina: non toccate niente.»
+        again: «Ancora voi.» Livia non si alza dalla sedia accanto al letto. «Non toccate niente.»
       - when: {flag: livia_chiave}
         text: «Avete la chiave. Non toccate le cose della contessa.»
+        again: «Ancora voi.» Livia non alza nemmeno gli occhi dai conti.
     greeting_again: «Ancora voi.» Livia non alza nemmeno gli occhi dai conti.
     unknown: «Non sono cose che vi riguardano.»
     refuses: «Tenete le vostre cose, signorina.»
@@ -352,6 +358,7 @@ characters:
           Corrado è seduto alla scrivania del conte, coi piedi sul piano di mogano. «Guarda chi si
           vede. Siete arrivata fin quassù? Prendete pure quello che volete, signorina: tanto, tra
           poco, qui sarà tutto mio.»
+        again: «Ancora voi?» Corrado non toglie i piedi dalla scrivania. «Servitevi, signorina, servitevi.»
     greeting_again: «Ancora qui?» Corrado alza il bicchiere vuoto, come per un brindisi. «Allora mettetevi comoda.»
     unknown: Corrado scrolla le spalle. «Chiedetelo a Ettore, lui sa tutto.»
     refuses: «Non accetto regali dagli estranei.»
@@ -600,11 +607,16 @@ characters:
       Genova. La contessa parlava di una visita… Se vi serve qualcosa, qualunque cosa, chiedete a
       me.»
     greeting_variants:
+      - when: {all: [{flag: atto_due}, {flag: medaglione_mostrato}]}
+        text: «Signorina.» Agnese alza la candela e ti sorride. «Avete bisogno di me?»
       - when: {flag: atto_due}
         text: >
           Agnese ti aspetta in cima allo scalone, con una candela in mano. «Ce l'avete fatta! Livia vi
           ha dato la chiave?» Si avvicina, e i suoi occhi vanno al tuo collo. «Posso vedere il vostro
           medaglione? La contessa ne parlava tanto…»
+        again: >
+          «Eccovi di nuovo.» Agnese alza la candela, e i suoi occhi tornano al tuo collo. «Me lo fate
+          vedere, il medaglione?»
     greeting_again: «Eccovi di nuovo.» Agnese ti sorride. «Avete bisogno di me?»
     unknown: «Non saprei, signorina. Chiedete a Ettore, forse.»
     refuses: «Oh, no, non potrei.»
@@ -684,4 +696,7 @@ characters:
         text: >
           «Che bella stella. La contessa la disegnava dappertutto, sapete? Sui biglietti, sui margini
           dei libri…» Agnese si morde il labbro. «Posso vederlo da vicino?»
+        variants:
+          - when: {flag: medaglione_mostrato}
+            text: «Che strana stella. Grazie per avermela fatta vedere, signorina.»
         again: «Me lo fate vedere?»

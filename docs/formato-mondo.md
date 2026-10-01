@@ -261,14 +261,17 @@ characters:
       - when: {flag: atto_due}
         room: biblioteca
     greeting: Risposta a "parla con il pellegrino".
-    greeting_variants: []        # facoltativo, come le variants: il saluto che segue la partita
+    greeting_variants:           # facoltativo, come le variants: il saluto che segue la partita
+      - when: {flag: torre_vista}
+        text: Il saluto quando la condizione vale.
+        again: …                 # facoltativo: questa variante dalla seconda volta
     greeting_again: …            # facoltativo: il saluto dalla seconda volta
     unknown: Risposta a una domanda su qualcosa che non conosce.
     refuses: Risposta a "dai X al pellegrino" se nessuna regola lo prevede (facoltativo).
     gestures:                    # facoltativo: congedo, grazie, scuse, come_stai, chi_sei, scortesia
       grazie:
         text: Risposta a «grazie».
-        variants: []             # come per le stanze
+        variants: []             # come greeting_variants, anche con again
         again: …                 # facoltativo: dalla seconda volta
     topics:
       torre:
@@ -277,7 +280,7 @@ characters:
         aliases: [mura]
         when: {flag: torre_vista}   # facoltativo: finché è falsa, l'argomento è sconosciuto
         text: Risposta.
-        variants: []             # come per le stanze
+        variants: []             # come greeting_variants, anche con again
         again: …                 # facoltativo: la risposta dalla seconda volta
         effects: []              # facoltativo, come per le regole
 ```
@@ -305,8 +308,11 @@ characters:
   per la chiave» è un grazie). Un argomento non può chiamarsi come un gesto.
 - **Le risposte ripetute**: il gioco ricorda i gesti e gli argomenti già usati con ciascun
   personaggio; dalla seconda volta vale `again`, se c'è, a meno che una variante sia vera (una novità
-  della partita vince sempre). Nelle avventure per bambini meglio senza: sentire di nuovo l'indizio
-  aiuta.
+  della partita vince sempre). Anche una variante ha il suo `again`, dalla seconda volta che si dice
+  proprio lei: Agnese saluta «Ce l'avete fatta!» una volta sola. Senza `again` la variante si ripete,
+  come serve a ciò che descrive uno stato («Il dottor Ferri russa.»). Il gioco ricorda le varianti
+  per posizione: riordinarle sposta il loro `again` nelle partite salvate. Nelle avventure per
+  bambini meglio senza: sentire di nuovo l'indizio aiuta.
 - **A chi, senza nome**: gesti, domande e «dai X» senza personaggio vanno all'unico presente, o a
   quello con cui si è parlato per ultimo (anche solo una domanda senza risposta o un regalo
   rifiutato) se è ancora lì; altrimenti «A chi?».

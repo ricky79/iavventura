@@ -37,6 +37,7 @@ from app.engine.models import (
     Room,
     RoomView,
     Rule,
+    SaidVariant,
     SetFlag,
     TextVariant,
     Topic,
@@ -462,9 +463,15 @@ def _first_variant(variants: tuple[TextVariant, ...], text: str, state: GameStat
     return next((variant.text for variant in variants if holds(variant.when, state)), text)
 
 
-def _said(state: GameState, key: str, variants: tuple[TextVariant, ...], text: str, again: str | None) -> str:
-    """What a character says: the first variant that holds; else, from the second time on, `again` if
-    there is one; else the text. From now on it counts as said."""
-    line = _first_variant(variants, again if again is not None and key in state.asked else text, state)
+def _said(state: GameState, key: str, variants: tuple[SaidVariant, ...], text: str, again: str | None) -> str:
+    """What a character says: the first variant that holds, else the text; from the second time on, the
+    `again` of the one said, if it has one. From now on it counts as said."""
+    said = next(((index, variant) for index, variant in enumerate(variants) if holds(variant.when, state)), None)
+    if said is not None:
+        index, variant = said
+        line = variant.again if variant.again is not None and f"{key}:{index}" in state.asked else variant.text
+        state.asked.add(f"{key}:{index}")
+    else:
+        line = again if again is not None and key in state.asked else text
     state.asked.add(key)
     return line

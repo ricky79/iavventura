@@ -1105,6 +1105,28 @@ def test_the_greeting_has_its_again_text(keeper_world):
     assert [engine.execute(state, talk).text for _ in range(2)] == ["«Buongiorno», dice il custode.", "«Ancora voi?»"]
 
 
+def test_a_greeting_variant_has_its_own_again_text(keeper_world):
+    # Agnese greeted «Ce l'avete fatta!» every time: the variant won over greeting_again.
+    keeper = keeper_world["characters"]["custode"]
+    keeper["greeting_again"] = "«Ancora voi?»"
+    keeper["greeting_variants"] = [{"when": {"flag": "porta_aperta"}, "text": "«L'avete aperta!»", "again": "«Eccovi.»"}]
+    engine, state = start(keeper_world)
+    talk = Action(verb="parla", target="custode")
+    engine.execute(state, talk)
+    state.flags.add("porta_aperta")
+
+    assert [engine.execute(state, talk).text for _ in range(2)] == ["«L'avete aperta!»", "«Eccovi.»"]
+
+
+def test_a_topic_variant_has_its_own_again_text(keeper_world):
+    keeper_world["characters"]["custode"]["topics"]["leva"]["variants"][0]["again"] = "«Ve l'ho detto: tirata.»"
+    engine, state = start(keeper_world)
+    state.flags.add("porta_aperta")
+    ask = Action(verb="chiedi", target="custode", topic="leva")
+
+    assert [engine.execute(state, ask).text for _ in range(2)] == ["«L'hai tirata, eh?»", "«Ve l'ho detto: tirata.»"]
+
+
 @pytest.fixture
 def polite_keeper(keeper_world) -> dict:
     keeper_world["characters"]["custode"]["gestures"] = {
@@ -1124,6 +1146,15 @@ def test_a_gesture_gets_the_character_answer(polite_keeper):
 
     assert answers == ["«Prego.»", "«Basta, basta.»", "«Bene.»"]
     assert engine.execute(state, how).text == "«Benissimo!»"
+
+
+def test_a_gesture_variant_has_its_own_again_text(polite_keeper):
+    polite_keeper["characters"]["custode"]["gestures"]["come_stai"]["variants"][0]["again"] = "«Sempre benissimo.»"
+    engine, state = start(polite_keeper)
+    state.flags.add("porta_aperta")
+    how = Action(verb="parla", target="custode", gesture="come_stai")
+
+    assert [engine.execute(state, how).text for _ in range(2)] == ["«Benissimo!»", "«Sempre benissimo.»"]
 
 
 @pytest.mark.parametrize(

@@ -939,6 +939,8 @@ rules:
   # --- Agnese e il medaglione (nell'atto 4 questa regola porterà al finale «tradita») ---
   dai_medaglione_agnese:
     trigger: {verb: dai, target: medaglione, with: agnese}
+    effects:
+      - set_flag: medaglione_mostrato
     text: >
       Agnese prende il medaglione e lo rigira a lungo tra le dita, alla luce delle candele. Poi te
       lo rende con un sorriso. «Che strana stella.»

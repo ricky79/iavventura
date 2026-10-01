@@ -706,3 +706,50 @@ def test_the_rose_can_be_put_in_the_vase_by_hand(valdimora):
 
     assert "Lei avrebbe voluto così" in answer
     assert "livia_permette" in game.state.flags
+
+
+# --- Minors left by the final review of act 2 --------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("room", "flags", "name", "first"),
+    [
+        ("loggia", (), "Agnese", "Ce l'avete fatta"),
+        ("studio_conte", (), "Corrado", "Siete arrivata fin quassù"),
+        ("camera_contessa", (), "Livia", "Siete salita"),
+        ("camera_contessa", ("livia_permette",), "Livia", "«Grazie», dice soltanto"),
+        ("galleria", (), "Ettore", "Sapevo"),
+        ("galleria", ("ritratto_scoperto",), "Ettore", "Ora avete visto"),
+    ],
+)  # fmt: skip
+def test_upstairs_a_greeting_is_not_said_twice(valdimora, room, flags, name, first):
+    # The variants won over greeting_again: Agnese said «Ce l'avete fatta!» at every greeting.
+    game = in_act_two(valdimora, room, *flags)
+
+    assert first in game.turn(f"parla con {name}")
+    assert first not in game.turn(f"parla con {name}")
+
+
+@pytest.mark.parametrize(
+    ("room", "flag", "name", "first"),
+    [
+        ("stanza_maggiordomo", "busta_data", "Ettore", "Quello che so, è vostro"),
+        ("ufficio_governante", "livia_chiave", "Livia", "Avete la chiave"),
+    ],
+)  # fmt: skip
+def test_downstairs_a_greeting_is_not_said_twice(valdimora, room, flag, name, first):
+    game = new_game(valdimora)
+    game.state.flags.add(flag)
+    game.state.current_room = room
+
+    assert first in game.turn(f"parla con {name}")
+    assert first not in game.turn(f"parla con {name}")
+
+
+def test_once_shown_the_medallion_agnese_no_longer_asks_for_it(valdimora):
+    game = in_act_two(valdimora, "loggia", carried=("medaglione",))
+
+    game.turn("dai il medaglione ad Agnese")
+
+    assert "medaglione" not in game.turn("parla con Agnese")
+    assert "Me lo fate vedere" not in game.turn("chiedi ad Agnese del medaglione")
