@@ -849,6 +849,15 @@ def test_taking_what_is_in_hand_while_naming_something_else_is_asked_as_using_th
     assert "ninna nanna" in say(game, "sì")
 
 
+def test_taking_what_is_in_hand_from_somewhere_is_still_taking_it():
+    # The jewel box is where the winding key came from, not something to use it with.
+    game = in_the_music_room({"verbo": "prendi", "bersaglio": "chiavetta di carica", "con": "nessuno"})
+    game.state.current_room = "boudoir"
+    game.state.flags.update({"livia_permette", "portagioie_aperto"})
+
+    assert say(game, "riprendo la chiavetta dal portagioie") == "(prendi la chiavetta di carica)\nCe l'hai già."
+
+
 def test_taking_what_is_in_hand_alone_is_still_taking_it():
     game = in_the_music_room({"verbo": "prendi", "bersaglio": "chiavetta di carica", "con": "nessuno"})
 

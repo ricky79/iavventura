@@ -64,6 +64,8 @@ _HELP_WORDS = frozenset({"aiuto", "help"})
 # A sentence starting with one of these is a question, even without "?" (kids leave it out).
 _QUESTION_WORDS = frozenset({"perche", "cosa", "come", "chi", "dove", "quanto", "quanti", "quale", "quali", "quando"})
 # Answers to "Vuoi…?", by their first word. Not "s" and "n": they are south and north.
+# "riprendo la chiavetta dal portagioie": what comes after them is where something is taken from.
+_FROM_WORDS = frozenset({"da", "dal", "dallo", "dalla", "dai", "dagli", "dalle", "dall"})
 _YES_WORDS = frozenset({"si", "certo", "ok", "okay", "sicuro", "confermo"})
 _NO_WORDS = frozenset({"no"})
 
@@ -345,13 +347,16 @@ class Game:
 
     def _using_what_is_in_hand(self, action: Action, words: list[str], near: list[Item]) -> Action | None:
         """«carico il carillon con la chiavetta»: the model took what the player already holds, while the
-        sentence names one other thing here. Using the two together is only a guess, asked about."""
+        sentence names one other thing here. Using the two together is only a guess, asked about; not
+        if the other is where it is taken from («riprendo la chiavetta dal portagioie»)."""
         if action.verb is not Verb.TAKE or action.with_ is not None:
             return None
         if self.state.item_locations.get(action.target) != INVENTORY:
             return None
-        others = [item.id for item in near if item.id != action.target and is_named(item, words)]
-        return Action(verb=Verb.USE, target=action.target, with_=others[0]) if len(others) == 1 else None
+        others = [item for item in near if item.id != action.target and is_named(item, words)]
+        if len(others) != 1 or _taken_from(others[0], words):
+            return None
+        return Action(verb=Verb.USE, target=action.target, with_=others[0].id)
 
     def _execute(self, action: Action, source: str) -> str:
         outcome = self.engine.execute(self.state, action)
@@ -395,3 +400,9 @@ def _topic_asked(words: list[str], characters: list[tuple[Character, list[Topic]
         return None
     person, topic = asked[0]
     return Action(verb=Conversation.ASK, target=person.id, topic=topic.id)
+
+
+def _taken_from(item: Item, words: list[str]) -> bool:
+    """Whether the words name the item right after "da", "dal", "dalla"…: where something is taken from."""
+    said = {word for name in names_said(item, words) for word in words_saying(name, words)}
+    return any(word in _FROM_WORDS and following in said for word, following in zip(words, words[1:]))
