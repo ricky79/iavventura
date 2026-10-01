@@ -137,6 +137,9 @@ rooms:
         to: pianerottolo_soffitta
         when: {flag: atto_tre}
         otherwise: La porta della scala di servizio è chiusa a chiave.
+        otherwise_variants:
+          - when: {has: chiave_servizio}
+            text: "La porta della scala di servizio è chiusa a chiave. Hai la chiave della scala di servizio: usala."
 
   salone_musica:
     name: Salone della musica

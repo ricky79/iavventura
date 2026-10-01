@@ -129,6 +129,11 @@ characters:
         text: >
           «Il carillon d'argento, nel salone della musica? Era della signorina Clara. Da bambina non
           si addormentava senza la sua ninna nanna.»
+        variants:
+          - when: {flag: carillon_suonato}
+            text: >
+              «L'avete fatto suonare. L'ho sentito fin qui.» Ettore chiude gli occhi. «La ninna nanna
+              della signorina Clara. Non la sentivo da trent'anni.»
         again: «Nel salone della musica, signorina.»
       livia:
         name: Livia
@@ -239,6 +244,8 @@ characters:
         aliases: [piano nobile, piano di sopra, chiave dello scalone, porta]
         text: «Il piano nobile resta chiuso finché non arriva il notaio. Ordini miei.»
         variants:
+          - when: {flag: atto_due}
+            text: «Ormai siete salita. Non fatemene pentire.»
           - when: {flag: livia_chiave}
             text: «Avete la chiave. Non fatemene pentire.»
         again: "«Ve l'ho già detto: finché non arriva il notaio, resta chiuso.»"
@@ -335,6 +342,11 @@ characters:
         aliases: [porta di servizio, porta della scala di servizio, chiave della scala di servizio, soffitta]
         when: {flag: atto_due}
         text: «La chiave della scala di servizio la teneva la contessa, non io. Chissà dove l'ha messa.»
+        variants:
+          - when: {has: chiave_servizio}
+            text: >
+              Livia guarda la chiave che hai in mano, col suo nastro azzurro. «Allora l'avete trovata
+              voi.» Stringe le labbra. «Fate quello che dovete, signorina.»
         again: "«Ve l'ho detto: la teneva lei.»"
 
   corrado:
@@ -442,6 +454,9 @@ characters:
         aliases: [bastone del conte, bastoni, rastrelliera, manico ricurvo]
         when: {flag: atto_due}
         text: «Il bastone di mio zio? Prendetelo pure, se vi fa comodo. Prendete quello che volete, ve l'ho detto.»
+        variants:
+          - when: {has: bastone}
+            text: «L'avete già in mano, signorina. Tenetevelo pure, a me non serve.»
         again: «Prendetelo, vi ho detto.»
       studio:
         name: studio

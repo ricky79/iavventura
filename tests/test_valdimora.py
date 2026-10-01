@@ -753,3 +753,18 @@ def test_once_shown_the_medallion_agnese_no_longer_asks_for_it(valdimora):
 
     assert "medaglione" not in game.turn("parla con Agnese")
     assert "Me lo fate vedere" not in game.turn("chiedi ad Agnese del medaglione")
+
+
+@pytest.mark.parametrize(
+    ("room", "flags", "carried", "line", "done"),
+    [
+        ("studio_conte", (), ("bastone",), "chiedi a Corrado del bastone", "L'avete già in mano"),
+        ("camera_contessa", (), ("chiave_servizio",), "chiedi a Livia della scala di servizio", "l'avete trovata"),
+        ("camera_contessa", ("livia_chiave",), (), "chiedi a Livia dello scalone", "Ormai siete salita"),
+        ("galleria", ("ritratto_scoperto", "carillon_suonato"), (), "chiedi a Ettore del carillon", "L'avete fatto suonare"),
+        ("pianerottolo_servizio", (), ("chiave_servizio",), "su", "usala"),
+    ],
+)  # fmt: skip
+def test_a_hint_knows_when_it_is_done(valdimora, room, flags, carried, line, done):
+    # A hint that sends the player to do something has a variant for when it is done.
+    assert done in in_act_two(valdimora, room, *flags, carried=carried).turn(line)
