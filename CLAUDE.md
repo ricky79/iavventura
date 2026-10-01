@@ -419,6 +419,36 @@ tests/
       «morte»); «ragazza» per Ettore è il ritratto anche se si parla di Agnese; un'ipotesi inutile se
       tra «da» e il nome c'è altro («dal fondo del portagioie»); «usa la boccetta col dottore» non
       lo sveglia; chi mostra il medaglione già nel primo atto, di sopra, non sente «Ce l'avete fatta!».
+- **Valdimora, atto 3** (2026-10-01, branch `feature/valdimora-atto-3`; decisioni nella spec,
+  «Atto 3: decisioni prese al momento di costruirlo»; piano in
+  `docs/superpowers/plans/2026-10-01-valdimora-atto-3.md`): la soffitta in
+  `data/worlds/valdimora/soffitta.yaml` (12 stanze), nel menu con un finale provvisorio sul flag
+  `atto_quattro` (la porta della cantina aperta con la lanterna accesa). Il secondo `acts`, «terzo
+  atto», comincia aprendo la scala di servizio. Livia confessa davanti alla fotografia (solo con
+  «dai»), le lettere «a mia figlia Clara» dicono a Irene che la contessa era sua nonna e Corrado se
+  ne accorge, la casa delle bambole dà la chiave della cantina; l'asse sul pavimento marcio porta
+  alla lanterna, da riempire col petrolio della rimessa e accendere coi fiammiferi della cucina.
+  Facoltativi: Agnese mandata di sotto (il petrolio o una tisana) ci resta, e la sua camera resta
+  aperta, con la prova 3; la corda legata al lucernario porta sul tetto, alla lettera del notaio.
+  Tre morti: nel sottotetto senza l'asse, nel buco del pavimento, sul tetto senza la corda;
+  entrando, il gioco mostra la stanza e poi il finale. Ferri resta nel biliardo; la luce sotto il
+  tetto vista nel primo atto era Agnese.
+  - Col modello vero, 23 frasi del terzo atto: 18 al primo giro. Le altre hanno mostrato difetti
+    generali, corretti nell'interprete (il prompt non cambia): «lego» e «annodo» non sono leggere
+    («lego» è quasi «leggo»); esaminare qualcosa che la frase non nomina diventa esaminare l'unica
+    cosa che nomina («guardo sotto il materasso»); per leggere ed esaminare vince l'oggetto nominato
+    con le parole esatte su quello nominato solo con un'altra desinenza («leggo le lettere della
+    contessa» non è la lettera della contessa); un salto senza parola da salto che nomina una
+    stanza tra le uscite è uno spostamento («esco dal lucernario sul tetto»: senza la corda, il
+    gioco chiede prima). E l'alias «camera di Clara» sulla sua porta.
+  - Dalla revisione finale: la trave sotto il lucernario è un arredo, e la corda si lega anche a
+    lei («lego la corda alla trave»; un alias «trave» sul lucernario cambiava le risposte del
+    modello e rompeva due frasi); nel terzo atto Livia non ha più le chiavi alla cintura, Ettore sa
+    dov'è Agnese quando è di sotto e il suo indizio sulla lanterna la segue. Niente alias «tè» per
+    la tisana: senza accento è «te». Rimandati: testi che invecchiano andando avanti nell'atto
+    (Livia dopo la confessione, Corrado sull'eredità dopo le lettere, Agnese che si offre di
+    scendere quando è già di sotto), «tetto» e «pioggia» nella stanza dell'orologio, gli alias
+    «casa», «appunti», «vestiti».
 
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.
@@ -471,10 +501,10 @@ ollama pull qwen2.5:3b
     (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
     sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
     invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
-    `tests/test_ollama.py` (oggi 148 su 155, ~1360 s: i 36 casi di prima, gli 8 dei pericoli, i 17
-    del primo atto di Valdimora e le 20 frasi dei dialoghi tutti, 28 delle 29 frasi del secondo atto
-    e 39 delle 45 frasi trovate giocando; le altre 7 sono limiti noti, e «infilo il medaglione nella
-    cornice» a volte passa).
+    `tests/test_ollama.py` (oggi 172 su 179, ~1780 s: i 36 casi di prima, gli 8 dei pericoli, i 17
+    del primo atto di Valdimora, le 20 frasi dei dialoghi e le 24 del terzo atto tutti, 28 delle 29
+    frasi del secondo atto e 39 delle 45 frasi trovate giocando; le altre 7 sono limiti noti, e
+    «infilo il medaglione nella cornice» a volte passa).
   - Il modello non è del tutto deterministico: con lo stesso prompt e `temperature: 0`, 2 o 3 frasi
     su 70 cambiano risposta da un giro all'altro (la cache di Ollama?). Un caso che passa una volta
     sola non dimostra niente.

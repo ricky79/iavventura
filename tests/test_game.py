@@ -933,6 +933,19 @@ def test_a_word_for_something_here_names_nothing_elsewhere(room, sentence, reply
     assert say(game, sentence) == answer
 
 
+def test_tying_the_rope_to_the_beam():
+    # «lego la corda alla trave»: the beam under the skylight couldn't be named; the model reads «lego».
+    reply = {"verbo": "leggi", "bersaglio": "trave", "con": "corda da bucato"}
+    game = Game(Engine(load_world(WORLDS_DIR / "valdimora")), talking(reply))
+    game.state.current_room = "stanza_orologio"
+    game.state.flags.update({"atto_due", "busta_data", "atto_tre"})
+    game.state.act = 2
+    game.state.item_locations["corda"] = "inventory"
+
+    assert say(game, "lego la corda alla trave").startswith("(usa la trave con la corda da bucato)")
+    assert "corda_legata" in game.state.flags
+
+
 @pytest.mark.parametrize(
     "reply",
     [

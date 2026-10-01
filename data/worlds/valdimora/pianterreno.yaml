@@ -508,7 +508,7 @@ items:
     gender: f
     plural: true
     aliases: [lenzuolo]
-    description: Lenzuola di lino stese ad asciugare. Una porta ricamate le iniziali «A. V.».
+    description: Lenzuola di lino stese ad asciugare. Ognuna porta ricamate le iniziali «A. V.».
     location: lavanderia
     scenery: true
 
@@ -924,6 +924,8 @@ rules:
       - {verb: apri, target: porta_cantina, with: chiavetta}
       - {verb: apri, target: porta_cantina, with: chiave_servizio}
       - {verb: apri, target: porta_cantina, with: chiavetta_carica}
+      - {verb: apri, target: porta_cantina, with: chiave_clara}
+      - {verb: apri, target: porta_clara, with: chiave_cantina}
       - {verb: apri, target: porta_scala_servizio, with: chiave_credenza}
       - {verb: apri, target: porta_scala_servizio, with: chiavetta}
       - {verb: apri, target: porta_scala_servizio, with: chiavetta_carica}
@@ -960,6 +962,8 @@ rules:
 
   apri_porta_cantina:
     trigger: {verb: apri, target: porta_cantina}
+    when: {not: {has: chiave_cantina}}
+    otherwise: "Hai la chiave della cantina: usala."
     text: È sbarrata e chiusa a chiave. Sul quadro delle chiavi di Livia, il gancio «Cantina» è vuoto.
 
   prendi_quadro_chiavi:

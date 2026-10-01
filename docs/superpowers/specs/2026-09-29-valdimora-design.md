@@ -392,6 +392,29 @@ nell'atto 4 porta al finale «tradita»).
    riconoscimento di vostra nipote». **Pericolo:** salire sul Tetto senza la corda legata è un
    finale di morte.
 
+#### Atto 3: decisioni prese al momento di costruirlo (2026-10-01)
+
+- **Ferri resta nella Sala del biliardo** anche nell'atto 3, per lo stesso motivo dell'atto 2 (la
+  sua borsa e il filo della grappa). Dove sta nell'atto 4 si decide col piano dell'atto 4.
+- **Le commissioni di Agnese**: mandata di sotto (il petrolio in Rimessa, la tisana in Cucina),
+  Agnese ci resta fino all'atto 4, e la sua camera resta aperta. In Rimessa indica la tanica
+  («prendetela pure»), in Cucina offre la tisana (solo testo). Così la prova 3 non si perde mai, e
+  il motore non cambia: gli effetti di un argomento valgono per l'argomento intero, non per le sue
+  varianti, quindi farla tornare su avrebbe chiesto un'aggiunta.
+- **La luce sotto il tetto** (vista dal cortile nel primo atto) era Agnese, che cercava la Stella:
+  nel soffittone gocce di cera fresche e impronte nella polvere, nella sua camera un mozzicone di
+  candela. Corretto il refuso delle lenzuola della lavanderia.
+- **Le morti entrando**: nel Sottotetto senza l'asse e sul Tetto senza la corda, come sopra, con
+  l'avvertimento chiaro nelle descrizioni del Soffittone e della Stanza dell'orologio; per le frasi
+  libere il gioco chiede prima (`Game._would_kill`).
+- **Livia e la fotografia**: con la fotografia in mano, la domanda su di lei («mostro la fotografia
+  a Livia») ottiene «Datemela, fatemela vedere da vicino»; Livia confessa e dà la chiave della
+  camera di Clara solo con `dai fotografia a Livia`. Una domanda non cambia la partita.
+- **I personaggi**: argomenti nuovi solo dove la pista li chiede; i saluti hanno le varianti per
+  l'atto 3 e il loro `again` dove ripeterli suonerebbe strano.
+- **Il modello vero**: una ventina di frasi libere dell'atto 3 in `tests/test_ollama.py`, poi il
+  giro completo.
+
 ### Atto 4: cantina
 
 `apri porta della cantina con chiave` (Cucina) apre la porta e attiva `atto_quattro`; il testo

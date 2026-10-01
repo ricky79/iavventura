@@ -1,5 +1,6 @@
-# I personaggi di Valdimora. Dove stanno nel primo atto: spec, sezione 2 (tabella dei personaggi);
-# gli spostamenti (moves) arrivano con gli atti successivi.
+# I personaggi di Valdimora. Dove stanno atto per atto: spec, sezione 2 (tabella dei personaggi), e
+# le decisioni di ogni atto (Ferri resta nel biliardo). Gli atti restano veri dopo il loro inizio,
+# quindi le varianti di un atto vengono prima di quelle degli atti precedenti.
 # I domestici danno del voi a Irene («signorina»); la narrazione le dà del tu. Gesti e opinioni
 # reciproche: docs/superpowers/specs/2026-09-29-dialoghi-design.md. Nessuno rivela i segreti degli
 # atti successivi; Agnese e Corrado, però, si difendono a vicenda.
@@ -15,12 +16,24 @@ characters:
       giorni.
     location: stanza_maggiordomo
     moves:
+      - when: {flag: atto_tre}
+        room: cucina
       - when: {flag: atto_due}
         room: galleria
     greeting: >
       Ettore si alza a fatica dalla sedia. «Perdonate, signorina: la casa è in lutto. La contessa ci
       ha lasciati tre giorni fa. Chi siete, e chi vi manda?»
     greeting_variants:
+      - when: {flag: lettere_lette}
+        text: >
+          Ettore posa l'argenteria e ti guarda a lungo. «Avete letto le sue lettere. Ve lo leggo in
+          faccia.» Gli tremano le labbra. «Bentornata a casa, signorina.»
+        again: «Signorina.» Ettore ti sorride, e torna alla sua argenteria.
+      - when: {flag: atto_tre}
+        text: >
+          Ettore è in cucina, accanto al focolare, e lucida l'argenteria per tenere occupate le mani.
+          «Signorina. Siete salita fin lassù, allora.»
+        again: «Signorina.» Ettore non alza gli occhi dall'argenteria.
       - when: {flag: ritratto_scoperto}
         text: Ettore guarda il ritratto, poi guarda te. «Ora avete visto», dice soltanto.
         again: Ettore resta accanto al ritratto, in silenzio. «Chiedete, signorina.»
@@ -100,6 +113,10 @@ characters:
           Ettore distoglie lo sguardo. «Non qui, signorina. Non ancora. La contessa ha voluto che le
           cose le trovaste da voi.»
         variants:
+          - when: {flag: lettere_lette}
+            text: >
+              «Ora sapete. Era vostra nonna, signorina, e vi voleva qui.» Ettore abbassa gli occhi.
+              «Perdonatemi se non ve l'ho detto io: le avevo dato la mia parola.»
           - when: {flag: ritratto_scoperto}
             text: >
               «L'avete vista, ora. Aveva il vostro stesso modo di guardare le cose.» Ettore si passa
@@ -167,6 +184,14 @@ characters:
           «La dama di compagnia della contessa. Le leggeva i romanzi, le dava le medicine. Da quando
           è morta non si stacca da lei, in cappella.»
         variants:
+          - when: {flag: agnese_in_cucina}
+            text: «È qui con noi, signorina, davanti al focolare. Dice che vi prepara una tisana.»
+          - when: {flag: agnese_in_rimessa}
+            text: «È scesa in rimessa, a prendervi il petrolio. Una ragazza servizievole.»
+          - when: {flag: atto_tre}
+            text: >
+              «La dama di compagnia della contessa. Ora sta di sopra, nel corridoio della servitù, e
+              si offre di fare commissioni a tutti. Una ragazza servizievole.»
           - when: {flag: atto_due}
             text: >
               «La dama di compagnia della contessa. Le leggeva i romanzi, le dava le medicine. Ora sta
@@ -187,6 +212,38 @@ characters:
           «Finché non liberano la strada, qui non arriva nessuno. Nemmeno il notaio, che Livia
           aspettava per il 20.»
         again: «Ci vorranno giorni, signorina. Siamo tutti chiusi qui.»
+      lanterna:
+        name: lanterna
+        gender: f
+        aliases: [lume, petrolio, fiammiferi]
+        when: {flag: atto_tre}
+        text: >
+          «Una lanterna? Ce n'è una vecchia in soffitta, nel sottotetto, se il pavimento regge
+          ancora. Il petrolio lo trovate in rimessa, e i fiammiferi qui in cucina.»
+        variants:
+          - when: {flag: lanterna_accesa}
+            text: «Bene. Con quella, laggiù, ci vedrete.»
+          - when: {flag: lanterna_piena}
+            text: "«Piena di petrolio, vedo. I fiammiferi sono qui in cucina: accendetela pure.»"
+          - when: {has: lanterna}
+            text: >
+              «L'avete trovata, allora. Ora le serve il petrolio: c'è una tanica in rimessa. E i
+              fiammiferi sono qui in cucina.»
+        again: «Il petrolio in rimessa, signorina, i fiammiferi qui in cucina.»
+      cantina:
+        name: cantina
+        gender: f
+        aliases: [porta della cantina, chiave della cantina, vino]
+        when: {flag: atto_tre}
+        text: >
+          «La cantina è chiusa da quest'estate. La chiave la teneva la contessa, e non so dove l'abbia
+          messa. Laggiù è buio pesto, signorina: senza un lume non si scende.»
+        variants:
+          - when: {has: chiave_cantina}
+            text: >
+              «Quella è la chiave della cantina.» Ettore la guarda, poi guarda te. «Laggiù è buio, e
+              si scende più facilmente di quanto si risalga. Siete sicura di avere tutto, signorina?»
+        again: «Senza un lume, laggiù, non si scende.»
 
   livia:
     name: Livia
@@ -196,14 +253,30 @@ characters:
     description: >
       Una donna sulla cinquantina, vestita di grigio, con un mazzo di chiavi alla cintura. Ti guarda
       come si guarda una macchia sul tappeto.
+    variants:
+      - when: {flag: atto_tre}
+        text: >
+          Una donna sulla cinquantina, vestita di grigio. Senza il mazzo di chiavi alla cintura sembra
+          più piccola, e più vecchia.
     location: ufficio_governante
     moves:
+      - when: {flag: atto_tre}
+        room: camera_livia
       - when: {flag: atto_due}
         room: camera_contessa
     greeting: >
       «Siete voi, quella della corriera.» Livia non si alza. «La casa è in lutto, signorina. Non so
       che cosa siate venuta a cercare, ma qui non troverete niente.»
     greeting_variants:
+      - when: {flag: livia_confessa}
+        text: >
+          Livia è seduta sul letto, con le mani in grembo e gli occhi rossi. «Vi ho detto tutto,
+          signorina. Ora lasciatemi sola.»
+      - when: {flag: atto_tre}
+        text: >
+          Livia è seduta sul letto della sua camera, le mani in grembo. Senza il mazzo di chiavi alla
+          cintura sembra più piccola. «Anche qui, signorina? In camera mia non c'è niente per voi.»
+        again: «Ancora voi.» Livia non si alza dal letto.
       - when: {flag: livia_permette}
         text: Livia è seduta accanto al letto, e guarda la rosa sul comodino. «Grazie», dice soltanto.
         again: Livia guarda ancora la rosa sul comodino. Non dice niente, ma non ti manda via.
@@ -343,11 +416,46 @@ characters:
         when: {flag: atto_due}
         text: «La chiave della scala di servizio la teneva la contessa, non io. Chissà dove l'ha messa.»
         variants:
+          - when: {flag: atto_tre}
+            text: «Siete salita anche quassù. Non vi ferma niente, eh, signorina?»
           - when: {has: chiave_servizio}
             text: >
               Livia guarda la chiave che hai in mano, col suo nastro azzurro. «Allora l'avete trovata
               voi.» Stringe le labbra. «Fate quello che dovete, signorina.»
         again: "«Ve l'ho detto: la teneva lei.»"
+      fotografia:
+        name: fotografia
+        gender: f
+        aliases: [foto, fotografia di mia madre]
+        when: {all: [{flag: atto_tre}, {has: fotografia}]}
+        text: «Che cosa tenete in mano?» Livia tende la mano, e la mano trema. «Datemela. Fatemela vedere da vicino.»
+        variants:
+          - when: {flag: livia_confessa}
+            text: «Avete i suoi occhi. Avrei dovuto capirlo il primo giorno.»
+        again: «Datemela, vi ho detto.»
+      clara:
+        name: Clara
+        article: none
+        gender: f
+        aliases: [madre, mamma, mia madre]
+        when: {flag: atto_tre}
+        text: «Non conosco nessuna Clara.» Ma le mani, in grembo, le tremano.
+        variants:
+          - when: {flag: livia_confessa}
+            text: «Era la ragazza più buona di questa casa. E io l'ho tradita.»
+        again: «Vi ho detto che non la conosco.»
+      camera_clara:
+        name: camera di Clara
+        gender: f
+        aliases: [camera chiusa, porta in fondo, targhetta, chiave della camera di Clara]
+        when: {flag: atto_tre}
+        text: «Quella porta è chiusa dal 1897, signorina. Non si apre. Non per voi.»
+        variants:
+          - when: {flag: camera_clara_aperta}
+            text: «L'avete aperta, allora. Trent'anni…» Livia si fa il segno della croce.
+          - when: {flag: livia_confessa}
+            text: «La chiave ce l'avete. Andate.»
+        again: «Non si apre, vi ho detto.»
 
   corrado:
     name: Corrado
@@ -359,12 +467,27 @@ characters:
       vuoto in mano. Ha l'aria di chi aspetta un treno in ritardo.
     location: biliardo
     moves:
+      - when: {flag: atto_tre}
+        room: archivio
       - when: {flag: atto_due}
         room: studio_conte
     greeting: >
       «Un'altra parente sconosciuta?» Corrado ride senza allegria. «Mettetevi in fila. Quando
       arriverà il notaio vedrete che qui non c'è niente per nessuno, tranne che per me.»
     greeting_variants:
+      - when: {flag: lettere_lette}
+        text: >
+          Corrado ti aspetta sulla soglia dell'archivio, con un foglio ingiallito in mano. «Clara di
+          Valdimora, nata nel 1878», legge ad alta voce. «La figlia di cui nessuno parlava.» Ti guarda
+          il medaglione, poi la faccia, e non ride più. «Allora siete voi. La nipotina. Godetevela
+          finché dura: il notaio non è ancora arrivato, e la strada è lunga.»
+        again: «Ancora qui, nipotina? Godetevela, finché dura.»
+      - when: {flag: atto_tre}
+        text: >
+          Corrado è chino su un faldone aperto, in una nuvola di polvere e di fumo. «Le carte di
+          famiglia», dice senza alzare gli occhi. «Voglio essere sicuro che il notaio non trovi
+          sorprese.»
+        again: «Ancora voi? Sto lavorando, signorina.»
       - when: {flag: atto_due}
         text: >
           Corrado è seduto alla scrivania del conte, coi piedi sul piano di mogano. «Guarda chi si
@@ -477,6 +600,28 @@ characters:
           «Siete stata in camera mia?» Per un attimo Corrado perde il sorriso. «Debiti di gioco. Il
           notaio li pagherà tutti, quando arriverà. Tutti.»
         again: «Il notaio li pagherà. Parliamo d'altro.»
+      archivio:
+        name: archivio
+        gender: m
+        aliases: [carte, faldone, faldoni, carte di famiglia, "1897"]
+        when: {flag: atto_tre}
+        text: >
+          «Trecento anni di carte. Cerco quello che non c'è: un altro erede. E finora, niente.» Soffia
+          via la polvere da un faldone.
+        variants:
+          - when: {flag: lettere_lette}
+            text: «Ho trovato quello che cercavo. Purtroppo per voi, e per me.»
+        again: «Sto cercando, signorina. Lasciatemi lavorare.»
+      clara:
+        name: Clara
+        article: none
+        gender: f
+        aliases: [madre, mia madre]
+        when: {flag: lettere_lette}
+        text: >
+          «Clara di Valdimora. Una zia che nessuno ha mai nominato, cancellata da tutto, tranne che da
+          questo faldone.» Corrado lo chiude di colpo. «E da voi, a quanto pare.»
+        again: «Non ne voglio parlare.»
 
   ferri:
     name: dottor Ferri
@@ -622,6 +767,13 @@ characters:
       dita.
     location: cappella
     moves:
+      # Le commissioni del terzo atto: mandata di sotto, ci resta (spec, «Atto 3: decisioni»).
+      - when: {flag: agnese_in_cucina}
+        room: cucina
+      - when: {flag: agnese_in_rimessa}
+        room: rimessa
+      - when: {flag: atto_tre}
+        room: corridoio_servitu
       - when: {flag: atto_due}
         room: loggia
     greeting: >
@@ -629,6 +781,23 @@ characters:
       Genova. La contessa parlava di una visita… Se vi serve qualcosa, qualunque cosa, chiedete a
       me.»
     greeting_variants:
+      - when: {flag: agnese_in_cucina}
+        text: >
+          Agnese è in cucina, davanti al focolare, e versa l'acqua bollente in una tazza. «Eccovi,
+          signorina. La tisana è quasi pronta.»
+        again: «Vi aspetto qui, signorina, se vi serve altro.»
+      - when: {all: [{flag: agnese_in_rimessa}, {has: tanica}]}
+        text: «Avete la tanica? Bene.» Agnese si pulisce le mani nel grembiule. «Io resto qui ancora un po', signorina.»
+      - when: {flag: agnese_in_rimessa}
+        text: >
+          Agnese è nella rimessa, accanto alla tanica del petrolio. «Eccola, signorina: prendetela
+          pure, per me è troppo pesante.»
+      - when: {flag: atto_tre}
+        text: >
+          Agnese è nel corridoio della servitù, davanti alla porta della sua camera, con la candela in
+          mano. «Siete salita fin quassù? Qui dormiamo noi della servitù.» Ti sorride. «Se vi serve
+          qualcosa di sotto, chiedete a me: scendo io.»
+        again: «Eccovi. Se vi serve qualcosa di sotto, chiedete pure.»
       - when: {all: [{flag: atto_due}, {flag: medaglione_mostrato}]}
         text: «Signorina.» Agnese alza la candela e ti sorride. «Avete bisogno di me?»
       - when: {flag: atto_due}
@@ -710,7 +879,54 @@ characters:
         gender: m
         aliases: [aiutare, serve]
         text: «Qualunque cosa. La contessa avrebbe voluto così.»
+        variants:
+          - when: {flag: atto_tre}
+            text: >
+              «Se vi serve qualcosa di sotto, chiedete a me: il petrolio per una lanterna, una tisana
+              calda… Le scale le conosco a occhi chiusi.»
         again: «Qualunque cosa, ve l'ho detto.»
+      petrolio:
+        name: petrolio
+        gender: m
+        aliases: [tanica, tanica di petrolio]
+        when: {all: [{flag: atto_tre}, {not: {has: tanica}}, {not: {flag: agnese_in_cucina}}]}
+        effects:
+          - set_flag: agnese_in_rimessa
+        text: >
+          «Il petrolio? Ce n'è una tanica in rimessa. Vado io, signorina: voi siete stanca. Vi aspetto
+          laggiù.» E scende di corsa le scale.
+        variants:
+          - when: {player_in: rimessa}
+            text: «La tanica è lì, signorina, accanto al muro. Prendetela pure, per me è troppo pesante.»
+      tisana:
+        name: tisana
+        gender: f
+        aliases: [camomilla, infuso, qualcosa di caldo, tazza]
+        when: {flag: atto_tre}
+        effects:
+          - set_flag: agnese_in_cucina
+        text: >
+          «Una tisana? Ma certo, signorina: vado in cucina e ve la preparo. Vi aspetto là, al caldo.»
+          Agnese prende la candela e scende.
+        variants:
+          - when: {player_in: cucina}
+            text: >
+              «Eccola, bella calda.» Agnese ti porge una tazza fumante, e tu la bevi a piccoli sorsi.
+              Sa di camomilla e di miele. «Vi aspetto qui, se vi serve altro.»
+      camera:
+        name: camera
+        gender: f
+        aliases: [camera di Agnese, cameretta, porta della camera di Agnese]
+        when: {flag: atto_tre}
+        text: «La mia cameretta? È tutta in disordine, signorina. Non c'è niente da vedere.»
+        again: «Niente da vedere, davvero.»
+      luce:
+        name: luce
+        gender: f
+        aliases: [candela, impronte, cera, soffittone]
+        when: {flag: atto_tre}
+        text: «Una luce in soffitta?» Agnese ride, ma troppo in fretta. «Sarà stato un lampo, signorina. Con questo tempo…»
+        again: «Un lampo, ve l'ho detto.»
       medaglione:
         name: medaglione
         gender: m

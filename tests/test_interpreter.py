@@ -755,3 +755,64 @@ def test_naming_what_is_in_a_place_is_no_move(castle, sentence, name, alias):
     result = interpret(FakeLLMClient(json_replies=[reply]), sentence, [], [(Direction.WEST, place)])
 
     assert result == NotUnderstood("la frase non chiede di spostarsi")
+
+
+# --- Found playing the third act of Valdimora ----------------------------------------------------------
+
+
+def test_tying_is_no_reading(valdimora):
+    # «lego la corda alla trave del lucernario»: «lego» is nearly «leggo», and the model answered «leggi».
+    reply = {"verbo": "leggi", "bersaglio": "corda da bucato", "con": "lucernario"}
+    in_reach = valdimora_items(valdimora, "corda", "lucernario", "meccanismo")
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), "lego la corda alla trave del lucernario", in_reach)
+
+    assert action == Action(verb="usa", target="corda", with_="lucernario")
+
+
+def test_examining_something_unnamed_is_examining_the_only_thing_named(valdimora):
+    # «guardo sotto il materasso»: the model looked at the candle stub.
+    reply = {"verbo": "guarda", "bersaglio": "mozzicone di candela", "con": "nessuno"}
+    in_reach = valdimora_items(valdimora, "letto_agnese", "mozzicone", "scarpe")
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), "guardo sotto il materasso", in_reach)
+
+    assert action == Action(verb="esamina", target="letto_agnese")
+
+
+def test_reading_what_the_sentence_names_by_its_very_words(valdimora):
+    # «leggo le lettere della contessa»: the model read the countess's letter to Irene, named only by
+    # another ending, while the sentence names the letters to Clara word for word.
+    reply = {"verbo": "leggi", "bersaglio": "lettera della contessa", "con": "nessuno"}
+    in_reach = valdimora_items(valdimora, "lettera", "medaglione", "lettere_clara")
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), "leggo le lettere della contessa", in_reach)
+
+    assert action == Action(verb="leggi", target="lettere_clara")
+
+
+def test_a_typo_is_not_another_item(valdimora):
+    # The very words of another item win only where they name the same thing: «ciave» is the key.
+    reply = {"verbo": "esamina", "bersaglio": "chiave della cantina", "con": "nessuno"}
+    in_reach = valdimora_items(valdimora, "chiave_cantina", "lanterna")
+
+    action = interpret(FakeLLMClient(json_replies=[reply]), "esamino la ciave e la lanterna", in_reach)
+
+    assert action == Action(verb="esamina", target="chiave_cantina")
+
+
+@pytest.mark.parametrize(
+    ("sentence", "expected"),
+    [
+        ("esco dal lucernario sul tetto", Action(verb="vai", direction="su")),
+        ("salto dal lucernario sul tetto", Action(verb="salta", target="lucernario")),
+    ],
+    ids=["out on the roof", "a jump word: a jump"],
+)
+def test_a_jump_toward_a_room_named_is_a_move(valdimora, sentence, expected):
+    # «esco dal lucernario sul tetto»: the model heard a jump into the skylight.
+    reply = {"verbo": "salta", "bersaglio": "lucernario", "con": "nessuno"}
+    in_reach = valdimora_items(valdimora, "lucernario", "meccanismo")
+    exits = [(Direction.NORTH, valdimora.rooms["soffittone"]), (Direction.UP, valdimora.rooms["tetto"])]
+
+    assert interpret(FakeLLMClient(json_replies=[reply]), sentence, in_reach, exits) == expected
