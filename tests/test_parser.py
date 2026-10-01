@@ -540,6 +540,33 @@ def test_a_sentence_that_does_not_name_a_thing(world, text, item_id):
     assert not is_named(world.items[item_id], words_of(text))
 
 
+@pytest.mark.parametrize(
+    ("text", "alias"),
+    [
+        ("ho sete", "seta"),  # four letters, another ending: but «sete» is a word of its own
+        ("mi metto in mezzo", "mazzo"),
+        ("è il nostro segreto", "nastro"),
+        ("spegni la candela", "segni"),
+        ("che strana stella", "strada"),
+        ("ho letto tutto", "lutto"),
+        ("è molto strano", "motto"),
+    ],
+)
+def test_a_common_word_is_no_typo_for_a_name(world_data, text, alias):
+    # In Valdimora's gallery «ho sete» answered «Non vedi niente del genere qui.»: the silk elsewhere.
+    world_data["items"]["chiave"]["aliases"] = [alias]
+    key = World.model_validate(world_data).items["chiave"]
+
+    assert not is_named(key, words_of(text))
+
+
+def test_a_common_word_still_names_a_thing_called_so(world_data):
+    world_data["items"]["chiave"]["aliases"] = ["letto"]
+    key = World.model_validate(world_data).items["chiave"]
+
+    assert is_named(key, words_of("mi siedo sul letto"))
+
+
 def test_rooms_are_named_like_items(world_data):
     world_data["rooms"]["atrio"]["name"] = "Scuderia"
     room = World.model_validate(world_data).rooms["atrio"]

@@ -165,7 +165,10 @@ nel pozzo" confronta le parole "corda gancio pozzo". Il parser sceglie:
 nome o un alias (tollerando un'altra desinenza e un errore di battitura: "chiavi", "ciave"): il
 modello sceglie da un elenco, e senza niente di adatto sceglie a caso. Quindi negli alias vanno le
 parole che il giocatore usa davvero ("vera" per il pozzo): una frase che nomina l'oggetto con una
-parola che non c'è riceve "Non ho capito.", e finisce in `logs/comandi.jsonl`.
+parola che non c'è riceve "Non ho capito.", e finisce in `logs/comandi.jsonl`. Le parole comuni
+(`COMMON_WORDS` in `app/engine/parser.py`: "sete", "metto", "nostro"…) non sono mai refusi, quindi
+"ho sete" non nomina la "seta". Un alias di una parola sola vicino a una parola comune che non è
+nella lista va evitato, oppure la parola va aggiunta alla lista ("fuori" nominava i "fiori").
 
 ## `rules`
 

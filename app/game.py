@@ -40,6 +40,7 @@ from app.engine.parser import (
     significant_words,
     topics_named,
     words_of,
+    words_saying,
 )
 from app.engine.text import action_text, confirmation, render, which_one
 from app.llm.client import LLMClient
@@ -297,11 +298,13 @@ class Game:
         return None if person is None else Action(verb=Conversation.TALK, target=person.id, gesture=gesture)
 
     def _names_one_elsewhere(self, things: Iterable[Item | Character], words: list[str], here: set[str]) -> bool:
-        """A name within one said of something here doesn't count: "corda" is also the grapple, and
-        "biglietto" is in "biglietto della contessa"."""
-        words_here = {word for thing_id in here for name in names_said(self.world.thing(thing_id), words) for word in name}
+        """A name said only by words that say something here doesn't count: "corda" is also the grapple,
+        "biglietto" is in "biglietto della contessa", and "velluti" (the dressing table's) is nearly the
+        drape's "velluto"."""
+        names_here = [name for thing_id in here for name in names_said(self.world.thing(thing_id), words)]
+        said_here = {word for name in names_here for word in words_saying(name, words)}
         return any(
-            thing.id not in here and any(not set(name) <= words_here for name in names_said(thing, words))
+            thing.id not in here and any(not words_saying(name, words) <= said_here for name in names_said(thing, words))
             for thing in things
         )
 

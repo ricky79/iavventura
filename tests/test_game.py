@@ -892,6 +892,26 @@ def test_a_common_word_is_no_topic(room, sentence, reply, shown):
     assert say(game, sentence).startswith(f"{shown}\n")
 
 
+@pytest.mark.parametrize(
+    ("room", "sentence", "reply", "answer"),
+    [
+        ("boudoir", "accarezzo i velluti",
+         {"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}, NOT_A_GAME_ACTION),
+        ("salone_musica", "sollevo la campana di vetro",
+         {"verbo": "prendi", "bersaglio": "nessuno", "con": "nessuno"}, NOT_UNDERSTOOD),
+    ],
+)  # fmt: skip
+def test_a_word_for_something_here_names_nothing_elsewhere(room, sentence, reply, answer):
+    # «velluti» is the dressing table's, nearly the drape's «velluto»; «vetro» the music box's glass,
+    # nearly the French window's «vetri»: the game answered «Non vedi niente del genere qui.».
+    game = Game(Engine(load_world(WORLDS_DIR / "valdimora")), talking(reply))
+    game.state.current_room = room
+    game.state.flags.update({"atto_due", "busta_data"})
+    game.state.act = 1
+
+    assert say(game, sentence) == answer
+
+
 def test_no_thanks_answers_the_question_even_with_someone_here(castle):
     # «no, grazie» is also a formula: the answer to «Vuoi…?» comes first.
     game = in_the_stable(castle)
