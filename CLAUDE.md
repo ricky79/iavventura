@@ -441,6 +441,14 @@ tests/
     contessa» non è la lettera della contessa); un salto senza parola da salto che nomina una
     stanza tra le uscite è uno spostamento («esco dal lucernario sul tetto»: senza la corda, il
     gioco chiede prima). E l'alias «camera di Clara» sulla sua porta.
+  - Dalla revisione finale: la trave sotto il lucernario è un arredo, e la corda si lega anche a
+    lei («lego la corda alla trave»; un alias «trave» sul lucernario cambiava le risposte del
+    modello e rompeva due frasi); nel terzo atto Livia non ha più le chiavi alla cintura, Ettore sa
+    dov'è Agnese quando è di sotto e il suo indizio sulla lanterna la segue. Niente alias «tè» per
+    la tisana: senza accento è «te». Rimandati: testi che invecchiano andando avanti nell'atto
+    (Livia dopo la confessione, Corrado sull'eredità dopo le lettere, Agnese che si offre di
+    scendere quando è già di sotto), «tetto» e «pioggia» nella stanza dell'orologio, gli alias
+    «casa», «appunti», «vestiti».
 
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.
@@ -493,8 +501,8 @@ ollama pull qwen2.5:3b
     (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
     sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
     invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
-    `tests/test_ollama.py` (oggi 171 su 178, ~1700 s: i 36 casi di prima, gli 8 dei pericoli, i 17
-    del primo atto di Valdimora, le 20 frasi dei dialoghi e le 23 del terzo atto tutti, 28 delle 29
+    `tests/test_ollama.py` (oggi 172 su 179, ~1780 s: i 36 casi di prima, gli 8 dei pericoli, i 17
+    del primo atto di Valdimora, le 20 frasi dei dialoghi e le 24 del terzo atto tutti, 28 delle 29
     frasi del secondo atto e 39 delle 45 frasi trovate giocando; le altre 7 sono limiti noti, e
     «infilo il medaglione nella cornice» a volte passa).
   - Il modello non è del tutto deterministico: con lo stesso prompt e `temperature: 0`, 2 o 3 frasi
