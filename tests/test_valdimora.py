@@ -1034,3 +1034,48 @@ def test_what_a_room_of_the_third_act_describes_can_be_examined(valdimora, room,
 
     assert answer not in ("Non vedi niente del genere qui.", "Non ho capito.")
     assert not answer.startswith("Quale intendi")
+
+
+# --- Atto 3: i personaggi --------------------------------------------------------------------------------
+
+
+
+def test_asked_about_the_photograph_livia_wants_it_but_tells_nothing(valdimora):
+    game = in_act_three(valdimora, "camera_livia", carried=("fotografia",))
+    before = game.state.model_dump(exclude={"turns", "asked", "last_speaker"})
+
+    assert "Datemela" in game.turn("chiedi a Livia della fotografia")
+    assert game.state.model_dump(exclude={"turns", "asked", "last_speaker"}) == before
+
+
+@pytest.mark.parametrize(
+    ("room", "flags", "line", "expected"),
+    [
+        ("corridoio_servitu", (), "parla con Agnese", "chiedete a me: scendo io"),
+        ("camera_livia", (), "parla con Livia", "In camera mia non c'è niente per voi"),
+        ("camera_livia", (), "chiedi a Livia di Clara", "Non conosco nessuna Clara"),
+        ("camera_livia", ("livia_confessa",), "chiedi a Livia di Clara", "l'ho tradita"),
+        ("archivio", (), "parla con Corrado", "Le carte di famiglia"),
+        ("archivio", ("lettere_lette",), "parla con Corrado", "Allora siete voi. La nipotina."),
+        ("archivio", ("lettere_lette",), "chiedi a Corrado di Clara", "cancellata da tutto"),
+        ("cucina", (), "parla con Ettore", "Siete salita fin lassù"),
+        ("cucina", ("lettere_lette",), "parla con Ettore", "Bentornata a casa"),
+        ("cucina", (), "chiedi a Ettore della lanterna", "nel sottotetto"),
+        ("cucina", (), "chiedi a Ettore della cantina", "senza un lume non si scende"),
+        ("cucina", ("lettere_lette",), "chiedi a Ettore di Clara", "Era vostra nonna"),
+    ],
+)  # fmt: skip
+def test_the_characters_have_something_to_say_in_the_third_act(valdimora, room, flags, line, expected):
+    assert expected in in_act_three(valdimora, room, *flags).turn(line)
+
+
+@pytest.mark.parametrize(
+    ("room", "flags", "carried", "line", "done"),
+    [
+        ("camera_livia", ("livia_confessa",), (), "chiedi a Livia della camera di Clara", "La chiave ce l'avete"),
+        ("cucina", (), ("chiave_cantina",), "chiedi a Ettore della cantina", "Siete sicura di avere tutto"),
+        ("cucina", ("lanterna_accesa",), (), "chiedi a Ettore della lanterna", "ci vedrete"),
+    ],
+)  # fmt: skip
+def test_what_the_characters_say_in_the_third_act_knows_when_it_is_done(valdimora, room, flags, carried, line, done):
+    assert done in in_act_three(valdimora, room, *flags, carried=carried).turn(line)
