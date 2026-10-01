@@ -130,6 +130,12 @@ rooms:
       Un pianerottolo spoglio, per la servitù: pareti imbiancate a calce e un odore di cera. Una
       porta stretta chiude la scala di servizio, che sale verso la soffitta. A sud si torna nella
       galleria dei ritratti, a ovest nel guardaroba.
+    variants:
+      - when: {flag: atto_tre}
+        text: >
+          Un pianerottolo spoglio, per la servitù: pareti imbiancate a calce e un odore di cera. La
+          porta della scala di servizio è aperta, e la scala sale verso la soffitta. A sud si torna
+          nella galleria dei ritratti, a ovest nel guardaroba.
     exits:
       sud: {to: galleria}
       ovest: {to: guardaroba}
@@ -184,14 +190,6 @@ rooms:
       un elastico. A sud si torna nello studio del conte.
     exits:
       sud: {to: studio_conte}
-
-  # Provvisoria: nessuno ci entra, perché aprire la scala di servizio chiude il secondo atto. La
-  # riscrive l'atto 3, nel file della soffitta.
-  pianerottolo_soffitta:
-    name: Pianerottolo della soffitta
-    description: In cima alla scala di servizio, la soffitta è buia e silenziosa.
-    exits:
-      giù: {to: pianerottolo_servizio}
 
 items:
   # --- La galleria: il ritratto di Clara ---
@@ -398,6 +396,9 @@ items:
     description: Una porta stretta di legno grezzo, chiusa a chiave. Dietro, una scala sale verso la soffitta.
     location: pianerottolo_servizio
     scenery: true
+    variants:
+      - when: {flag: atto_tre}
+        text: La porta della scala di servizio, aperta. La chiave è rimasta nella serratura.
 
   pareti_imbiancate:
     name: pareti imbiancate
@@ -797,7 +798,10 @@ rules:
     effects:
       - remove: chiave_servizio
       - set_flag: atto_tre
-    text: La chiave gira dura, poi scatta. La lasci nella serratura, e spingi la porta.
+    text: >
+      La chiave gira dura, poi scatta. La lasci nella serratura e spingi la porta: una scala di legno
+      stretta e ripida sale nel buio verso la soffitta. Da lassù scende un odore di polvere e di
+      lavanda.
 
   apri_scala_servizio_senza_chiave:
     trigger: {verb: apri, target: porta_scala_servizio}

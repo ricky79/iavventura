@@ -1,5 +1,6 @@
-# I personaggi di Valdimora. Dove stanno nel primo atto: spec, sezione 2 (tabella dei personaggi);
-# gli spostamenti (moves) arrivano con gli atti successivi.
+# I personaggi di Valdimora. Dove stanno atto per atto: spec, sezione 2 (tabella dei personaggi), e
+# le decisioni di ogni atto (Ferri resta nel biliardo). Gli atti restano veri dopo il loro inizio,
+# quindi le varianti di un atto vengono prima di quelle degli atti precedenti.
 # I domestici danno del voi a Irene («signorina»); la narrazione le dà del tu. Gesti e opinioni
 # reciproche: docs/superpowers/specs/2026-09-29-dialoghi-design.md. Nessuno rivela i segreti degli
 # atti successivi; Agnese e Corrado, però, si difendono a vicenda.
@@ -15,6 +16,8 @@ characters:
       giorni.
     location: stanza_maggiordomo
     moves:
+      - when: {flag: atto_tre}
+        room: cucina
       - when: {flag: atto_due}
         room: galleria
     greeting: >
@@ -198,6 +201,8 @@ characters:
       come si guarda una macchia sul tappeto.
     location: ufficio_governante
     moves:
+      - when: {flag: atto_tre}
+        room: camera_livia
       - when: {flag: atto_due}
         room: camera_contessa
     greeting: >
@@ -359,6 +364,8 @@ characters:
       vuoto in mano. Ha l'aria di chi aspetta un treno in ritardo.
     location: biliardo
     moves:
+      - when: {flag: atto_tre}
+        room: archivio
       - when: {flag: atto_due}
         room: studio_conte
     greeting: >
@@ -622,6 +629,13 @@ characters:
       dita.
     location: cappella
     moves:
+      # Le commissioni del terzo atto: mandata di sotto, ci resta (spec, «Atto 3: decisioni»).
+      - when: {flag: agnese_in_cucina}
+        room: cucina
+      - when: {flag: agnese_in_rimessa}
+        room: rimessa
+      - when: {flag: atto_tre}
+        room: corridoio_servitu
       - when: {flag: atto_due}
         room: loggia
     greeting: >
@@ -710,7 +724,54 @@ characters:
         gender: m
         aliases: [aiutare, serve]
         text: «Qualunque cosa. La contessa avrebbe voluto così.»
+        variants:
+          - when: {flag: atto_tre}
+            text: >
+              «Se vi serve qualcosa di sotto, chiedete a me: il petrolio per una lanterna, una tisana
+              calda… Le scale le conosco a occhi chiusi.»
         again: «Qualunque cosa, ve l'ho detto.»
+      petrolio:
+        name: petrolio
+        gender: m
+        aliases: [tanica, tanica di petrolio]
+        when: {all: [{flag: atto_tre}, {not: {has: tanica}}, {not: {flag: agnese_in_cucina}}]}
+        effects:
+          - set_flag: agnese_in_rimessa
+        text: >
+          «Il petrolio? Ce n'è una tanica in rimessa. Vado io, signorina: voi siete stanca. Vi aspetto
+          laggiù.» E scende di corsa le scale.
+        variants:
+          - when: {player_in: rimessa}
+            text: «La tanica è lì, signorina, accanto al muro. Prendetela pure, per me è troppo pesante.»
+      tisana:
+        name: tisana
+        gender: f
+        aliases: [camomilla, infuso, qualcosa di caldo, tazza]
+        when: {flag: atto_tre}
+        effects:
+          - set_flag: agnese_in_cucina
+        text: >
+          «Una tisana? Ma certo, signorina: vado in cucina e ve la preparo. Vi aspetto là, al caldo.»
+          Agnese prende la candela e scende.
+        variants:
+          - when: {player_in: cucina}
+            text: >
+              «Eccola, bella calda.» Agnese ti porge una tazza fumante, e tu la bevi a piccoli sorsi.
+              Sa di camomilla e di miele. «Vi aspetto qui, se vi serve altro.»
+      camera:
+        name: camera
+        gender: f
+        aliases: [camera di Agnese, cameretta, porta della camera di Agnese]
+        when: {flag: atto_tre}
+        text: «La mia cameretta? È tutta in disordine, signorina. Non c'è niente da vedere.»
+        again: «Niente da vedere, davvero.»
+      luce:
+        name: luce
+        gender: f
+        aliases: [candela, impronte, cera, soffittone]
+        when: {flag: atto_tre}
+        text: «Una luce in soffitta?» Agnese ride, ma troppo in fretta. «Sarà stato un lampo, signorina. Con questo tempo…»
+        again: «Un lampo, ve l'ho detto.»
       medaglione:
         name: medaglione
         gender: m

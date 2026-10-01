@@ -1,0 +1,817 @@
+# La soffitta di Valdimora (secondo piano): stanze, oggetti e regole del terzo atto.
+# Spec: docs/superpowers/specs/2026-09-29-valdimora-design.md, sezioni 3 e 4 (atto 3).
+# Il petrolio è nella rimessa e i fiammiferi in cucina; la porta della cantina, in cucina, chiude
+# il terzo atto (finale provvisorio: lo toglie l'atto 4).
+
+rooms:
+  pianerottolo_soffitta:
+    name: Pianerottolo della soffitta
+    aliases: [soffitta]
+    description: >
+      In cima alla scala di servizio, un pianerottolo stretto e buio che sa di polvere e di lavanda.
+      Quassù dorme la servitù. A ovest il corridoio della servitù, a est il soffittone, a nord lo
+      stenditoio; la scala scende al piano nobile.
+    exits:
+      giù: {to: pianerottolo_servizio}
+      ovest: {to: corridoio_servitu}
+      est: {to: soffittone}
+      nord: {to: stenditoio}
+
+  stenditoio:
+    name: Stenditoio
+    description: >
+      Una stanza lunga e vuota sotto il tetto, con le finestrelle aperte al vento perché il bucato
+      asciughi. Non c'è un panno steso. A sud il pianerottolo.
+    exits:
+      sud: {to: pianerottolo_soffitta}
+
+  corridoio_servitu:
+    name: Corridoio della servitù
+    aliases: [corridoio]
+    description: >
+      Un corridoio basso e stretto, dove un uomo alto dovrebbe chinarsi. A nord la camera di Agnese, a
+      sud quella di Livia; in fondo, a ovest, una porta chiusa con una targhetta d'ottone. A est si
+      torna sul pianerottolo.
+    variants:
+      - when: {flag: camera_clara_aperta}
+        text: >
+          Un corridoio basso e stretto, dove un uomo alto dovrebbe chinarsi. A nord la camera di
+          Agnese, a sud quella di Livia; in fondo, a ovest, la porta della camera di Clara è aperta. A
+          est si torna sul pianerottolo.
+    exits:
+      est: {to: pianerottolo_soffitta}
+      sud: {to: camera_livia}
+      nord:
+        to: camera_agnese
+        when: {any: [{flag: agnese_in_rimessa}, {flag: agnese_in_cucina}]}
+        otherwise: >
+          Agnese si mette davanti alla porta della sua camera, con un sorriso. «Lì è tutto in
+          disordine, signorina. Non c'è niente da vedere, ve lo assicuro.»
+      ovest:
+        to: camera_clara
+        when: {flag: camera_clara_aperta}
+        otherwise: >
+          La porta in fondo al corridoio è chiusa a chiave. Sulla targhetta d'ottone, quasi
+          cancellata, una parola sola: «Clara».
+        otherwise_variants:
+          - when: {has: chiave_clara}
+            text: "La porta della camera di Clara è chiusa a chiave. Hai la chiave della camera di Clara: usala."
+
+  camera_agnese:
+    name: Camera di Agnese
+    description: >
+      Una cameretta ordinata fino alla pignoleria: un letto stretto rifatto a regola d'arte, un
+      crocifisso, un catino sul comodino. Accanto al catino, un mozzicone di candela consumato fino in
+      fondo; sotto il letto, un paio di scarpe grigie di polvere. A sud il corridoio.
+    exits:
+      sud: {to: corridoio_servitu}
+
+  camera_livia:
+    name: Camera di Livia
+    description: >
+      Una camera spoglia come una cella: un letto stretto, un inginocchiatoio, un armadio con tre
+      vestiti grigi tutti uguali. Sul davanzale, in un vasetto da poco, una rosa bianca secca da anni.
+      A nord il corridoio.
+    exits:
+      nord: {to: corridoio_servitu}
+
+  camera_clara:
+    name: Camera di Clara
+    description: >
+      La camera di una ragazza, rimasta com'era trent'anni fa sotto un velo di polvere: un letto
+      stretto con la coperta ricamata, una casa delle bambole alta quasi quanto te, un baule ai piedi
+      del letto. La carta da parati è a stelline d'argento. A est il corridoio.
+    exits:
+      est: {to: corridoio_servitu}
+
+  soffittone:
+    name: Soffittone
+    description: >
+      Un soffittone immenso sotto le travi del tetto, ingombro di mobili coperti da teli. Nella
+      polvere del pavimento ci sono impronte fresche, e qua e là gocce di cera: qualcuno è salito qui
+      con una candela, e non molti giorni fa. A nord, verso il sottotetto, il pavimento è marcio: le
+      assi sono nere di umido, e in mezzo c'è un buco da cui si vede il piano di sotto. Metterci il
+      piede sarebbe una follia. A ovest il pianerottolo, a est l'archivio di famiglia, a sud la stanza
+      dell'orologio.
+    variants:
+      - when: {flag: asse_posata}
+        text: >
+          Un soffittone immenso sotto le travi del tetto, ingombro di mobili coperti da teli. Nella
+          polvere del pavimento ci sono impronte fresche, e qua e là gocce di cera: qualcuno è salito
+          qui con una candela, e non molti giorni fa. A nord, sul pavimento marcio, hai steso l'asse
+          lunga: un ponte stretto verso il sottotetto. A ovest il pianerottolo, a est l'archivio di
+          famiglia, a sud la stanza dell'orologio.
+    exits:
+      ovest: {to: pianerottolo_soffitta}
+      nord: {to: sottotetto}
+      est: {to: archivio}
+      sud: {to: stanza_orologio}
+
+  sottotetto:
+    name: Sottotetto
+    description: >
+      Uno spazio basso sotto gli spioventi, dove si sta solo chinati. Da una tegola rotta entra la
+      pioggia. A sud il soffittone.
+    exits:
+      sud: {to: soffittone}
+
+  archivio:
+    name: Archivio di famiglia
+    aliases: [archivio]
+    description: >
+      Una stanza stretta, foderata di scaffali: faldoni, pergamene arrotolate, trecento anni di carte
+      dei Valdimora. Su un tavolo, un faldone aperto con la data «1897». A ovest il soffittone.
+    exits:
+      ovest: {to: soffittone}
+
+  stanza_orologio:
+    name: Stanza dell'orologio
+    aliases: [torretta]
+    description: >
+      La stanza del grande orologio della torretta: ingranaggi di ferro grandi come ruote di carro, e
+      un pendolo fermo. In alto, il lucernario sbatte nel vento; fuori, il tetto è lucido di pioggia e
+      ripido come uno scivolo. Uscirci senza niente a cui tenersi sarebbe una follia. A nord il
+      soffittone.
+    variants:
+      - when: {flag: corda_legata}
+        text: >
+          La stanza del grande orologio della torretta: ingranaggi di ferro grandi come ruote di
+          carro, e un pendolo fermo. In alto, il lucernario sbatte nel vento; dalla trave sotto il
+          lucernario pende la corda che hai legato: con quella, lassù, ti puoi tenere. A nord il
+          soffittone.
+    exits:
+      nord: {to: soffittone}
+      su: {to: tetto}
+
+  tetto:
+    name: Tetto
+    description: >
+      Sei sul tetto, nel mezzo della tempesta. Le tegole sono lucide di pioggia, e il vento ti strappa
+      il fiato. A est, lungo il colmo, la piccionaia; giù, la stanza dell'orologio.
+    exits:
+      giù: {to: stanza_orologio}
+      est: {to: piccionaia}
+
+  piccionaia:
+    name: Piccionaia
+    description: >
+      Una piccionaia di legno, che sa di piume bagnate. Sui posatoi, una dozzina di piccioni tubano al
+      riparo; uno ha un tubetto di latta legato alla zampa. A ovest si torna sul tetto.
+    exits:
+      ovest: {to: tetto}
+
+items:
+  # --- Il pianerottolo e lo stenditoio: l'asse e la corda ---
+  scala_soffitta:
+    name: scala di legno
+    gender: f
+    aliases: [scala, scala di servizio, gradini]
+    description: Una scala di legno stretta e ripida, consumata al centro dei gradini. Scende al piano nobile.
+    location: pianerottolo_soffitta
+    scenery: true
+
+  finestrelle:
+    name: finestrelle
+    gender: f
+    plural: true
+    aliases: [finestrella, finestre]
+    description: Finestrelle basse, aperte sul vento e sulla pioggia. Giù, tre piani più in basso, il cortile.
+    location: stenditoio
+    scenery: true
+
+  asse:
+    name: asse lunga
+    gender: f
+    aliases: [asse, asse da stiro]
+    description: Un'asse di legno lunga e stretta, da stiro. È pesante, ma la porti.
+    location: stenditoio
+
+  corda:
+    name: corda da bucato
+    gender: f
+    aliases: [corda, fune]
+    description: Una corda da bucato, lunga e robusta.
+    location: stenditoio
+
+  # --- Il corridoio, la camera di Agnese (prova 3) e quella di Livia ---
+  porta_clara:
+    name: porta della camera di Clara
+    gender: f
+    aliases: [porta, porta di Clara, camera di Clara, targhetta, porta in fondo]
+    description: >
+      Una porta di legno chiaro, chiusa a chiave. Sulla targhetta d'ottone, quasi cancellata, una
+      parola sola: «Clara».
+    location: corridoio_servitu
+    scenery: true
+    variants:
+      - when: {flag: camera_clara_aperta}
+        text: La porta della camera di Clara, aperta. La chiave è rimasta nella serratura.
+
+  porta_agnese:
+    name: porta della camera di Agnese
+    gender: f
+    aliases: [porta di Agnese]
+    description: Una porta di legno scuro, senza serratura.
+    location: corridoio_servitu
+    scenery: true
+
+  letto_agnese:
+    name: letto di Agnese
+    gender: m
+    aliases: [letto, materasso, letto stretto]
+    description: >
+      Un letto stretto, rifatto con cura. Il materasso, però, è gonfio da una parte, come se sotto ci
+      fosse qualcosa.
+    location: camera_agnese
+    scenery: true
+    variants:
+      - when: {flag: materasso_frugato}
+        text: Un letto stretto, rifatto con cura. Sotto il materasso non c'è più niente.
+
+  crocifisso:
+    name: crocifisso
+    gender: m
+    aliases: [croce]
+    description: Un crocifisso di legno scuro, appeso sopra il letto.
+    location: camera_agnese
+    scenery: true
+
+  catino:
+    name: catino
+    gender: m
+    aliases: [comodino, brocca]
+    description: Un catino di ceramica bianca, con la sua brocca, su un comodino di legno grezzo.
+    location: camera_agnese
+    scenery: true
+
+  mozzicone:
+    name: mozzicone di candela
+    gender: m
+    aliases: [mozzicone, candela]
+    description: >
+      Un mozzicone di candela bianca, consumato fino in fondo. La cera colata è la stessa delle gocce
+      nel soffittone.
+    location: camera_agnese
+    scenery: true
+
+  scarpe:
+    name: scarpe grigie
+    gender: f
+    plural: true
+    aliases: [scarpe]
+    description: Un paio di scarpe di panno nero, grigie della stessa polvere del soffittone.
+    location: camera_agnese
+    scenery: true
+
+  lettera_giugno:
+    name: lettera di giugno
+    gender: f
+    aliases: [lettera, lettera intercettata]
+    description: >
+      Una lettera della contessa, datata giugno 1927, indirizzata a te, a Genova. Il francobollo c'è,
+      il timbro postale no: non è mai partita. È stata aperta, e richiusa con cura.
+    location: null
+
+  anello:
+    name: anello
+    gender: m
+    aliases: [anellino]
+    description: Un anellino d'oro sottile. All'interno, inciso, «C. ad A.».
+    location: null
+
+  quaderno:
+    name: quaderno di Agnese
+    gender: m
+    aliases: [quaderno, appunti, calligrafia]
+    description: >
+      Un quaderno di appunti: la spesa, i romanzi da leggere alla contessa, le ore delle gocce. Ogni
+      pagina è siglata con una «A.» tutta svolazzi.
+    location: null
+    variants:
+      - when: {has: registro}
+        text: >
+          Un quaderno di appunti: la spesa, i romanzi da leggere alla contessa, le ore delle gocce.
+          Ogni pagina è siglata con una «A.» tutta svolazzi. La confronti col registro delle medicine:
+          è la stessa mano. Non era la contessa a firmare le dosi. Era Agnese.
+
+  letto_livia:
+    name: letto di Livia
+    gender: m
+    aliases: [letto, letto stretto]
+    description: Un letto stretto, con una coperta grigia tirata senza una piega.
+    location: camera_livia
+    scenery: true
+
+  inginocchiatoio:
+    name: inginocchiatoio
+    gender: m
+    aliases: [rosario]
+    description: Un inginocchiatoio di legno, col velluto consumato dalle ginocchia. Sopra, un rosario.
+    location: camera_livia
+    scenery: true
+
+  armadio_livia:
+    name: armadio di Livia
+    gender: m
+    aliases: [armadio, vestiti, vestiti grigi]
+    description: Tre vestiti grigi tutti uguali, un grembiule, un cappotto. Nient'altro.
+    location: camera_livia
+    scenery: true
+
+  rosa_secca:
+    name: rosa secca
+    gender: f
+    aliases: [rosa, vasetto, davanzale]
+    description: Una rosa bianca della serra, secca da anni, in un vasetto da poco. Livia non l'ha mai buttata.
+    location: camera_livia
+    scenery: true
+
+  chiave_clara:
+    name: chiave della camera di Clara
+    gender: f
+    aliases: [chiave, chiave di Clara, chiave piccola]
+    description: Una chiave piccola e lucida, legata a un cordino. Livia l'ha portata al collo per trent'anni.
+    location: null
+
+  # --- La camera di Clara: le lettere (rivelazione 3) e la casa delle bambole ---
+  letto_clara:
+    name: letto di Clara
+    gender: m
+    aliases: [letto, coperta, coperta ricamata]
+    description: Un letto stretto, con una coperta ricamata a mano. Le stelle del ricamo sono uguali a quella del tuo medaglione.
+    location: camera_clara
+    scenery: true
+
+  carta_parati:
+    name: carta da parati
+    gender: f
+    aliases: [stelline, pareti]
+    description: Carta da parati azzurra, a stelline d'argento. In un angolo, a matita, segni di altezza e date, dal 1882 al 1895.
+    location: camera_clara
+    scenery: true
+
+  baule:
+    name: baule
+    gender: m
+    aliases: [baule di Clara, coperchio]
+    description: Un baule da corredo, col coperchio intarsiato. Non è chiuso a chiave.
+    location: camera_clara
+    scenery: true
+    variants:
+      - when: {flag: baule_aperto}
+        text: Il baule aperto. Dentro, vestiti da ragazza ripiegati con cura, e nient'altro.
+
+  lettere_clara:
+    name: lettere per Clara
+    gender: f
+    plural: true
+    aliases: [lettere, lettere della contessa, pacco, pacco di lettere, nastro nero]
+    description: >
+      Un pacco di lettere legato con un nastro nero, tutte della contessa, tutte «a mia figlia
+      Clara». Nessuna ha il francobollo: non sono mai partite.
+    location: null
+
+  casa_bambole:
+    name: casa delle bambole
+    gender: f
+    aliases: [casa, casetta, bambole, comignolo]
+    description: >
+      Una casa delle bambole di legno dipinto, a tre piani, con le finestre vere e le tendine di
+      pizzo. Sul tetto, al posto del comignolo, c'è un incavo a forma di stella.
+    location: camera_clara
+    scenery: true
+    variants:
+      - when: {flag: casa_aperta}
+        text: La casa delle bambole, col tetto sollevato come un coperchio. Le stanzette in miniatura sono vuote.
+
+  chiave_cantina:
+    name: chiave della cantina
+    gender: f
+    aliases: [chiave, chiave lunga, cartellino]
+    description: >
+      Una chiave lunga e scura, un po' arrugginita. Sul cartellino, la grafia della contessa: «Dove il
+      vino dorme più vecchio. Quando scenderai, porta con te tutto ciò che hai scoperto.»
+    location: null
+
+  # --- Il soffittone, il sottotetto (pericolo) e la lanterna ---
+  mobili_coperti:
+    name: mobili coperti
+    gender: m
+    plural: true
+    aliases: [mobili, teli, bauli, cassapanche]
+    description: >
+      Bauli, cassapanche, una culla, un manichino da sarta: generazioni di cose messe da parte e
+      coperte da teli bianchi. Qualcuno ha sollevato i teli, uno dopo l'altro, e li ha rimessi in
+      fretta.
+    location: soffittone
+    scenery: true
+
+  travi:
+    name: travi
+    gender: f
+    plural: true
+    aliases: [trave]
+    description: Travi di castagno annerite dal tempo. Ci piove dentro da più di un punto.
+    location: soffittone
+    scenery: true
+
+  impronte:
+    name: impronte
+    gender: f
+    plural: true
+    aliases: [polvere, gocce di cera, cera, gocce, orme]
+    description: >
+      Impronte di scarpe piccole, da donna, che girano tra i mobili coperti e tornano alla scala. E
+      gocce di cera bianca, fresche: qualcuno ha cercato qualcosa, quassù, a lume di candela.
+    location: soffittone
+    scenery: true
+
+  pavimento_marcio:
+    name: pavimento marcio
+    gender: m
+    aliases: [pavimento, buco, assi, assi marce]
+    description: >
+      Le assi del pavimento, verso il sottotetto, sono nere di umido e piene di buchi; una non c'è più
+      del tutto, e sotto si vede il buio del piano nobile. Ti servirebbe qualcosa di lungo da
+      stenderci sopra, per passare.
+    location: soffittone
+    scenery: true
+    variants:
+      - when: {flag: asse_posata}
+        text: Sul pavimento marcio hai steso l'asse lunga, da una trave sana all'altra. Regge.
+
+  asse_stesa:
+    name: asse stesa
+    gender: f
+    aliases: [asse, ponte]
+    description: L'asse lunga, stesa sul pavimento marcio da una trave sana all'altra. Regge il tuo peso.
+    location: null
+    scenery: true
+
+  tegola:
+    name: tegola rotta
+    gender: f
+    aliases: [tegola, spioventi, pioggia]
+    description: Una tegola spezzata. Ci piove dentro, goccia dopo goccia.
+    location: sottotetto
+    scenery: true
+
+  lanterna:
+    name: lanterna
+    gender: f
+    aliases: [lume, lanterna a petrolio, stoppino, serbatoio]
+    description: Una vecchia lanterna a petrolio, col vetro annerito. Il serbatoio è vuoto, e senza petrolio non si accende.
+    location: sottotetto
+    variants:
+      - when: {flag: lanterna_accesa}
+        text: La lanterna accesa. Dietro il vetro annerito la fiamma trema, ma tiene.
+      - when: {flag: lanterna_piena}
+        text: La lanterna, col serbatoio pieno di petrolio. Manca solo da accenderla.
+
+  # --- L'archivio di famiglia ---
+  faldoni:
+    name: faldoni
+    gender: m
+    plural: true
+    aliases: [scaffali, pergamene, contratti]
+    description: Faldoni di cartone e pergamene coi sigilli di cera rossa. Nessuno li riordina da anni.
+    location: archivio
+    scenery: true
+
+  faldone_1897:
+    name: faldone del 1897
+    gender: m
+    aliases: [faldone, "1897", carte del conte, carte, tavolo]
+    description: >
+      Il faldone del 1897, aperto sul tavolo: le carte del conte Ruggero. Conti della tenuta, una
+      lettera al parroco, il libro paga della servitù.
+    location: archivio
+    scenery: true
+
+  # --- La stanza dell'orologio, il tetto (pericolo) e la piccionaia ---
+  meccanismo:
+    name: meccanismo dell'orologio
+    gender: m
+    aliases: [meccanismo, ingranaggi, pendolo, orologio]
+    description: >
+      Ingranaggi di ferro, catene, un pendolo lungo quanto un uomo. L'orologio si è fermato alle tre e
+      un quarto, e nessuno l'ha più caricato.
+    location: stanza_orologio
+    scenery: true
+
+  lucernario:
+    name: lucernario
+    gender: m
+    aliases: [botola]
+    description: >
+      Un lucernario di vetro e ferro, aperto, che sbatte nel vento. Sotto, una trave robusta, a cui si
+      potrebbe legare qualcosa; fuori, il tetto.
+    location: stanza_orologio
+    scenery: true
+    variants:
+      - when: {flag: corda_legata}
+        text: Il lucernario aperto, che sbatte nel vento. Alla trave sotto è legata la tua corda, che pende fuori, sul tetto.
+
+  corda_legata:
+    name: corda legata
+    gender: f
+    aliases: [corda, nodo]
+    description: La corda da bucato, legata alla trave sotto il lucernario con un nodo da marinaio. Pende fuori, sul tetto.
+    location: null
+    scenery: true
+
+  tempesta:
+    name: tempesta
+    gender: f
+    aliases: [tegole, colmo, vento, pioggia]
+    description: Pioggia e vento, e sotto di te le tegole lucide che scendono ripide verso il vuoto.
+    location: tetto
+    scenery: true
+
+  piccioni:
+    name: piccioni
+    gender: m
+    plural: true
+    aliases: [piccione, posatoi, piume, piccionaia]
+    description: >
+      Piccioni viaggiatori, grigi e bagnati. La contessa li teneva per scrivere al notaio in città,
+      quando la strada era chiusa.
+    location: piccionaia
+    scenery: true
+
+  tubetto:
+    name: tubetto di latta
+    gender: m
+    aliases: [tubetto, latta, zampa]
+    description: Un tubetto di latta legato alla zampa di un piccione. Dentro c'è qualcosa di arrotolato.
+    location: piccionaia
+    scenery: true
+    variants:
+      - when: {flag: tubetto_aperto}
+        text: Il tubetto di latta, vuoto. Il piccione ti guarda, offeso.
+
+  lettera_notaio:
+    name: lettera del notaio
+    gender: f
+    aliases: [lettera, carta intestata]
+    description: Una lettera su carta intestata, «Studio notarile Bertola, Torino», datata 15 ottobre 1927.
+    location: null
+
+rules:
+  # --- Il pianerottolo e lo stenditoio ---
+  prendi_asse:
+    trigger: {verb: prendi, target: asse_stesa}
+    text: Se la togli, nel sottotetto non ci arrivi più. Lasciala dov'è.
+
+  # --- La camera di Livia: la confessione ---
+  livia_confessa:
+    trigger: {verb: dai, target: fotografia, with: livia}
+    when: {all: [{flag: atto_tre}, {not: {flag: livia_confessa}}]}
+    otherwise: Livia guarda la fotografia, e per un attimo impallidisce. Poi te la rende senza una parola.
+    otherwise_variants:
+      - when: {flag: livia_confessa}
+        text: Livia scuote la testa. «L'ho guardata abbastanza, signorina. Tenetela voi.»
+    effects:
+      - give: chiave_clara
+      - set_flag: livia_confessa
+    text: >
+      Livia prende la fotografia e la guarda a lungo. Le tremano le mani. «Clara», dice piano.
+      «Avevo diciotto anni, ed ero la sua cameriera. Fui io a dire al conte che aspettava un bambino:
+      credevo di fare il mio dovere. La cacciò quella notte stessa, sotto la pioggia, e la contessa
+      non me l'ha mai perdonato, anche se non me l'ha mai detto.» Ti rende la fotografia, poi si sfila
+      dal collo una chiave piccola, legata a un cordino. «La camera di Clara. È chiusa da trent'anni,
+      e la chiave l'ho sempre tenuta io. Andate, signorina. Voi ne avete il diritto.»
+
+  # --- Il corridoio: la camera di Clara e quella di Agnese ---
+  apri_camera_clara:
+    trigger: {verb: apri, target: porta_clara, with: chiave_clara}
+    when: {not: {flag: camera_clara_aperta}}
+    otherwise: La porta della camera di Clara è già aperta.
+    effects:
+      - remove: chiave_clara
+      - set_flag: camera_clara_aperta
+    text: >
+      La chiave gira dopo trent'anni con un lamento di ferro. La lasci nella serratura e spingi la
+      porta: dentro, la polvere e il silenzio di una stanza chiusa dal 1897.
+
+  apri_camera_clara_senza_chiave:
+    trigger: {verb: apri, target: porta_clara}
+    when: {all: [{not: {flag: camera_clara_aperta}}, {not: {has: chiave_clara}}]}
+    otherwise: "Hai la chiave della camera di Clara: usala."
+    otherwise_variants:
+      - when: {flag: camera_clara_aperta}
+        text: La porta della camera di Clara è già aperta.
+    text: È chiusa a chiave. Eppure la serratura è lucida, come se qualcuno l'avesse tenuta in ordine per tutti questi anni.
+
+  apri_porta_agnese:
+    trigger: {verb: apri, target: porta_agnese}
+    when: {any: [{flag: agnese_in_rimessa}, {flag: agnese_in_cucina}]}
+    otherwise: >
+      Agnese si mette davanti alla porta, con un sorriso. «Lì è tutto in disordine, signorina. Non
+      c'è niente da vedere, ve lo assicuro.»
+    text: Non è chiusa a chiave. Basta entrare.
+
+  # --- La camera di Agnese: la prova 3 ---
+  fruga_materasso:
+    trigger:
+      - {verb: esamina, target: letto_agnese}
+      - {verb: prendi, target: letto_agnese}
+      - {verb: tira, target: letto_agnese}
+      - {verb: spingi, target: letto_agnese}
+      - {verb: apri, target: letto_agnese}
+    when: {not: {flag: materasso_frugato}}
+    otherwise: Un letto stretto, rifatto con cura. Sotto il materasso non c'è più niente.
+    effects:
+      - give: lettera_giugno
+      - give: anello
+      - give: quaderno
+      - set_flag: materasso_frugato
+    text: >
+      Il materasso è gonfio da una parte. Lo sollevi: sotto, ben nascosti, una lettera, un anellino
+      d'oro e un quaderno. Li prendi, e rimetti il materasso com'era.
+
+  leggi_lettera_giugno:
+    trigger: {verb: leggi, target: lettera_giugno}
+    text: >
+      «Cara Irene, non mi conosci, ma io so chi sei. Ti scrivo per la terza volta, e ancora non mi
+      rispondi: forse le mie lettere non ti arrivano. Vieni a Valdimora. C'è una cosa che appartiene a
+      te e a tua madre, e il tempo che mi resta è poco. Adelaide di Valdimora.» Non è mai partita.
+      Qualcuno l'ha aperta, l'ha letta, e l'ha tenuta.
+
+  leggi_quaderno:
+    trigger: {verb: leggi, target: quaderno}
+    when: {has: registro}
+    otherwise: >
+      La spesa, i romanzi da leggere alla contessa, le ore delle gocce. Ogni pagina è siglata con una
+      «A.» tutta svolazzi.
+    text: >
+      La spesa, i romanzi da leggere alla contessa, le ore delle gocce. Ogni pagina è siglata con una
+      «A.» tutta svolazzi. La confronti col registro delle medicine: è la stessa mano. Non era la
+      contessa a firmare le dosi. Era Agnese.
+
+  # --- La camera di Clara: le lettere e la casa delle bambole ---
+  apri_baule:
+    trigger: {verb: apri, target: baule}
+    when: {not: {flag: baule_aperto}}
+    otherwise: Il baule è aperto, e dentro restano solo i vestiti.
+    effects:
+      - give: lettere_clara
+      - set_flag: baule_aperto
+    text: >
+      Sollevi il coperchio. Dentro, vestiti da ragazza ripiegati con cura e, sopra tutto, un pacco di
+      lettere legato con un nastro nero. Sulla prima, la grafia della contessa: «A mia figlia Clara».
+      Lo prendi.
+
+  prendi_baule:
+    trigger: {verb: prendi, target: baule}
+    text: È un baule da corredo, pesante come un armadio. Ma il coperchio non è chiuso a chiave.
+
+  leggi_lettere:
+    trigger: {verb: leggi, target: lettere_clara}
+    when: {not: {flag: lettere_lette}}
+    otherwise: L'ultima lettera la sai quasi a memoria. «Ma hai una figlia. Si chiama Irene.»
+    effects:
+      - set_flag: lettere_lette
+    text: >
+      Sciogli il nastro e leggi. La prima è del novembre 1897: «Clara, figlia mia, tuo padre mi ha
+      proibito di cercarti, e io ho obbedito. Che Dio mi perdoni.» Poi una ogni anno, il giorno del
+      compleanno di Clara, mai spedita. L'ultima è di questa primavera, e la mano trema: «Ettore mi ha
+      detto tutto. Sei morta nove anni fa, e io non l'ho saputo. Ma hai una figlia. Si chiama Irene, e
+      fa la sarta a Genova, come te. Le ho scritto.» Abbassi il foglio. La contessa di Valdimora era
+      tua nonna.
+
+  apri_casa_bambole:
+    trigger:
+      - {verb: usa, target: medaglione, with: casa_bambole}
+    when: {not: {flag: casa_aperta}}
+    otherwise: La casa delle bambole è aperta, e dentro non c'è altro.
+    effects:
+      - give: chiave_cantina
+      - set_flag: casa_aperta
+    text: >
+      Appoggi il medaglione nell'incavo sul tetto della casetta, e lo giri. Con uno scatto il tetto si
+      solleva come un coperchio. Nella stanzetta più alta, sul letto di una bambola, c'è una chiave
+      lunga e scura, con un cartellino: «Dove il vino dorme più vecchio. Quando scenderai, porta con
+      te tutto ciò che hai scoperto.» Prendi la chiave, e ti rimetti il medaglione al collo.
+
+  apri_casa_senza_medaglione:
+    trigger:
+      - {verb: apri, target: casa_bambole}
+      - {verb: tira, target: casa_bambole}
+    when: {not: {flag: casa_aperta}}
+    otherwise: La casa delle bambole è aperta, e dentro non c'è altro.
+    text: Il tetto della casetta non si solleva. Al posto del comignolo c'è un incavo a forma di stella.
+
+  prendi_casa_bambole:
+    trigger: {verb: prendi, target: casa_bambole}
+    text: È alta quasi quanto te. La lasci dov'è.
+
+  leggi_chiave_cantina:
+    trigger: {verb: leggi, target: chiave_cantina}
+    text: "Sul cartellino, la grafia della contessa: «Dove il vino dorme più vecchio. Quando scenderai, porta con te tutto ciò che hai scoperto.»"
+
+  # --- Il soffittone e il sottotetto (pericolo) ---
+  stendi_asse:
+    trigger: {verb: usa, target: asse, with: pavimento_marcio}
+    effects:
+      - remove: asse
+      - place: {item: asse_stesa, room: soffittone}
+      - set_flag: asse_posata
+    text: >
+      Stendi l'asse sul pavimento marcio, da una trave sana all'altra, e la provi con un piede.
+      Scricchiola, ma regge. Ora si passa.
+
+  salta_nel_buco:
+    trigger: {verb: salta, target: pavimento_marcio}
+    effects:
+      - set_flag: caduta_in_soffitta
+    text: Fai un passo sulle assi marce.
+
+  # --- La lanterna: il petrolio (rimessa) e i fiammiferi (cucina) ---
+  riempi_lanterna:
+    trigger: {verb: usa, target: tanica, with: lanterna}
+    when: {not: {flag: lanterna_piena}}
+    otherwise: La lanterna è già piena di petrolio.
+    effects:
+      - set_flag: lanterna_piena
+    text: Sviti il tappo della tanica e versi il petrolio nel serbatoio della lanterna, finché non è pieno.
+
+  accendi_lanterna:
+    trigger: {verb: usa, target: fiammiferi, with: lanterna}
+    when: {all: [{flag: lanterna_piena}, {not: {flag: lanterna_accesa}}]}
+    otherwise: La lanterna è già accesa.
+    otherwise_variants:
+      - when: {not: {flag: lanterna_piena}}
+        text: Sfreghi un fiammifero, ma lo stoppino è secco e il serbatoio vuoto. Non prende.
+    effects:
+      - set_flag: lanterna_accesa
+    text: >
+      Sfreghi un fiammifero e lo avvicini allo stoppino. La fiamma prende, trema, poi si alza dritta
+      dietro il vetro. La lanterna è accesa.
+
+  # --- L'archivio di famiglia ---
+  leggi_faldone:
+    trigger: {verb: leggi, target: faldone_1897}
+    text: >
+      Una lettera del conte al parroco, del novembre 1897: «Mia figlia è partita, e non tornerà. Il
+      suo nome non sia più pronunciato in questa casa.» E nel libro paga della servitù, in un
+      inchiostro diverso, una riga sola: «Livia, cameriera: aumento di salario, novembre 1897.»
+
+  # --- La stanza dell'orologio, il tetto (pericolo) e la piccionaia ---
+  lega_corda:
+    trigger:
+      - {verb: usa, target: corda, with: lucernario}
+      - {verb: usa, target: corda, with: meccanismo}
+    effects:
+      - remove: corda
+      - place: {item: corda_legata, room: stanza_orologio}
+      - set_flag: corda_legata
+    text: >
+      Leghi un capo della corda alla trave sotto il lucernario, con un nodo da marinaio, e lasci
+      pendere l'altro fuori, sul tetto. Ora, lassù, qualcosa ti tiene.
+
+  prendi_corda_legata:
+    trigger: {verb: prendi, target: corda_legata}
+    text: È legata alla trave, e lassù è lei che ti tiene. La lasci dov'è.
+
+  prendi_tubetto:
+    trigger:
+      - {verb: prendi, target: tubetto}
+      - {verb: apri, target: tubetto}
+      - {verb: prendi, target: piccioni}
+    when: {not: {flag: tubetto_aperto}}
+    otherwise: Il tubetto è vuoto. Il piccione ti guarda, offeso.
+    effects:
+      - give: lettera_notaio
+      - set_flag: tubetto_aperto
+    text: >
+      Il piccione si lascia prendere senza un battito d'ali. Sfili il tubetto dalla zampa e lo apri:
+      dentro, arrotolata stretta, una lettera su carta intestata di uno studio notarile di Torino. Era
+      per la contessa, ed è arrivata dopo di lei.
+
+  leggi_lettera_notaio:
+    trigger: {verb: leggi, target: lettera_notaio}
+    text: >
+      «Gentilissima contessa, confermo l'appuntamento: sarò a Valdimora il 20 ottobre, coi testimoni,
+      per il riconoscimento di vostra nipote, la signorina Irene, figlia della defunta Clara di
+      Valdimora, come vostra erede. I documenti che mi avete descritto saranno sufficienti. Con
+      ossequio, avv. Bertola.» Chi sapeva del 20 ottobre, sapeva che cosa avrebbe perso.
+
+  # --- La porta della cantina, in cucina: si scende solo con la lanterna accesa ---
+  apri_cantina:
+    trigger: {verb: apri, target: porta_cantina, with: chiave_cantina}
+    when: {all: [{flag: lanterna_accesa}, {has: lanterna}]}
+    otherwise: >
+      La chiave gira, e la porta si apre su una scala di pietra che sprofonda nel buio pesto. Senza
+      una luce non scendi di un passo: richiudi.
+    otherwise_variants:
+      - when: {has: lanterna}
+        text: >
+          La chiave gira, e la porta si apre su una scala di pietra che sprofonda nel buio pesto. La
+          tua lanterna è spenta, e senza una luce non scendi di un passo: richiudi.
+    effects:
+      - remove: chiave_cantina
+      - set_flag: atto_quattro
+    text: >
+      La chiave gira con fatica, e la lasci nella serratura. La porta si apre su una scala di pietra
+      che scende nel buio; da sotto sale un'aria fredda, che sa di muffa e di vino.

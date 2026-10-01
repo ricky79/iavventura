@@ -1,4 +1,4 @@
-"""La Stella di Valdimora, atti 1 e 2 (il pianterreno e il piano nobile): the game played with typed commands through Game,
+"""La Stella di Valdimora, atti 1, 2 e 3 (il pianterreno, il piano nobile e la soffitta): the game played with typed commands through Game,
 and the invariants that keep its puzzles honest.
 
 Chain: the letter to Ettore -> the countess's envelope (the riddle) -> oil and medallion in the sundial
@@ -10,7 +10,7 @@ import pytest
 
 from app.engine.engine import Engine
 from app.engine.loader import WORLDS_DIR, load_world
-from app.engine.models import Action, Give, Remove, World
+from app.engine.models import Action, Give, Remove, SetFlag, World
 from app.game import Game
 
 
@@ -206,7 +206,8 @@ def test_the_sleeping_doctor_only_snores(valdimora):
 
 
 def test_no_character_gives_a_shortcut(valdimora):
-    # Only Ettore's word for Livia and the key of the sideboard come from talking.
+    # Only Ettore's word for Livia and the key of the sideboard come from talking; Agnese's errands, in the
+    # third act, only send her downstairs.
     effects = {
         (character.id, topic.id): topic.effects
         for character in valdimora.characters.values()
@@ -214,7 +215,11 @@ def test_no_character_gives_a_shortcut(valdimora):
         if topic.effects
     }
 
-    assert set(effects) == {("ettore", "livia"), ("ettore", "credenza")}
+    assert set(effects) == {("ettore", "livia"), ("ettore", "credenza"), ("agnese", "petrolio"), ("agnese", "tisana")}
+    assert [*effects["agnese", "petrolio"], *effects["agnese", "tisana"]] == [
+        SetFlag(set_flag="agnese_in_rimessa"),
+        SetFlag(set_flag="agnese_in_cucina"),
+    ]
 
 
 # Everything a room describes can be examined: (room, what the player types).
@@ -494,8 +499,9 @@ def test_the_second_act_can_be_played_to_its_end(valdimora):
     assert "Lei avrebbe voluto così" in answers[26]
     assert "testa a farfalla" in answers[28]
     assert "ninna nanna" in answers[35]
-    assert answers[-1].endswith("Fine del secondo atto. (Il terzo è in costruzione.)")
-    assert game.finished and not game.state.lost
+    # The service stairs open the third act: its state is kept, to go on from here after a death.
+    assert "odore di polvere e di lavanda" in answers[-1]
+    assert not game.finished and game.state.act == 2 and game.state.checkpoint is not None
 
 
 def test_in_the_second_act_the_characters_are_upstairs(valdimora):
@@ -789,3 +795,242 @@ def test_even_asleep_the_doctor_knows_the_flask(valdimora):
     assert "russare" in answer
     assert "russa" in game.turn("parla con il dottore")
     assert "L'avevo portata piena" not in game.turn("chiedi al dottore delle medicine")  # once only
+
+
+# --- Atto 3: la soffitta -------------------------------------------------------------------------------
+
+# From the service landing, once its door is open: the photograph for Livia, Clara's room (the letters,
+# the doll's house), the plank over the rotten floor, the lantern, the oil in the coach house and the
+# matches in the kitchen, the cellar door.
+TO_THE_CELLAR = [
+    "su", "ovest", "sud", "dai la fotografia a Livia",
+    "nord", "apri la porta con la chiave", "ovest",
+    "apri il baule", "leggi le lettere", "usa il medaglione con la casa delle bambole",
+    "est", "est", "nord", "prendi l'asse", "sud", "est", "usa l'asse con il pavimento",
+    "nord", "prendi la lanterna", "sud", "ovest", "giù",
+    "sud", "sud", "giù", "sud", "usa la tanica con la lanterna",
+    "nord", "nord", "nord", "usa i fiammiferi con la lanterna",
+    "apri la porta della cantina con la chiave",
+]  # fmt: skip
+
+
+def in_act_three(valdimora: World, room: str, *flags: str, carried: tuple[str, ...] = ()) -> Game:
+    """A game already in the third act (its state kept), in `room`."""
+    game = in_act_two(valdimora, room, "atto_tre", *flags, carried=carried)
+    game.state.act = 2
+    return game
+
+
+def test_the_third_act_can_be_played_to_its_end(valdimora):
+    game = new_game(valdimora)
+    play(game, *TO_THE_STAIRCASE, *TO_THE_SERVICE_STAIRS)
+
+    answers = play(game, *TO_THE_CELLAR)
+
+    assert "Fui io a dire al conte" in answers[3]
+    assert "chiusa dal 1897" in answers[5]
+    assert "«A mia figlia Clara»" in answers[7]
+    assert "La contessa di Valdimora era tua nonna." in answers[8]
+    assert "Dove il vino dorme più vecchio" in answers[9]
+    assert "Ora si passa" in answers[16]
+    assert "finché non è pieno" in answers[26]
+    assert "La lanterna è accesa" in answers[30]
+    assert answers[-1].endswith("Fine del terzo atto. (Il quarto è in costruzione.)")
+    assert game.finished and not game.state.lost
+
+
+def test_in_the_third_act_the_characters_move(valdimora):
+    # The doctor stays by his bag in the billiard room (spec, «Atto 3: decisioni»).
+    game = in_act_three(valdimora, "pianerottolo_soffitta")
+
+    rooms = {character.id: game.engine.character_room(character, game.state) for character in valdimora.characters.values()}
+
+    assert rooms == {"ettore": "cucina", "livia": "camera_livia", "corrado": "archivio", "ferri": "biliardo",
+                     "agnese": "corridoio_servitu"}  # fmt: skip
+
+
+@pytest.mark.parametrize(("line", "room"), [("chiedi ad Agnese della tisana", "cucina"), ("chiedi ad Agnese del petrolio", "rimessa")])
+def test_sent_downstairs_agnese_leaves_her_room_open(valdimora, line, room):
+    game = in_act_three(valdimora, "corridoio_servitu")
+
+    answer = game.turn(line)
+
+    assert "Vi aspetto" in answer
+    assert game.engine.character_room(valdimora.characters["agnese"], game.state) == room
+    assert game.turn("nord").startswith("Camera di Agnese")
+
+
+def test_downstairs_agnese_does_the_errand(valdimora):
+    tea = in_act_three(valdimora, "cucina", "agnese_in_cucina")
+    oil = in_act_three(valdimora, "rimessa", "agnese_in_rimessa")
+
+    assert "bella calda" in tea.turn("chiedi ad Agnese della tisana")
+    assert "Prendetela pure" in oil.turn("chiedi ad Agnese del petrolio")
+
+
+def test_the_light_under_the_roof_was_agnese(valdimora):
+    # Seen from the courtyard in the first act: fresh wax in the attic, the candle stub in her room.
+    attic = in_act_three(valdimora, "soffittone")
+    her_room = in_act_three(valdimora, "camera_agnese", "agnese_in_cucina")
+    corridor = in_act_three(valdimora, "corridoio_servitu")
+
+    assert "a lume di candela" in attic.turn("esamina le impronte")
+    assert "La cera colata è la stessa" in her_room.turn("esamina il mozzicone")
+    assert "Sarà stato un lampo" in corridor.turn("chiedi ad Agnese della luce")
+
+
+def test_the_count_s_papers_of_1897(valdimora):
+    assert "aumento di salario" in in_act_three(valdimora, "archivio").turn("leggi il faldone")
+
+
+@pytest.mark.parametrize(
+    ("room", "carried", "line", "hint"),
+    [
+        ("corridoio_servitu", (), "ovest", "«Clara»"),
+        ("corridoio_servitu", (), "apri la porta", "chiusa a chiave"),
+        ("corridoio_servitu", (), "nord", "Non c'è niente da vedere"),
+        ("corridoio_servitu", (), "apri la porta di Agnese", "Non c'è niente da vedere"),
+        ("camera_clara", (), "apri la casa delle bambole", "incavo a forma di stella"),
+        ("cucina", ("lanterna",), "usa i fiammiferi con la lanterna", "Non prende"),
+        ("cucina", ("chiave_cantina",), "apri la porta della cantina con la chiave", "buio pesto"),
+        ("cucina", ("chiave_cantina", "lanterna"), "apri la porta della cantina con la chiave", "spenta"),
+    ],
+    ids=["Clara's room", "Clara's door", "Agnese's room", "Agnese's door", "doll's house without the medallion",
+         "lantern without oil", "cellar without light", "cellar, lantern out"],
+)  # fmt: skip
+def test_act_three_in_the_wrong_order_gives_hints(valdimora, room, carried, line, hint):
+    game = in_act_three(valdimora, room, carried=carried)
+    before = game.state.model_dump(exclude={"turns", "asked", "last_speaker"})
+
+    answer = game.turn(line)
+
+    assert hint in answer
+    assert game.state.model_dump(exclude={"turns", "asked", "last_speaker"}) == before
+
+
+def test_before_the_third_act_livia_gives_the_photograph_back(valdimora):
+    game = in_act_two(valdimora, "camera_contessa", carried=("fotografia",))
+
+    assert "impallidisce" in game.turn("dai la fotografia a Livia")
+    assert "livia_confessa" not in game.state.flags
+
+
+def test_the_keys_of_the_third_act_come_only_from_livia_and_the_doll_s_house(valdimora):
+    givers = {
+        key: [rule.id for rule in valdimora.rules.values() if Give(give=key) in rule.effects]
+        for key in ("chiave_clara", "chiave_cantina")
+    }
+    topics = [
+        (character.id, topic.id)
+        for character in valdimora.characters.values()
+        for topic in character.topics.values()
+        if Give(give="chiave_clara") in topic.effects or Give(give="chiave_cantina") in topic.effects
+    ]
+
+    assert givers == {"chiave_clara": ["livia_confessa"], "chiave_cantina": ["apri_casa_bambole"]}
+    assert topics == []
+
+
+def test_under_agnese_s_mattress_is_proof_three(valdimora):
+    game = in_act_three(valdimora, "camera_agnese", "agnese_in_cucina", carried=("registro",))
+
+    answers = play(game, "esamina il letto", "leggi la lettera di giugno", "esamina l'anello", "leggi il quaderno",
+                   "esamina il letto")  # fmt: skip
+
+    assert [game.state.item_locations[item] for item in ("lettera_giugno", "anello", "quaderno")] == ["inventory"] * 3
+    assert "Qualcuno l'ha aperta" in answers[1]
+    assert "«C. ad A.»" in answers[2]
+    assert "Era Agnese" in answers[3]
+    assert "non c'è più niente" in answers[4]
+
+
+# From the attic landing: the clothesline, tied under the skylight, then the roof and the pigeon loft.
+TO_THE_PIGEONS = [
+    "nord", "prendi la corda", "sud", "est", "sud", "usa la corda con il lucernario", "su", "est",
+    "prendi il tubetto", "leggi la lettera del notaio",
+]  # fmt: skip
+
+
+def test_the_notary_s_letter_is_on_the_roof(valdimora):
+    game = in_act_three(valdimora, "pianerottolo_soffitta")
+
+    answers = play(game, *TO_THE_PIGEONS)
+
+    assert "qualcosa ti tiene" in answers[5]
+    assert "studio notarile" in answers[8]
+    assert "riconoscimento di vostra nipote" in answers[9]
+    assert not game.finished
+
+
+@pytest.mark.parametrize(
+    "lines",
+    [("su", "est", "nord"), ("su", "est", "salta nel buco"), ("su", "est", "sud", "su")],
+    ids=["the attic without the plank", "into the hole", "the roof without the rope"],
+)
+def test_the_attic_kills_and_the_game_goes_on_from_the_third_act(valdimora, lines):
+    game = new_game(valdimora)
+    play(game, *TO_THE_STAIRCASE, *TO_THE_SERVICE_STAIRS)
+
+    answer = play(game, *lines)[-1]
+
+    assert answer.endswith("Sei morta.")
+    assert game.finished and game.state.lost and game.resumable == "terzo atto"
+    assert game.turn("riprendi").startswith("Riprendi dall'inizio del terzo atto.")
+    assert game.state.current_room == "pianerottolo_servizio" and not game.finished
+    assert game.turn("su").startswith("Pianerottolo della soffitta")
+
+
+def test_with_the_plank_and_the_rope_the_attic_and_the_roof_are_safe(valdimora):
+    game = in_act_three(valdimora, "soffittone", "asse_posata", "corda_legata")
+
+    play(game, "nord", "sud", "sud", "su")
+
+    assert game.state.current_room == "tetto" and not game.finished
+
+
+@pytest.mark.parametrize(
+    ("room", "flags", "carried", "line", "done"),
+    [
+        ("corridoio_servitu", (), ("chiave_clara",), "ovest", "usala"),
+        ("corridoio_servitu", ("camera_clara_aperta",), (), "apri la porta", "già aperta"),
+        ("camera_livia", ("livia_confessa",), ("fotografia",), "dai la fotografia a Livia", "L'ho guardata abbastanza"),
+        ("cucina", (), ("chiave_cantina",), "apri la porta della cantina", "usala"),
+        ("camera_clara", ("casa_aperta",), (), "usa il medaglione con la casa delle bambole", "non c'è altro"),
+        ("camera_clara", ("lettere_lette",), ("lettere_clara",), "leggi le lettere", "Si chiama Irene"),
+        ("stanza_orologio", ("corda_legata",), (), "esamina il lucernario", "legata la tua corda"),
+    ],
+)  # fmt: skip
+def test_a_hint_of_the_third_act_knows_when_it_is_done(valdimora, room, flags, carried, line, done):
+    assert done in in_act_three(valdimora, room, *flags, carried=carried).turn(line)
+
+
+ACT_THREE_DESCRIBED = [
+    ("pianerottolo_soffitta", "scala"), ("stenditoio", "finestrelle"),
+    ("corridoio_servitu", "targhetta"), ("corridoio_servitu", "porta di Agnese"),
+    ("camera_agnese", "crocifisso"), ("camera_agnese", "catino"), ("camera_agnese", "comodino"),
+    ("camera_agnese", "mozzicone"), ("camera_agnese", "scarpe"), ("camera_agnese", "letto"),
+    ("camera_livia", "letto"), ("camera_livia", "inginocchiatoio"), ("camera_livia", "armadio"),
+    ("camera_livia", "vestiti"), ("camera_livia", "rosa"), ("camera_livia", "davanzale"),
+    ("camera_clara", "letto"), ("camera_clara", "coperta"), ("camera_clara", "casa delle bambole"),
+    ("camera_clara", "baule"), ("camera_clara", "carta da parati"),
+    ("soffittone", "mobili"), ("soffittone", "teli"), ("soffittone", "travi"), ("soffittone", "impronte"),
+    ("soffittone", "cera"), ("soffittone", "pavimento"), ("soffittone", "buco"), ("soffittone", "assi"),
+    ("sottotetto", "tegola"), ("sottotetto", "spioventi"),
+    ("archivio", "scaffali"), ("archivio", "faldoni"), ("archivio", "pergamene"), ("archivio", "faldone"),
+    ("archivio", "tavolo"),
+    ("stanza_orologio", "ingranaggi"), ("stanza_orologio", "pendolo"), ("stanza_orologio", "lucernario"),
+    ("tetto", "tegole"), ("tetto", "tempesta"), ("tetto", "colmo"),
+    ("piccionaia", "piccioni"), ("piccionaia", "posatoi"), ("piccionaia", "tubetto"),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(
+    ("room", "thing"), ACT_THREE_DESCRIBED, ids=[f"{room}: {thing}" for room, thing in ACT_THREE_DESCRIBED]
+)
+def test_what_a_room_of_the_third_act_describes_can_be_examined(valdimora, room, thing):
+    game = in_act_three(valdimora, room)
+
+    answer = game.turn(f"esamina {thing}")
+
+    assert answer not in ("Non vedi niente del genere qui.", "Non ho capito.")
+    assert not answer.startswith("Quale intendi")
