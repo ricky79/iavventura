@@ -420,6 +420,7 @@ VALDIMORA = load_world(WORLDS_DIR / "valdimora")
 VALDIMORA_RULE = {rule_id: rule.text for rule_id, rule in VALDIMORA.rules.items()}
 ETTORE = VALDIMORA.characters["ettore"]
 LIVIA = VALDIMORA.characters["livia"]
+ACT_THREE = ("atto_due", "busta_data", "atto_tre")
 
 VALDIMORA_CASES = [
     # (room, carried, flags, sentence, check on (answer, game))
@@ -509,6 +510,53 @@ VALDIMORA_CASES = [
     # A glance from the balcony is no jump into the valley.
     ("balcone", (), ("atto_due",), "getto un'occhiata alla valle", lambda a, g: not g.finished),
     ("balcone", (), ("atto_due",), "lancio uno sguardo verso la valle", lambda a, g: not g.finished),
+    # The third act (2026-10-01).
+    # Showing the photograph may be asking about it (Livia asks for it) or giving it (she confesses).
+    ("camera_livia", ("fotografia",), ACT_THREE, "mostro la fotografia di mia madre a Livia",
+     lambda a, g: g.state.item_locations["chiave_clara"] == "inventory" or LIVIA.topics["fotografia"].text in a),
+    ("camera_livia", ("fotografia",), ACT_THREE, "porgo la foto alla governante",
+     lambda a, g: g.state.item_locations["chiave_clara"] == "inventory"),
+    ("camera_livia", (), ACT_THREE, "chi era Clara?", says(LIVIA.topics["clara"].text)),
+    ("corridoio_servitu", ("chiave_clara",), ACT_THREE, "apro la camera di Clara con la chiave",
+     lambda a, g: "camera_clara_aperta" in g.state.flags),
+    ("camera_clara", (), (*ACT_THREE, "camera_clara_aperta"), "frugo nel baule",
+     lambda a, g: g.state.item_locations["lettere_clara"] == "inventory" or "Non è chiuso a chiave" in a),
+    ("camera_clara", ("lettere_clara",), (*ACT_THREE, "camera_clara_aperta"), "leggo le lettere della contessa",
+     lambda a, g: "lettere_lette" in g.state.flags),
+    ("camera_clara", (), (*ACT_THREE, "camera_clara_aperta"), "infilo il medaglione nel tetto della casa delle bambole",
+     lambda a, g: g.state.item_locations["chiave_cantina"] == "inventory"
+     or g.pending == Action(verb="usa", target="medaglione", with_="casa_bambole")),
+    ("soffittone", ("asse",), ACT_THREE, "stendo l'asse sopra il pavimento marcio",
+     lambda a, g: "asse_posata" in g.state.flags),
+    # Nobody dies without asking for it.
+    ("soffittone", (), ACT_THREE, "attraverso il pavimento marcio", lambda a, g: not g.finished),
+    ("soffittone", (), ACT_THREE, "seguo le impronte nella polvere", lambda a, g: not g.finished and "Non vedi" not in a),
+    ("stanza_orologio", (), ACT_THREE, "esco dal lucernario sul tetto", lambda a, g: not g.finished),
+    ("sottotetto", (), (*ACT_THREE, "asse_posata"), "prendo la vecchia lanterna",
+     lambda a, g: g.state.item_locations["lanterna"] == "inventory"),
+    ("rimessa", ("lanterna",), ACT_THREE, "verso il petrolio nella lanterna", lambda a, g: "lanterna_piena" in g.state.flags),
+    # Lit, or asked first when the model picked the hearth and the matches are only a guess.
+    ("cucina", ("lanterna",), (*ACT_THREE, "lanterna_piena"), "accendo la lanterna con un fiammifero",
+     lambda a, g: "lanterna_accesa" in g.state.flags
+     or g.pending == Action(verb="usa", target="lanterna", with_="fiammiferi")),
+    ("cucina", ("lanterna", "chiave_cantina"), (*ACT_THREE, "lanterna_piena", "lanterna_accesa"),
+     "uso la chiave della cantina sulla porta", lambda a, g: "atto_quattro" in g.state.flags),
+    ("corridoio_servitu", (), ACT_THREE, "Agnese, mi faresti una camomilla?", lambda a, g: "agnese_in_cucina" in g.state.flags),
+    ("corridoio_servitu", (), ACT_THREE, "potresti andare a prendermi del petrolio?",
+     lambda a, g: "agnese_in_rimessa" in g.state.flags),
+    ("camera_agnese", (), (*ACT_THREE, "agnese_in_cucina"), "guardo sotto il materasso",
+     lambda a, g: g.state.item_locations["lettera_giugno"] == "inventory"),
+    # Tied, or asked first when the model picked the clockwork and the skylight is only a guess.
+    ("stanza_orologio", ("corda",), ACT_THREE, "lego la corda alla trave del lucernario",
+     lambda a, g: "corda_legata" in g.state.flags
+     or g.pending == Action(verb="usa", target="corda", with_="lucernario")),
+    ("piccionaia", (), (*ACT_THREE, "corda_legata"), "sfilo il tubetto dalla zampa del piccione",
+     lambda a, g: g.state.item_locations["lettera_notaio"] == "inventory"),
+    ("archivio", (), ACT_THREE, "sfoglio le carte del 1897",
+     says(VALDIMORA_RULE["leggi_faldone"], VALDIMORA.items["faldone_1897"].description)),
+    ("cucina", (), ACT_THREE, "Ettore, dove trovo una lanterna?", says(ETTORE.topics["lanterna"].text)),
+    ("archivio", (), (*ACT_THREE, "lettere_lette"), "che cosa sapete di mia madre, Corrado?",
+     says(VALDIMORA.characters["corrado"].topics["clara"].text)),
 ]  # fmt: skip
 
 

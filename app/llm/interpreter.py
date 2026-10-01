@@ -39,6 +39,7 @@ from app.engine.parser import (
     significant_words,
     topics_named,
     words_of,
+    words_saying,
 )
 from app.llm.client import LLMClient, LLMError
 from app.llm.prompts import interpreter_system, interpreter_user
@@ -68,6 +69,8 @@ JUMP_WORDS = frozenset(word for word, verb in ITEM_VERBS.items() if verb is Verb
 )
 # "lancio uno sguardo verso la valle", "getto un'occhiata nel pozzo": with a jump word, a look.
 _GLANCE_WORDS = frozenset({"sguardo", "sguardi", "occhiata", "occhiate", "occhiatina", "occhio", "occhi"})
+# "lego la corda alla trave": tying, which the model may take for reading ("lego" is nearly "leggo").
+_TIE_WORDS = frozenset({"lego", "leghi", "lega", "legare", "legala", "legarla", "annodo", "annoda", "annodare"})
 
 _VERBS = [verb.value for verb in Verb]
 _CONVERSATION = [verb.value for verb in Conversation]
@@ -260,13 +263,17 @@ def _checked(
         if action.target in {character.id for character, _ in characters}:
             return NotUnderstood("'salta' su un personaggio")
         said = _directions_said(words)
-        if said and not JUMP_WORDS.intersection(words):
-            # "salgo sul sasso": the model heard a jump in "salgo", and climbing is a move
-            return _checked_move(Action(verb=Command.GO, direction=min(said)), words, exits)
+        places = _places_named(words, exits)
+        if (said or len(places) == 1) and not JUMP_WORDS.intersection(words):
+            # "salgo sul sasso": the model heard a jump in "salgo", and climbing is a move; so is going
+            # out to the one place the sentence names ("esco dal lucernario sul tetto")
+            return _checked_move(Action(verb=Command.GO, direction=min(said) if said else places[0]), words, exits)
         # Jumping may kill: with another item named ("lancio il rampino nel pozzo") it's throwing that.
         thrown = next((item.id for item in in_reach if item.id != action.target and is_named(item, words)), None)
         if thrown is not None:
             action = Action(verb=Verb.USE, target=action.target, with_=thrown)
+    if action.verb is Verb.READ and _TIE_WORDS.intersection(words):
+        action = Action(verb=Verb.USE, target=action.target, with_=action.with_)
     action = _read_what_is_named(action, words, in_reach)
     things = {thing.id: thing for thing in [*in_reach, *(character for character, _ in characters)]}
     ids = [thing_id for thing_id in (action.target, action.with_) if thing_id is not None]
@@ -284,15 +291,41 @@ def _checked(
 
 
 def _read_what_is_named(action: Action, words: list[str], in_reach: Sequence[Item]) -> Action:
-    """Reading and examining have no tool: when the model picked the wrong item and put the one the
-    sentence names as the tool ("leggo il biglietto della contessa"), that one is what is read."""
-    if action.verb not in (Verb.READ, Verb.EXAMINE) or action.with_ is None:
+    """Reading and examining have no tool, and what the sentence names is what is read or examined: the
+    tool, when the model picked the wrong item and put the one named as the tool ("leggo il biglietto
+    della contessa"); the only item named, when the model examined one the sentence doesn't name
+    ("guardo sotto il materasso"); the only item named by its very words, when the model's is named by
+    the same words only with another ending ("leggo le lettere della contessa" is no "lettera")."""
+    if action.verb not in (Verb.READ, Verb.EXAMINE):
         return action
     items = {item.id: item for item in in_reach}
     target = action.target
-    if target in items and not is_named(items[target], words) and action.with_ in items and is_named(items[action.with_], words):
-        target = action.with_
+    if target in items and not is_named(items[target], words):
+        named = [item.id for item in in_reach if is_named(item, words)]
+        if action.with_ in items and is_named(items[action.with_], words):
+            target = action.with_
+        elif action.verb is Verb.EXAMINE and len(named) == 1:
+            target = named[0]
+    elif target in items and not _named_word_for_word(items[target], words):
+        same_words = _words_naming(items[target], words)
+        exact = [
+            item.id
+            for item in in_reach
+            if item.id != target and _named_word_for_word(item, words) and _words_naming(item, words) & same_words
+        ]
+        if len(exact) == 1:
+            target = exact[0]
     return Action(verb=action.verb, target=target)
+
+
+def _named_word_for_word(item: Item, words: list[str]) -> bool:
+    """Whether the words say a name of the item without changing a letter."""
+    return any(set(name) <= set(words) for name in names_said(item, words))
+
+
+def _words_naming(item: Item, words: list[str]) -> set[str]:
+    """The words that name the item, at least nearly."""
+    return {word for name in names_said(item, words) for word in words_saying(name, words)}
 
 
 def _guess(action: Action, unnamed: str, words: list[str], in_reach: Sequence[Item]) -> Action | None:
@@ -312,7 +345,7 @@ def _checked_move(
     there ("mangio una mora" doesn't go to the brambles). Then the way the sentence names wins over the
     model's: its direction ("salgo sul sasso": up), or the only exit it names ("attraverso il ponte")."""
     said = _directions_said(words)
-    places = [room for _, room in exits if room is not None and significant_words(room.name) in names_said(room, words)]
+    places = _places_named(words, exits)
     if not (said or places) and gesture_said(words) is Gesture.FAREWELL:
         # "adesso vado, ci vediamo più tardi": leaving the conversation, not the room
         return NotUnderstood("la frase si congeda, non chiede di spostarsi")
@@ -324,6 +357,15 @@ def _checked_move(
         return Action(verb=Command.GO, direction=said.pop())
     ways = [direction for direction, _ in exits if names_the_way(direction, words, exits)]
     return Action(verb=Command.GO, direction=ways[0]) if len(ways) == 1 else action
+
+
+def _places_named(words: list[str], exits: Sequence[tuple[Direction, Room | None]]) -> list[Direction]:
+    """The exits whose rooms the words name by their own name, not only by what is there."""
+    return [
+        direction
+        for direction, room in exits
+        if room is not None and significant_words(room.name) in names_said(room, words)
+    ]
 
 
 def _directions_said(words: list[str]) -> set[Direction]:
