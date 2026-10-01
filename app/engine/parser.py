@@ -34,6 +34,27 @@ STOPWORDS = frozenset(
     """.split()
 )
 
+# Words of everyday speech, never a typo for a name ("ho sete" is no "seta", "metto" no "motto"): they
+# name only a thing called just so. Not here: words that name by another ending ("esco" is "esce").
+COMMON_WORDS = frozenset(
+    """
+    sono siete siamo sara stato stata avete abbiamo hanno avevo aveva
+    faccio fate fatto fatta vado andate andiamo andare andato andata vengo vieni viene venite venuto venuta
+    stai state stanno dico dici dite detto detta dimmi ditemi vedo vedi vede vedete visto vista
+    sapete sapevo voglio vuoi vuole volete posso puoi potete devo devi deve dovete
+    metto metti mette messo messa letto letta preso presa seguo segui segue spegni spengo spento spenta
+    cerco cerca cercate morto torno torna tornate salgo sali scendo scendi
+    tocco tocca tocchi provo prova sento senti sente aspetto aspetta parlo parla dammi datemi
+    nostro nostra nostri nostre vostro vostra vostri vostre questo questa questi queste quello quella quelli
+    molto molta molti molte poco tanto tanta troppo tutto tutta tutti tutte altro altra altri altre
+    ancora sempre adesso subito prima dopo forse quasi proprio anche mezzo
+    bene male strano strana strani strane bello bella brutto brutta vecchia nuovo nuova grande piccolo piccola
+    vero sete fame freddo caldo paura sonno sera seria basta vale pena mille pieno soli certi certe
+    porto porti fermo fermi figlio corre crede parti sogni
+    perche quando quanto quale come dove cosa niente nulla
+    """.split()
+)
+
 DIRECTIONS = {
     "nord": Direction.NORTH,
     "n": Direction.NORTH,
@@ -374,6 +395,11 @@ def names_said(thing: Named | Room, words: Sequence[str]) -> list[tuple[str, ...
     return [name for name in names if all(any(_nearly(word, name_word) for word in words) for name_word in name)]
 
 
+def words_saying(name: tuple[str, ...], words: Sequence[str]) -> set[str]:
+    """The words that say a name of names_said."""
+    return {word for word in words if any(_nearly(word, name_word) for name_word in name)}
+
+
 def topics_named(character: Character, topics: Iterable[Topic], words: Sequence[str]) -> list[Topic]:
     """The topics the words name, the last named first ("cosa serve per prendere la piuma?" is about
     the feather); the character's own name is no topic ("pellegrino, cosa sai della torre?")."""
@@ -400,9 +426,11 @@ def names_the_way(direction: Direction, words: Sequence[str], exits: Sequence[tu
 def _nearly(word: str, other: str) -> bool:
     """The same word; between words of four letters another ending ("more", "mora"); with a longer one,
     one letter more, less or different (a typo: "pozo", "ciave"), but never the first ("lancio" is no
-    "gancio")."""
+    "gancio"). `word` is the player's: a common word is no typo (COMMON_WORDS)."""
     if word == other:
         return True
+    if word in COMMON_WORDS:
+        return False
     shorter, longer = sorted((word, other), key=len)
     if len(shorter) < 4 or len(longer) - len(shorter) > 1 or word[0] != other[0]:
         return False

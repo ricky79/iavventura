@@ -240,6 +240,12 @@ class TextVariant(_Frozen):
     text: Text
 
 
+class SaidVariant(TextVariant):
+    """A variant of what a character says: the greeting, an answer to a gesture or about a topic."""
+
+    again: Text | None = None  # this variant from the second time it is said on
+
+
 class Exit(_Frozen):
     to: Id
     when: Condition | None = None
@@ -317,7 +323,7 @@ class Topic(_Frozen):
     # While false the character doesn't know the topic: it answers `unknown`, and the LLM isn't told.
     when: Condition | None = None
     text: Text
-    variants: tuple[TextVariant, ...] = ()
+    variants: tuple[SaidVariant, ...] = ()
     again: Text | None = None  # the answer from the second time on, unless a variant holds
     effects: tuple[Effect, ...] = ()
 
@@ -333,7 +339,7 @@ class Line(_Frozen):
     """A character's answer to a gesture: the text, variants that follow the game, the second time."""
 
     text: Text
-    variants: tuple[TextVariant, ...] = ()
+    variants: tuple[SaidVariant, ...] = ()
     again: Text | None = None
 
 
@@ -351,7 +357,7 @@ class Character(_Frozen):
     location: Id  # a room: where the character is while none of its moves holds
     moves: tuple[Move, ...] = ()  # the first whose condition holds says where the character is now
     greeting: Text  # "parla con X"
-    greeting_variants: tuple[TextVariant, ...] = ()  # the first that holds replaces the greeting
+    greeting_variants: tuple[SaidVariant, ...] = ()  # the first that holds replaces the greeting
     greeting_again: Text | None = None  # the greeting from the second time on, unless a variant holds
     unknown: Text  # the answer about anything else
     refuses: Text | None = None  # "dai X" that no rule wants; without it, the engine's own answer

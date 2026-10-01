@@ -385,8 +385,6 @@ KNOWN_LIMITS = {
     "afferra la ciave nel pozzo": "the well comes back as the tool: 'Vuoi prendere la chiave di ferro con il pozzo?'",
     "ti faccio il solletico sul naso con la piuma": "with 'ti' the model loses the dragon: 'Vuoi usare la piuma?'",
     "guardo su nell'albero": "'guarda su' is looking around, not at the oak",
-    # Found with the dialogues (2026-09-30).
-    "siete una vecchia strega": "'vecchia' is nearly 'vecchio', Ettore's alias: 'Non vedi nessuno del genere qui.'",
     # Found with the second act of Valdimora (2026-09-30).
     "infilo il medaglione nella cornice": (
         "unstable: the model answers 'inventario' (the game shows the inventory) or 'prendi il medaglione' "
@@ -503,6 +501,14 @@ VALDIMORA_CASES = [
      says(LIVIA.topics["campanello"].text)),
     ("atrio", (), ("atto_due",), "salgo al piano nobile", lambda a, g: g.state.current_room == "loggia"),
     ("atrio", (), ("atto_due",), "vado su per lo scalone", lambda a, g: g.state.current_room == "loggia"),
+    # The minors of act 2's final review: a topic named by a common noun, common words and words of things here.
+    ("galleria", (), ("atto_due", "ritratto_scoperto"), "Ettore, chi è questa ragazza?",
+     says(ETTORE.topics["ritratto"].variants[0].text)),
+    ("galleria", (), ("atto_due",), "ho sete", lambda a, g: "Non vedi" not in a),
+    ("boudoir", (), ("atto_due", "livia_permette"), "accarezzo i velluti", lambda a, g: "Non vedi" not in a),
+    # A glance from the balcony is no jump into the valley.
+    ("balcone", (), ("atto_due",), "getto un'occhiata alla valle", lambda a, g: not g.finished),
+    ("balcone", (), ("atto_due",), "lancio uno sguardo verso la valle", lambda a, g: not g.finished),
 ]  # fmt: skip
 
 

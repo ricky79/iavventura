@@ -849,6 +849,15 @@ def test_taking_what_is_in_hand_while_naming_something_else_is_asked_as_using_th
     assert "ninna nanna" in say(game, "sì")
 
 
+def test_taking_what_is_in_hand_from_somewhere_is_still_taking_it():
+    # The jewel box is where the winding key came from, not something to use it with.
+    game = in_the_music_room({"verbo": "prendi", "bersaglio": "chiavetta di carica", "con": "nessuno"})
+    game.state.current_room = "boudoir"
+    game.state.flags.update({"livia_permette", "portagioie_aperto"})
+
+    assert say(game, "riprendo la chiavetta dal portagioie") == "(prendi la chiavetta di carica)\nCe l'hai già."
+
+
 def test_taking_what_is_in_hand_alone_is_still_taking_it():
     game = in_the_music_room({"verbo": "prendi", "bersaglio": "chiavetta di carica", "con": "nessuno"})
 
@@ -862,6 +871,18 @@ def on_the_balcony(reply: dict) -> Game:
     game.state.flags.update({"atto_due", "busta_data"})
     game.state.act = 1
     return game
+
+
+@pytest.mark.parametrize(
+    "sentence", ["lancio uno sguardo verso la valle", "getto un'occhiata alla valle", "butto un occhio sulla valle"]
+)
+def test_a_glance_is_no_jump(sentence):
+    # Found by the review of the act 2 minors: «lancio», «getto», «butto» are jump words, and the model
+    # may say «salta nella valle», a fall from the balcony.
+    game = on_the_balcony({"verbo": "salta", "bersaglio": "valle", "con": "nessuno"})
+
+    assert say(game, sentence).startswith("(esamina la valle)")
+    assert not game.finished
 
 
 def test_an_interpreted_action_that_would_kill_is_asked_first():
@@ -890,6 +911,62 @@ def test_a_common_word_is_no_topic(room, sentence, reply, shown):
     game.state.act = 1
 
     assert say(game, sentence).startswith(f"{shown}\n")
+
+
+@pytest.mark.parametrize(
+    ("room", "sentence", "reply", "answer"),
+    [
+        ("boudoir", "accarezzo i velluti",
+         {"verbo": "altro", "bersaglio": "nessuno", "con": "nessuno"}, NOT_A_GAME_ACTION),
+        ("salone_musica", "sollevo la campana di vetro",
+         {"verbo": "prendi", "bersaglio": "nessuno", "con": "nessuno"}, NOT_UNDERSTOOD),
+    ],
+)  # fmt: skip
+def test_a_word_for_something_here_names_nothing_elsewhere(room, sentence, reply, answer):
+    # «velluti» is the dressing table's, nearly the drape's «velluto»; «vetro» the music box's glass,
+    # nearly the French window's «vetri»: the game answered «Non vedi niente del genere qui.».
+    game = Game(Engine(load_world(WORLDS_DIR / "valdimora")), talking(reply))
+    game.state.current_room = room
+    game.state.flags.update({"atto_due", "busta_data"})
+    game.state.act = 1
+
+    assert say(game, sentence) == answer
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        {"verbo": "chiedi", "bersaglio": "Ettore", "con": "nessuno"},
+        # The real model examined the portrait, the girl too: but the question is said to Ettore.
+        {"verbo": "esamina", "bersaglio": "ritratto", "con": "nessuno"},
+    ],
+)
+def test_who_is_this_girl_is_asking_ettore_about_the_portrait(reply):
+    game = Game(Engine(load_world(WORLDS_DIR / "valdimora")), talking(reply))
+    game.state.current_room = "galleria"
+    game.state.flags.update({"atto_due", "busta_data", "ritratto_scoperto"})
+    game.state.act = 1
+
+    assert say(game, "Ettore, chi è questa ragazza?").startswith("(chiedi a Ettore del ritratto)\n«La signorina Clara")
+
+
+def test_an_insult_with_a_common_word_is_said_to_the_one_here():
+    # «vecchia» was nearly «vecchio», Ettore's alias: «Non vedi nessuno del genere qui.»
+    reply = {"verbo": "parla", "bersaglio": "Livia", "con": "scortesia"}
+    game = Game(Engine(load_world(WORLDS_DIR / "valdimora")), talking(reply))
+    game.state.current_room = "ufficio_governante"
+
+    assert say(game, "siete una vecchia strega").startswith("(sii scortese con Livia)\n")
+
+
+def test_a_question_to_nobody_by_name_about_a_thing_is_still_examining_it():
+    reply = {"verbo": "esamina", "bersaglio": "ritratto", "con": "nessuno"}
+    game = Game(Engine(load_world(WORLDS_DIR / "valdimora")), talking(reply))
+    game.state.current_room = "galleria"
+    game.state.flags.update({"atto_due", "busta_data", "ritratto_scoperto"})
+    game.state.act = 1
+
+    assert say(game, "chi è questa ragazza?").startswith("(esamina il ritratto)")
 
 
 def test_no_thanks_answers_the_question_even_with_someone_here(castle):

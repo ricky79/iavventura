@@ -66,6 +66,8 @@ JUMP_WORDS = frozenset(word for word, verb in ITEM_VERBS.items() if verb is Verb
     buttiamoci getto gettarmi gettarsi lancio lanciarmi lanciarsi
     """.split()
 )
+# "lancio uno sguardo verso la valle", "getto un'occhiata nel pozzo": with a jump word, a look.
+_GLANCE_WORDS = frozenset({"sguardo", "sguardi", "occhiata", "occhiate", "occhiatina", "occhio", "occhi"})
 
 _VERBS = [verb.value for verb in Verb]
 _CONVERSATION = [verb.value for verb in Conversation]
@@ -252,6 +254,8 @@ def _checked(
         return Action(verb=Conversation.TALK, target=action.target, gesture=said)
     if not isinstance(action.verb, Verb):
         return action
+    if action.verb is Verb.JUMP and _GLANCE_WORDS.intersection(words):
+        action = Action(verb=Verb.EXAMINE, target=action.target)
     if action.verb is Verb.JUMP:
         if action.target in {character.id for character, _ in characters}:
             return NotUnderstood("'salta' su un personaggio")

@@ -621,7 +621,7 @@ def test_the_flask_can_be_found(valdimora):
     assert "Digitale" in answers[12]
 
 
-@pytest.mark.parametrize("line", ["prendi il vaso", "spingi la balaustra", "salta dalla balaustra"])
+@pytest.mark.parametrize("line", ["prendi il vaso", "spingi la balaustra", "salta dalla balaustra", "salta nella valle"])
 def test_the_balcony_kills_and_the_game_goes_on_from_the_second_act(valdimora, line):
     game = new_game(valdimora)
     play(game, *TO_THE_STAIRCASE)
@@ -633,12 +633,15 @@ def test_the_balcony_kills_and_the_game_goes_on_from_the_second_act(valdimora, l
     assert game.finished and game.state.lost and game.resumable == "secondo atto"
     assert game.turn("riprendi").startswith("Riprendi dall'inizio del secondo atto.")
     assert game.state.current_room == "atrio" and not game.finished
+    assert game.turn("su").startswith("Loggia")  # the staircase is still open
+    assert game.state.current_room == "loggia"
 
 
-def test_pulling_the_vase_by_hand_is_only_a_hint(valdimora):
+@pytest.mark.parametrize("line", ["tira il vaso", "spingi il vaso"])
+def test_pulling_the_vase_by_hand_is_only_a_hint(valdimora, line):
     game = in_act_two(valdimora, "balcone")
 
-    assert "qualcosa di lungo" in game.turn("tira il vaso")
+    assert "qualcosa di lungo" in game.turn(line)
     assert not game.finished
 
 
@@ -706,3 +709,83 @@ def test_the_rose_can_be_put_in_the_vase_by_hand(valdimora):
 
     assert "Lei avrebbe voluto così" in answer
     assert "livia_permette" in game.state.flags
+
+
+# --- Minors left by the final review of act 2 --------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("room", "flags", "name", "first"),
+    [
+        ("loggia", (), "Agnese", "Ce l'avete fatta"),
+        ("studio_conte", (), "Corrado", "Siete arrivata fin quassù"),
+        ("camera_contessa", (), "Livia", "Siete salita"),
+        ("camera_contessa", ("livia_permette",), "Livia", "«Grazie», dice soltanto"),
+        ("galleria", (), "Ettore", "Sapevo"),
+        ("galleria", ("ritratto_scoperto",), "Ettore", "Ora avete visto"),
+    ],
+)  # fmt: skip
+def test_upstairs_a_greeting_is_not_said_twice(valdimora, room, flags, name, first):
+    # The variants won over greeting_again: Agnese said «Ce l'avete fatta!» at every greeting.
+    game = in_act_two(valdimora, room, *flags)
+
+    assert first in game.turn(f"parla con {name}")
+    assert first not in game.turn(f"parla con {name}")
+
+
+@pytest.mark.parametrize(
+    ("room", "flag", "name", "first"),
+    [
+        ("stanza_maggiordomo", "busta_data", "Ettore", "Quello che so, è vostro"),
+        ("ufficio_governante", "livia_chiave", "Livia", "Avete la chiave"),
+    ],
+)  # fmt: skip
+def test_downstairs_a_greeting_is_not_said_twice(valdimora, room, flag, name, first):
+    game = new_game(valdimora)
+    game.state.flags.add(flag)
+    game.state.current_room = room
+
+    assert first in game.turn(f"parla con {name}")
+    assert first not in game.turn(f"parla con {name}")
+
+
+def test_once_shown_the_medallion_agnese_no_longer_asks_for_it(valdimora):
+    game = in_act_two(valdimora, "loggia", carried=("medaglione",))
+
+    game.turn("dai il medaglione ad Agnese")
+
+    assert "medaglione" not in game.turn("parla con Agnese")
+    answer = game.turn("chiedi ad Agnese del medaglione")
+    assert "Me lo fate vedere" not in answer
+    assert "disegnava dappertutto" in answer  # the clue stays
+
+
+@pytest.mark.parametrize(
+    ("room", "flags", "carried", "line", "done"),
+    [
+        ("studio_conte", (), ("bastone",), "chiedi a Corrado del bastone", "L'avete già in mano"),
+        ("camera_contessa", (), ("chiave_servizio",), "chiedi a Livia della scala di servizio", "l'avete trovata"),
+        ("camera_contessa", ("livia_chiave",), (), "chiedi a Livia dello scalone", "Ormai siete salita"),
+        ("galleria", ("ritratto_scoperto", "carillon_suonato"), (), "chiedi a Ettore del carillon", "L'avete fatto suonare"),
+        ("pianerottolo_servizio", (), ("chiave_servizio",), "su", "usala"),
+    ],
+)  # fmt: skip
+def test_a_hint_knows_when_it_is_done(valdimora, room, flags, carried, line, done):
+    # A hint that sends the player to do something has a variant for when it is done.
+    assert done in in_act_two(valdimora, room, *flags, carried=carried).turn(line)
+
+
+def test_the_cut_bell_cord_rings_nothing(valdimora):
+    assert "tagliato di netto" in in_act_two(valdimora, "camera_contessa").turn("tira il cordone")
+
+
+def test_even_asleep_the_doctor_knows_the_flask(valdimora):
+    # Who had put him to sleep with the grappa never saw him recognise the flask.
+    game = in_act_two(valdimora, "biliardo", "ferri_addormentato", carried=("flacone",))
+
+    answer = game.turn("chiedi al dottore delle medicine")
+
+    assert "L'avevo portata piena" in answer
+    assert "russare" in answer
+    assert "russa" in game.turn("parla con il dottore")
+    assert "L'avevo portata piena" not in game.turn("chiedi al dottore delle medicine")  # once only

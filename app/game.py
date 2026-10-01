@@ -40,6 +40,7 @@ from app.engine.parser import (
     significant_words,
     topics_named,
     words_of,
+    words_saying,
 )
 from app.engine.text import action_text, confirmation, render, which_one
 from app.llm.client import LLMClient
@@ -62,6 +63,8 @@ Per terminare la partita: fine."""
 _HELP_WORDS = frozenset({"aiuto", "help"})
 # A sentence starting with one of these is a question, even without "?" (kids leave it out).
 _QUESTION_WORDS = frozenset({"perche", "cosa", "come", "chi", "dove", "quanto", "quanti", "quale", "quali", "quando"})
+# "riprendo la chiavetta dal portagioie": what comes after them is where something is taken from.
+_FROM_WORDS = frozenset({"da", "dal", "dallo", "dalla", "dai", "dagli", "dalle", "dall"})
 # Answers to "Vuoi…?", by their first word. Not "s" and "n": they are south and north.
 _YES_WORDS = frozenset({"si", "certo", "ok", "okay", "sicuro", "confermo"})
 _NO_WORDS = frozenset({"no"})
@@ -257,6 +260,11 @@ class Game:
             people = [someone for someone, _ in characters]
             person = people[0] if len(people) == 1 else next((p for p in people if p.id == self.state.last_speaker), None)
         if person is None:
+            if action.verb is Verb.EXAMINE and asking:
+                # «Ettore, chi è questa ragazza?»: the girl is also the portrait, but the question is his.
+                addressed = [(someone, topics) for someone, topics in characters if is_named(someone, words)]
+                if len(addressed) == 1 and (question := _topic_asked(words, addressed)):
+                    return question
             return action
         topics = next(topics for someone, topics in characters if someone is person)
         if action.verb is Conversation.ASK and action.topic is not None and not topics_named(person, topics, words):
@@ -297,11 +305,13 @@ class Game:
         return None if person is None else Action(verb=Conversation.TALK, target=person.id, gesture=gesture)
 
     def _names_one_elsewhere(self, things: Iterable[Item | Character], words: list[str], here: set[str]) -> bool:
-        """A name within one said of something here doesn't count: "corda" is also the grapple, and
-        "biglietto" is in "biglietto della contessa"."""
-        words_here = {word for thing_id in here for name in names_said(self.world.thing(thing_id), words) for word in name}
+        """A name said only by words that say something here doesn't count: "corda" is also the grapple,
+        "biglietto" is in "biglietto della contessa", and "velluti" (the dressing table's) is nearly the
+        drape's "velluto"."""
+        names_here = [name for thing_id in here for name in names_said(self.world.thing(thing_id), words)]
+        said_here = {word for name in names_here for word in words_saying(name, words)}
         return any(
-            thing.id not in here and any(not set(name) <= words_here for name in names_said(thing, words))
+            thing.id not in here and any(not words_saying(name, words) <= said_here for name in names_said(thing, words))
             for thing in things
         )
 
@@ -342,13 +352,16 @@ class Game:
 
     def _using_what_is_in_hand(self, action: Action, words: list[str], near: list[Item]) -> Action | None:
         """«carico il carillon con la chiavetta»: the model took what the player already holds, while the
-        sentence names one other thing here. Using the two together is only a guess, asked about."""
+        sentence names one other thing here. Using the two together is only a guess, asked about; not
+        if the other is where it is taken from («riprendo la chiavetta dal portagioie»)."""
         if action.verb is not Verb.TAKE or action.with_ is not None:
             return None
         if self.state.item_locations.get(action.target) != INVENTORY:
             return None
-        others = [item.id for item in near if item.id != action.target and is_named(item, words)]
-        return Action(verb=Verb.USE, target=action.target, with_=others[0]) if len(others) == 1 else None
+        others = [item for item in near if item.id != action.target and is_named(item, words)]
+        if len(others) != 1 or _taken_from(others[0], words):
+            return None
+        return Action(verb=Verb.USE, target=action.target, with_=others[0].id)
 
     def _execute(self, action: Action, source: str) -> str:
         outcome = self.engine.execute(self.state, action)
@@ -392,3 +405,9 @@ def _topic_asked(words: list[str], characters: list[tuple[Character, list[Topic]
         return None
     person, topic = asked[0]
     return Action(verb=Conversation.ASK, target=person.id, topic=topic.id)
+
+
+def _taken_from(item: Item, words: list[str]) -> bool:
+    """Whether the words name the item right after "da", "dal", "dalla"…: where something is taken from."""
+    said = {word for name in names_said(item, words) for word in words_saying(name, words)}
+    return any(word in _FROM_WORDS and following in said for word, following in zip(words, words[1:]))
