@@ -503,6 +503,11 @@ VALDIMORA_CASES = [
      says(LIVIA.topics["campanello"].text)),
     ("atrio", (), ("atto_due",), "salgo al piano nobile", lambda a, g: g.state.current_room == "loggia"),
     ("atrio", (), ("atto_due",), "vado su per lo scalone", lambda a, g: g.state.current_room == "loggia"),
+    # The minors of act 2's final review: a topic named by a common noun, common words and words of things here.
+    ("galleria", (), ("atto_due", "ritratto_scoperto"), "Ettore, chi è questa ragazza?",
+     says(ETTORE.topics["ritratto"].variants[0].text)),
+    ("galleria", (), ("atto_due",), "ho sete", lambda a, g: "Non vedi" not in a),
+    ("boudoir", (), ("atto_due", "livia_permette"), "accarezzo i velluti", lambda a, g: "Non vedi" not in a),
 ]  # fmt: skip
 
 

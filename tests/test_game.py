@@ -912,6 +912,16 @@ def test_a_word_for_something_here_names_nothing_elsewhere(room, sentence, reply
     assert say(game, sentence) == answer
 
 
+def test_who_is_this_girl_is_asking_ettore_about_the_portrait():
+    reply = {"verbo": "chiedi", "bersaglio": "Ettore", "con": "nessuno"}
+    game = Game(Engine(load_world(WORLDS_DIR / "valdimora")), talking(reply))
+    game.state.current_room = "galleria"
+    game.state.flags.update({"atto_due", "busta_data", "ritratto_scoperto"})
+    game.state.act = 1
+
+    assert say(game, "Ettore, chi è questa ragazza?").startswith("(chiedi a Ettore del ritratto)\n«La signorina Clara")
+
+
 def test_no_thanks_answers_the_question_even_with_someone_here(castle):
     # «no, grazie» is also a formula: the answer to «Vuoi…?» comes first.
     game = in_the_stable(castle)

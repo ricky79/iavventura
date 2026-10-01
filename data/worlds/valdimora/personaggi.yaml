@@ -108,7 +108,7 @@ characters:
       ritratto:
         name: ritratto
         gender: m
-        aliases: [quadro, quadro coperto, drappo, galleria]
+        aliases: [quadro, quadro coperto, drappo, galleria, ragazza]
         when: {flag: atto_due}
         text: >
           «Quel quadro è coperto dal 1897. Ordini del conte: nessuno doveva più vederlo.» Ettore
