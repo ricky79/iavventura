@@ -198,3 +198,7 @@ tests/              # test pytest
 4. ~~LLM interprete delle frasi libere (Ollama)~~
 5. ~~Interfaccia web in stile console retrò~~
 6. ~~Personaggi e dialoghi~~
+7. Creazione nuova avventura (il giallo di Valdimora) per estendere il motore con nuove feature (in corso...)
+8. Test con modello Qwen3-4B
+9. Test con modello Qwen3-8B
+10. Test con modello Gemma3-4B
