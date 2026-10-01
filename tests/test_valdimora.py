@@ -633,6 +633,8 @@ def test_the_balcony_kills_and_the_game_goes_on_from_the_second_act(valdimora, l
     assert game.finished and game.state.lost and game.resumable == "secondo atto"
     assert game.turn("riprendi").startswith("Riprendi dall'inizio del secondo atto.")
     assert game.state.current_room == "atrio" and not game.finished
+    assert game.turn("su").startswith("Loggia")  # the staircase is still open
+    assert game.state.current_room == "loggia"
 
 
 @pytest.mark.parametrize("line", ["tira il vaso", "spingi il vaso"])
