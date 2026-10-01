@@ -492,6 +492,11 @@ VALDIMORA_CASES = [
      lambda a, g: g.state.item_locations["flacone"] == "inventory"),
     # Nobody dies without asking for it.
     ("balcone", (), ("atto_due",), "guardo giù dal balcone", lambda a, g: not g.finished),
+    # Found by the final review: with the stick in hand, or by a model slip, nobody falls without being asked.
+    ("balcone", ("bastone",), ("atto_due",), "prendo il vaso col bastone", lambda a, g: not g.finished),
+    ("balcone", ("bastone",), ("atto_due",), "recupero il vaso usando il bastone", lambda a, g: not g.finished),
+    ("balcone", (), ("atto_due",), "mi sporgo verso il vaso", lambda a, g: not g.finished),
+    ("balcone", (), ("atto_due",), "mi appoggio alla balaustra", lambda a, g: not g.finished),
     ("loggia", (), ("atto_due",), "faccio vedere il medaglione ad Agnese",
      says("Che strana stella", VALDIMORA.characters["agnese"].topics["medaglione"].text)),
     ("camera_contessa", (), ("atto_due",), "chi ha tagliato il cordone del campanello?",
