@@ -755,7 +755,9 @@ def test_once_shown_the_medallion_agnese_no_longer_asks_for_it(valdimora):
     game.turn("dai il medaglione ad Agnese")
 
     assert "medaglione" not in game.turn("parla con Agnese")
-    assert "Me lo fate vedere" not in game.turn("chiedi ad Agnese del medaglione")
+    answer = game.turn("chiedi ad Agnese del medaglione")
+    assert "Me lo fate vedere" not in answer
+    assert "disegnava dappertutto" in answer  # the clue stays
 
 
 @pytest.mark.parametrize(
@@ -786,3 +788,4 @@ def test_even_asleep_the_doctor_knows_the_flask(valdimora):
     assert "L'avevo portata piena" in answer
     assert "russare" in answer
     assert "russa" in game.turn("parla con il dottore")
+    assert "L'avevo portata piena" not in game.turn("chiedi al dottore delle medicine")  # once only

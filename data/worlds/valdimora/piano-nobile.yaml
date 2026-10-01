@@ -830,7 +830,7 @@ rules:
   tira_cordone:
     trigger: {verb: tira, target: cordone}
     text: >
-      Tiri il cordone, e ti resta in mano, molle: è tagliato di netto. In fondo alla casa non suona
+      Tiri il cordone, e ti pende molle tra le dita: è tagliato di netto. In fondo alla casa non suona
       niente. Da questo letto, la contessa non poteva più chiamare nessuno.
 
   # --- Il balcone: il vaso, il flacone (prova 2) e la balaustra (pericolo) ---

@@ -550,6 +550,9 @@ def test_a_sentence_that_does_not_name_a_thing(world, text, item_id):
         ("che strana stella", "strada"),
         ("ho letto tutto", "lutto"),
         ("è molto strano", "motto"),
+        ("mi fermo un attimo", "ferro"),
+        ("mille grazie", "miele"),
+        ("non ne vale la pena", "valle"),
     ],
 )
 def test_a_common_word_is_no_typo_for_a_name(world_data, text, alias):

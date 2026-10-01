@@ -873,6 +873,18 @@ def on_the_balcony(reply: dict) -> Game:
     return game
 
 
+@pytest.mark.parametrize(
+    "sentence", ["lancio uno sguardo verso la valle", "getto un'occhiata alla valle", "butto un occhio sulla valle"]
+)
+def test_a_glance_is_no_jump(sentence):
+    # Found by the review of the act 2 minors: «lancio», «getto», «butto» are jump words, and the model
+    # may say «salta nella valle», a fall from the balcony.
+    game = on_the_balcony({"verbo": "salta", "bersaglio": "valle", "con": "nessuno"})
+
+    assert say(game, sentence).startswith("(esamina la valle)")
+    assert not game.finished
+
+
 def test_an_interpreted_action_that_would_kill_is_asked_first():
     # Found by the final review of act 2: a model slip («tocco la balaustra» as «spingi») killed at once.
     game = on_the_balcony({"verbo": "spingi", "bersaglio": "balaustra", "con": "nessuno"})

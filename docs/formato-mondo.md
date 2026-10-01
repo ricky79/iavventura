@@ -311,8 +311,8 @@ characters:
   della partita vince sempre). Anche una variante ha il suo `again`, dalla seconda volta che si dice
   proprio lei: Agnese saluta «Ce l'avete fatta!» una volta sola. Senza `again` la variante si ripete,
   come serve a ciò che descrive uno stato («Il dottor Ferri russa.»). Il gioco ricorda le varianti
-  per posizione: riordinarle sposta il loro `again` nelle partite salvate. Nelle avventure per
-  bambini meglio senza: sentire di nuovo l'indizio aiuta.
+  per posizione: aggiungerle, toglierle o riordinarle sposta il loro `again` nelle partite salvate.
+  Nelle avventure per bambini meglio senza: sentire di nuovo l'indizio aiuta.
 - **A chi, senza nome**: gesti, domande e «dai X» senza personaggio vanno all'unico presente, o a
   quello con cui si è parlato per ultimo (anche solo una domanda senza risposta o un regalo
   rifiutato) se è ancora lì; altrimenti «A chi?».

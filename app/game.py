@@ -63,9 +63,9 @@ Per terminare la partita: fine."""
 _HELP_WORDS = frozenset({"aiuto", "help"})
 # A sentence starting with one of these is a question, even without "?" (kids leave it out).
 _QUESTION_WORDS = frozenset({"perche", "cosa", "come", "chi", "dove", "quanto", "quanti", "quale", "quali", "quando"})
-# Answers to "Vuoi…?", by their first word. Not "s" and "n": they are south and north.
 # "riprendo la chiavetta dal portagioie": what comes after them is where something is taken from.
 _FROM_WORDS = frozenset({"da", "dal", "dallo", "dalla", "dai", "dagli", "dalle", "dall"})
+# Answers to "Vuoi…?", by their first word. Not "s" and "n": they are south and north.
 _YES_WORDS = frozenset({"si", "certo", "ok", "okay", "sicuro", "confermo"})
 _NO_WORDS = frozenset({"no"})
 

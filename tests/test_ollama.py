@@ -506,6 +506,9 @@ VALDIMORA_CASES = [
      says(ETTORE.topics["ritratto"].variants[0].text)),
     ("galleria", (), ("atto_due",), "ho sete", lambda a, g: "Non vedi" not in a),
     ("boudoir", (), ("atto_due", "livia_permette"), "accarezzo i velluti", lambda a, g: "Non vedi" not in a),
+    # A glance from the balcony is no jump into the valley.
+    ("balcone", (), ("atto_due",), "getto un'occhiata alla valle", lambda a, g: not g.finished),
+    ("balcone", (), ("atto_due",), "lancio uno sguardo verso la valle", lambda a, g: not g.finished),
 ]  # fmt: skip
 
 

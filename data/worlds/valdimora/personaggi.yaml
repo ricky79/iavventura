@@ -28,7 +28,7 @@ characters:
         text: >
           Ettore è in piedi davanti al quadro coperto, le mani dietro la schiena. «Signorina. Sapevo
           che prima o poi sareste venuta qui.»
-        again: «Signorina.» Ettore non si muove da davanti al quadro coperto.
+        again: «Signorina.» Ettore non si è mosso dal quadro coperto.
       - when: {flag: busta_data}
         text: «Signorina Irene.» Ettore si inchina appena. «Chiedete pure. Quello che so, è vostro.»
         again: «Ditemi, signorina Irene.»
@@ -576,8 +576,9 @@ characters:
             text: >
               Gli metti la boccetta sotto il naso. Il dottore apre un occhio, poi tutti e due, e il
               colore gli sparisce dalla faccia. «Questa è la digitale della contessa. Dove l'avete
-              trovata?» Te la rende con la mano che trema. «L'avevo portata piena, una settimana prima
-              che morisse.» Poi la testa gli ricade sul petto, e ricomincia a russare.
+              trovata?» La annusa, e la allontana con la mano che trema. «L'avevo portata piena, una
+              settimana prima che morisse.» Poi la testa gli ricade sul petto, e ricomincia a russare.
+            again: Il dottore russa. Stavolta, nemmeno la boccetta lo sveglia.
           - when: {flag: ferri_addormentato}
             text: Il dottore russa.
           - when: {has: flacone}
@@ -719,5 +720,7 @@ characters:
           dei libri…» Agnese si morde il labbro. «Posso vederlo da vicino?»
         variants:
           - when: {flag: medaglione_mostrato}
-            text: «Che strana stella. Grazie per avermela fatta vedere, signorina.»
+            text: >
+              «Che strana stella. La contessa la disegnava dappertutto, sapete? Sui biglietti, sui
+              margini dei libri…» Agnese ti sorride. «Grazie per avermela fatta vedere, signorina.»
         again: «Me lo fate vedere?»

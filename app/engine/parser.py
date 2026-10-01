@@ -49,7 +49,8 @@ COMMON_WORDS = frozenset(
     molto molta molti molte poco tanto tanta troppo tutto tutta tutti tutte altro altra altri altre
     ancora sempre adesso subito prima dopo forse quasi proprio anche mezzo
     bene male strano strana strani strane bello bella brutto brutta vecchia nuovo nuova grande piccolo piccola
-    vero sete fame freddo caldo paura sonno
+    vero sete fame freddo caldo paura sonno sera seria basta vale pena mille pieno soli certi certe
+    porto porti fermo fermi figlio corre crede parti sogni
     perche quando quanto quale come dove cosa niente nulla
     """.split()
 )
