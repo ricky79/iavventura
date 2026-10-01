@@ -373,6 +373,27 @@ tests/
     un gesto è quel gesto («chiedi al pellegrino del suo nome», «chiedi scusa al custode»); l'orso,
     dopo lo scambio, ringrazia per le more. Lasciati: «chi era il castellano?» dall'interprete da
     solo (servirebbe ritoccare il prompt, il turno risponde giusto) e `engine.py` che usa `definite`.
+- **Valdimora, atto 2** (2026-09-30, branch `feature/valdimora-atto-2`; decisioni nella spec,
+  «Atto 2: decisioni prese al momento di costruirlo»; piano in
+  `docs/superpowers/plans/2026-09-30-valdimora-atto-2.md`): il piano nobile in
+  `data/worlds/valdimora/piano-nobile.yaml` (13 stanze e una provvisoria in cima alla scala di
+  servizio), nel menu con un finale provvisorio sul flag `atto_tre`. Il primo `acts` («secondo
+  atto», su `atto_due`): si muore cadendo dal balcone e si riprende dall'inizio dell'atto. Ettore,
+  Livia, Corrado e Agnese salgono di sopra (`moves`), Ferri resta nel biliardo con la sua borsa; i
+  loro testi seguono il posto e la partita. Le chiavi usate restano nella serratura. Alias: niente
+  parole sole simili a parole comuni, per la tolleranza ai refusi («sete»/«siete», «annate»/«andate»,
+  «cera»/«cerca», «cappelli»/«cappella»). Dati e test provati prima su una copia del mondo.
+  - Col modello vero 142 su 150; gli altri 8 sono limiti noti. Trovati giocando: un oggetto dato dal
+    modello per nome e per alias («bastone dal manico ricurvo», «bastone») mandava in errore il gioco
+    (ora è un oggetto solo); prendere ciò che si ha già in mano, mentre la frase nomina un'altra sola
+    cosa qui, diventa l'ipotesi «Vuoi usare la chiavetta di carica con il carillon?»; limite noto
+    «infilo il medaglione nella cornice» (il modello dice «inventario», a volte «prendi», e allora il
+    gioco chiede). Limite accettato: nella loggia «vado nel salone» da solo può dare «Sei già qui.»
+    («salone» è quasi «scalone», alias della loggia).
+  - Dalla revisione finale: un'azione capita dal modello che finirebbe con una morte viene chiesta
+    prima («Vuoi spingere la balaustra?», `Game._would_kill`; i salti hanno già la loro regola); col
+    bastone in mano prendere il vaso dà un indizio; tolti gli alias «fiori» (anche dei gigli
+    dell'atto 1) e «conte», simili a «fuori» e «conti».
 
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.
@@ -425,9 +446,10 @@ ollama pull qwen2.5:3b
     (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
     sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
     invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
-    `tests/test_ollama.py` (oggi 119 su 126, ~1080 s: i 36 casi di prima, gli 8 dei pericoli e i 17
-    del primo atto di Valdimora tutti, 39 delle 45 frasi trovate giocando e 19 delle 20 frasi dei
-    dialoghi; le altre 7 sono limiti noti).
+    `tests/test_ollama.py` (oggi 142 su 150, ~1350 s: i 36 casi di prima, gli 8 dei pericoli e i 17
+    del primo atto di Valdimora tutti, 23 delle 24 frasi del secondo atto, 39 delle 45 frasi trovate
+    giocando e 19 delle 20 frasi dei dialoghi; le altre 8 sono limiti noti, e «infilo il medaglione
+    nella cornice» a volte passa).
   - Il modello non è del tutto deterministico: con lo stesso prompt e `temperature: 0`, 2 o 3 frasi
     su 70 cambiano risposta da un giro all'altro (la cache di Ollama?). Un caso che passa una volta
     sola non dimostra niente.

@@ -10,6 +10,14 @@ rooms:
       lo scalone di pietra sale verso il piano nobile, chiuso da una porta di legno scuro. A nord,
       oltre una vetrata, il cortile; a ovest il salotto, a est la sala del biliardo. A sud, fuori
       sotto la pioggia, la rimessa.
+    variants:
+      - when: {flag: atto_due}
+        text: >
+          Un atrio alto e freddo, col pavimento a scacchi bianchi e neri. Sul portone da cui sei
+          entrata pende un drappo nero, e accanto, su un cavalletto, c'è un annuncio listato a lutto.
+          In fondo, lo scalone di pietra sale verso la loggia del piano nobile: la sua porta ora è
+          aperta. A nord, oltre una vetrata, il cortile; a ovest il salotto, a est la sala del
+          biliardo. A sud, fuori sotto la pioggia, la rimessa.
     exits:
       nord: {to: cortile}
       sud: {to: rimessa}
@@ -149,13 +157,6 @@ rooms:
       ovest: {to: sala_da_pranzo}
       est: {to: cappella}
 
-  # Provvisoria: nessuno ci entra, perché aprire lo scalone chiude il primo atto. La riscrive l'atto 2.
-  loggia:
-    name: Loggia dello scalone
-    description: In cima allo scalone, il piano nobile è buio e silenzioso.
-    exits:
-      giù: {to: atrio}
-
 items:
   # --- Quello che Irene porta con sé ---
   lettera:
@@ -192,7 +193,7 @@ items:
   fotografia:
     name: fotografia di tua madre
     gender: f
-    aliases: [fotografia, foto]
+    aliases: [fotografia, foto, fotografia di mia madre, foto di mia madre]
     description: >
       Tua madre a trent'anni, in uno studio fotografico di Genova: il vestito scuro, i capelli
       raccolti, il medaglione al collo. Non sorride, ma ha gli occhi buoni.
@@ -579,7 +580,6 @@ items:
     name: gigli
     gender: m
     plural: true
-    aliases: [fiori]
     description: Gigli bianchi, freschi. Il profumo è così forte che quasi stordisce.
     location: cappella
     scenery: true
@@ -824,10 +824,11 @@ rules:
     when: {not: {flag: atto_due}}
     otherwise: La porta dello scalone è già aperta.
     effects:
+      - remove: chiave_scalone
       - set_flag: atto_due
     text: >
-      La chiave gira con un rumore secco. La porta si apre sullo scalone buio, che sale verso il
-      piano nobile.
+      La chiave gira con un rumore secco, e la lasci nella toppa. La porta si apre sullo scalone
+      buio, che sale verso il piano nobile.
 
   apri_scalone_senza_chiave:
     trigger: {verb: apri, target: porta_scalone}
@@ -844,11 +845,12 @@ rules:
     when: {not: {flag: credenza_aperta}}
     otherwise: La credenza è già aperta, e dentro restano solo bicchieri.
     effects:
+      - remove: chiave_credenza
       - give: grappa
       - set_flag: credenza_aperta
     text: >
-      La chiavina gira senza fatica. Tra i bicchieri buoni c'è una bottiglia di grappa ancora
-      sigillata. La prendi.
+      La chiavina gira senza fatica, e la lasci nella serratura. Tra i bicchieri buoni c'è una
+      bottiglia di grappa ancora sigillata. La prendi.
 
   apri_credenza_senza_chiave:
     trigger: {verb: apri, target: credenza}
@@ -892,11 +894,13 @@ rules:
     when: {not: {flag: armadietto_aperto}}
     otherwise: L'armadietto è già aperto.
     effects:
+      - remove: chiavetta
       - give: registro
       - set_flag: armadietto_aperto
     text: >
-      Lo sportello si apre con un cigolio. Bende, sciroppi, flaconi e, sul ripiano più basso, un
-      quaderno nero: il registro delle medicine. Lo prendi.
+      La chiavetta gira, e la lasci nella serratura. Lo sportello si apre con un cigolio. Bende,
+      sciroppi, flaconi e, sul ripiano più basso, un quaderno nero: il registro delle medicine. Lo
+      prendi.
 
   apri_armadietto_senza_chiave:
     trigger: {verb: apri, target: armadietto}
@@ -918,6 +922,11 @@ rules:
       - {verb: apri, target: porta_cantina, with: chiave_scalone}
       - {verb: apri, target: porta_cantina, with: chiave_credenza}
       - {verb: apri, target: porta_cantina, with: chiavetta}
+      - {verb: apri, target: porta_cantina, with: chiave_servizio}
+      - {verb: apri, target: porta_cantina, with: chiavetta_carica}
+      - {verb: apri, target: porta_scala_servizio, with: chiave_credenza}
+      - {verb: apri, target: porta_scala_servizio, with: chiavetta}
+      - {verb: apri, target: porta_scala_servizio, with: chiavetta_carica}
     text: La chiave non entra nella serratura.
 
   leggi_registro:

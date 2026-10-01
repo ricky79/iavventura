@@ -14,10 +14,19 @@ characters:
       Un uomo alto e magro, sui settant'anni, in livrea nera. Ha gli occhi rossi di chi non dorme da
       giorni.
     location: stanza_maggiordomo
+    moves:
+      - when: {flag: atto_due}
+        room: galleria
     greeting: >
       Ettore si alza a fatica dalla sedia. «Perdonate, signorina: la casa è in lutto. La contessa ci
       ha lasciati tre giorni fa. Chi siete, e chi vi manda?»
     greeting_variants:
+      - when: {flag: ritratto_scoperto}
+        text: Ettore guarda il ritratto, poi guarda te. «Ora avete visto», dice soltanto.
+      - when: {flag: atto_due}
+        text: >
+          Ettore è in piedi davanti al quadro coperto, le mani dietro la schiena. «Signorina. Sapevo
+          che prima o poi sareste venuta qui.»
       - when: {flag: busta_data}
         text: «Signorina Irene.» Ettore si inchina appena. «Chiedete pure. Quello che so, è vostro.»
     greeting_again: «Ancora voi, signorina? Non mi avete detto chi vi manda.»
@@ -87,7 +96,37 @@ characters:
         text: >
           Ettore distoglie lo sguardo. «Non qui, signorina. Non ancora. La contessa ha voluto che le
           cose le trovaste da voi.»
+        variants:
+          - when: {flag: ritratto_scoperto}
+            text: >
+              «L'avete vista, ora. Aveva il vostro stesso modo di guardare le cose.» Ettore si passa
+              una mano sugli occhi. «Non chiedetemi altro, signorina. Non ancora.»
         again: «Abbiate pazienza, signorina. Ogni cosa a suo tempo.»
+      ritratto:
+        name: ritratto
+        gender: m
+        aliases: [quadro, quadro coperto, drappo, galleria]
+        when: {flag: atto_due}
+        text: >
+          «Quel quadro è coperto dal 1897. Ordini del conte: nessuno doveva più vederlo.» Ettore
+          guarda il drappo nero. «Il conte è morto da dodici anni, signorina, e io sono vecchio. Se
+          volete guardare, non sarò io a fermarvi.»
+        variants:
+          - when: {flag: ritratto_scoperto}
+            text: >
+              «La signorina Clara, a vent'anni. Viveva qui, in questa casa.» Ettore si schiarisce la
+              voce. «Il resto la contessa ha voluto che lo scopriste da voi, e io le ho dato la mia
+              parola.»
+        again: «Il drappo, signorina. Nessuno vi fermerà.»
+      carillon:
+        name: carillon
+        gender: m
+        aliases: [cilindro, ninna nanna, musica, salone della musica]
+        when: {flag: ritratto_scoperto}
+        text: >
+          «Il carillon d'argento, nel salone della musica? Era della signorina Clara. Da bambina non
+          si addormentava senza la sua ninna nanna.»
+        again: «Nel salone della musica, signorina.»
       livia:
         name: Livia
         article: none
@@ -119,6 +158,11 @@ characters:
         text: >
           «La dama di compagnia della contessa. Le leggeva i romanzi, le dava le medicine. Da quando
           è morta non si stacca da lei, in cappella.»
+        variants:
+          - when: {flag: atto_due}
+            text: >
+              «La dama di compagnia della contessa. Le leggeva i romanzi, le dava le medicine. Ora sta
+              nella loggia, in cima allo scalone: dice che vi aspetta, se avete bisogno.»
         again: «Povera ragazza. È sempre in cappella, con la contessa.»
       ferri:
         name: dottor Ferri
@@ -145,10 +189,19 @@ characters:
       Una donna sulla cinquantina, vestita di grigio, con un mazzo di chiavi alla cintura. Ti guarda
       come si guarda una macchia sul tappeto.
     location: ufficio_governante
+    moves:
+      - when: {flag: atto_due}
+        room: camera_contessa
     greeting: >
       «Siete voi, quella della corriera.» Livia non si alza. «La casa è in lutto, signorina. Non so
       che cosa siate venuta a cercare, ma qui non troverete niente.»
     greeting_variants:
+      - when: {flag: livia_permette}
+        text: Livia è seduta accanto al letto, e guarda la rosa sul comodino. «Grazie», dice soltanto.
+      - when: {flag: atto_due}
+        text: >
+          Livia è seduta rigida su una sedia accanto al letto vuoto. «Siete salita, allora. Questa era
+          la sua camera, signorina: non toccate niente.»
       - when: {flag: livia_chiave}
         text: «Avete la chiave. Non toccate le cose della contessa.»
     greeting_again: «Ancora voi.» Livia non alza nemmeno gli occhi dai conti.
@@ -236,6 +289,47 @@ characters:
         aliases: [mazzo di chiavi, quadro delle chiavi]
         text: «Ogni chiave di questa casa passa da me.»
         again: «Tutte da me. Non fatemelo ripetere.»
+      rose:
+        name: rosa bianca
+        gender: f
+        aliases: [rosa, rose, rose bianche, vasetto, comodino]
+        when: {flag: atto_due}
+        text: >
+          «Ogni mattina, per trent'anni, le ho portato una rosa bianca della serra, per il comodino.
+          Le piacevano solo quelle.» Livia guarda il vasetto vuoto. «Da quando è morta non ho avuto
+          il coraggio di coglierne una.»
+        variants:
+          - when: {flag: livia_permette}
+            text: «È bella, la vostra rosa. Lei l'avrebbe tenuta fino all'ultimo petalo.»
+        again: «Una rosa bianca, ogni mattina. Dalla serra.»
+      boudoir:
+        name: boudoir
+        gender: m
+        aliases: [porta del boudoir, porta bassa, portagioie]
+        when: {flag: atto_due}
+        text: >
+          «Il boudoir era suo e basta. Nessuno ci entrava, nemmeno io, se non chiamata.» Livia stringe
+          le labbra. «Non lo apro al primo che capita.»
+        variants:
+          - when: {flag: livia_permette}
+            text: «Andate pure. Ve l'ho detto.»
+        again: «Lì dentro no, signorina.»
+      campanello:
+        name: campanello
+        gender: m
+        aliases: [cordone, cordone del campanello, filo, campanelli]
+        when: {flag: atto_due}
+        text: >
+          «Tagliato?» Livia si alza e guarda il cordone, e per la prima volta la vedi turbata. «Non me
+          n'ero accorta. La notte la contessa non chiamava mai: c'era Agnese, con le sue gocce.»
+        again: «Non so chi l'abbia tagliato, signorina. Non lo so.»
+      scala_servizio:
+        name: scala di servizio
+        gender: f
+        aliases: [porta di servizio, porta della scala di servizio, chiave della scala di servizio, soffitta]
+        when: {flag: atto_due}
+        text: «La chiave della scala di servizio la teneva la contessa, non io. Chissà dove l'ha messa.»
+        again: "«Ve l'ho detto: la teneva lei.»"
 
   corrado:
     name: Corrado
@@ -246,9 +340,18 @@ characters:
       Un uomo sui quarant'anni, elegante ma trasandato, con la cravatta allentata e un bicchiere
       vuoto in mano. Ha l'aria di chi aspetta un treno in ritardo.
     location: biliardo
+    moves:
+      - when: {flag: atto_due}
+        room: studio_conte
     greeting: >
       «Un'altra parente sconosciuta?» Corrado ride senza allegria. «Mettetevi in fila. Quando
       arriverà il notaio vedrete che qui non c'è niente per nessuno, tranne che per me.»
+    greeting_variants:
+      - when: {flag: atto_due}
+        text: >
+          Corrado è seduto alla scrivania del conte, coi piedi sul piano di mogano. «Guarda chi si
+          vede. Siete arrivata fin quassù? Prendete pure quello che volete, signorina: tanto, tra
+          poco, qui sarà tutto mio.»
     greeting_again: «Ancora qui?» Corrado alza il bicchiere vuoto, come per un brindisi. «Allora mettetevi comoda.»
     unknown: Corrado scrolla le spalle. «Chiedetelo a Ettore, lui sa tutto.»
     refuses: «Non accetto regali dagli estranei.»
@@ -326,6 +429,32 @@ characters:
         aliases: [strada]
         text: «Una settimana, dicono, per liberare la strada. Una settimana chiuso qui con voi tutti.»
         again: «Una settimana. Contate i giorni con me, se vi diverte.»
+      bastone:
+        name: bastone
+        gender: m
+        aliases: [bastone del conte, bastoni, rastrelliera, manico ricurvo]
+        when: {flag: atto_due}
+        text: «Il bastone di mio zio? Prendetelo pure, se vi fa comodo. Prendete quello che volete, ve l'ho detto.»
+        again: «Prendetelo, vi ho detto.»
+      studio:
+        name: studio
+        gender: m
+        aliases: [studio del conte, scrivania, zio, ruggero]
+        when: {flag: atto_due}
+        text: >
+          «Lo studio di mio zio Ruggero. È morto nel '15, e da allora qui dentro non ha comandato più
+          nessuno.» Si accende una sigaretta. «Fino a me.»
+        again: «Il mio studio, signorina. Quasi.»
+      cambiali:
+        name: cambiali
+        gender: f
+        plural: true
+        aliases: [debiti, cambiale, gioco]
+        when: {flag: atto_due}
+        text: >
+          «Siete stata in camera mia?» Per un attimo Corrado perde il sorriso. «Debiti di gioco. Il
+          notaio li pagherà tutti, quando arriverà. Tutti.»
+        again: «Il notaio li pagherà. Parliamo d'altro.»
 
   ferri:
     name: dottor Ferri
@@ -416,13 +545,18 @@ characters:
         name: medicine
         gender: f
         plural: true
-        aliases: [farmaco, gocce, digitale, borsa]
+        aliases: [farmaco, gocce, digitale, borsa, flacone, boccetta]
         text: >
           «Digitale, gocce per il cuore. Io le prescrivevo, e la ragazza, Agnese, gliele dava ogni
           sera.»
         variants:
           - when: {flag: ferri_addormentato}
             text: Il dottore russa.
+          - when: {has: flacone}
+            text: >
+              Il dottore vede la boccetta che hai in mano, e il colore gli sparisce dalla faccia.
+              «Questa è la digitale della contessa. Dove l'avete trovata?» La annusa, e te la rende
+              con la mano che trema. «L'avevo portata piena, una settimana prima che morisse.»
         again: «Digitale, vi ho detto. Io la prescrivevo, lei la dava.»
       corrado:
         name: Corrado
@@ -458,16 +592,28 @@ characters:
       Una ragazza di trent'anni, pallida, vestita di nero. Ha gli occhi gonfi e un rosario tra le
       dita.
     location: cappella
+    moves:
+      - when: {flag: atto_due}
+        room: loggia
     greeting: >
       Agnese si alza di scatto, poi ti sorride tra le lacrime. «Voi dovete essere la signorina di
       Genova. La contessa parlava di una visita… Se vi serve qualcosa, qualunque cosa, chiedete a
       me.»
+    greeting_variants:
+      - when: {flag: atto_due}
+        text: >
+          Agnese ti aspetta in cima allo scalone, con una candela in mano. «Ce l'avete fatta! Livia vi
+          ha dato la chiave?» Si avvicina, e i suoi occhi vanno al tuo collo. «Posso vedere il vostro
+          medaglione? La contessa ne parlava tanto…»
     greeting_again: «Eccovi di nuovo.» Agnese ti sorride. «Avete bisogno di me?»
     unknown: «Non saprei, signorina. Chiedete a Ettore, forse.»
     refuses: «Oh, no, non potrei.»
     gestures:
       congedo:
         text: «Andate pure. Io resto con lei.» Agnese torna a guardare la bara.
+        variants:
+          - when: {flag: atto_due}
+            text: «Andate pure. Io resto qui ad aspettarvi, se vi serve qualcosa.»
       grazie:
         text: "«Di niente. Chiedete pure: sono qui per aiutarvi.»"
         again: «Per così poco!»
@@ -531,3 +677,11 @@ characters:
         aliases: [aiutare, serve]
         text: «Qualunque cosa. La contessa avrebbe voluto così.»
         again: «Qualunque cosa, ve l'ho detto.»
+      medaglione:
+        name: medaglione
+        gender: m
+        aliases: [stella, ciondolo]
+        text: >
+          «Che bella stella. La contessa la disegnava dappertutto, sapete? Sui biglietti, sui margini
+          dei libri…» Agnese si morde il labbro. «Posso vederlo da vicino?»
+        again: «Me lo fate vedere?»

@@ -193,7 +193,9 @@ def _to_action(
         return NotUnderstood(f"verbo sconosciuto {verb!r}")
     if target not in ids_by_name:
         return NotUnderstood(f"bersaglio non a portata {target!r}")
-    with_ = ids_by_name.get(tool) if tool != target else None
+    with_ = ids_by_name.get(tool)
+    if with_ == ids_by_name[target]:
+        with_ = None  # the same item twice, by its name and by an alias ("bastone dal manico ricurvo", "bastone")
     if verb in (Verb.DROP, Verb.JUMP) and with_ is not None:
         # "butta il rampino nel pozzo": dropping one thing into another, or jumping with it, is using
         # them together
