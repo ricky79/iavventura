@@ -572,6 +572,12 @@ characters:
           «Digitale, gocce per il cuore. Io le prescrivevo, e la ragazza, Agnese, gliele dava ogni
           sera.»
         variants:
+          - when: {all: [{flag: ferri_addormentato}, {has: flacone}]}
+            text: >
+              Gli metti la boccetta sotto il naso. Il dottore apre un occhio, poi tutti e due, e il
+              colore gli sparisce dalla faccia. «Questa è la digitale della contessa. Dove l'avete
+              trovata?» Te la rende con la mano che trema. «L'avevo portata piena, una settimana prima
+              che morisse.» Poi la testa gli ricade sul petto, e ricomincia a russare.
           - when: {flag: ferri_addormentato}
             text: Il dottore russa.
           - when: {has: flacone}

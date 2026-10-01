@@ -621,7 +621,7 @@ def test_the_flask_can_be_found(valdimora):
     assert "Digitale" in answers[12]
 
 
-@pytest.mark.parametrize("line", ["prendi il vaso", "spingi la balaustra", "salta dalla balaustra"])
+@pytest.mark.parametrize("line", ["prendi il vaso", "spingi la balaustra", "salta dalla balaustra", "salta nella valle"])
 def test_the_balcony_kills_and_the_game_goes_on_from_the_second_act(valdimora, line):
     game = new_game(valdimora)
     play(game, *TO_THE_STAIRCASE)
@@ -635,10 +635,11 @@ def test_the_balcony_kills_and_the_game_goes_on_from_the_second_act(valdimora, l
     assert game.state.current_room == "atrio" and not game.finished
 
 
-def test_pulling_the_vase_by_hand_is_only_a_hint(valdimora):
+@pytest.mark.parametrize("line", ["tira il vaso", "spingi il vaso"])
+def test_pulling_the_vase_by_hand_is_only_a_hint(valdimora, line):
     game = in_act_two(valdimora, "balcone")
 
-    assert "qualcosa di lungo" in game.turn("tira il vaso")
+    assert "qualcosa di lungo" in game.turn(line)
     assert not game.finished
 
 
@@ -768,3 +769,18 @@ def test_once_shown_the_medallion_agnese_no_longer_asks_for_it(valdimora):
 def test_a_hint_knows_when_it_is_done(valdimora, room, flags, carried, line, done):
     # A hint that sends the player to do something has a variant for when it is done.
     assert done in in_act_two(valdimora, room, *flags, carried=carried).turn(line)
+
+
+def test_the_cut_bell_cord_rings_nothing(valdimora):
+    assert "tagliato di netto" in in_act_two(valdimora, "camera_contessa").turn("tira il cordone")
+
+
+def test_even_asleep_the_doctor_knows_the_flask(valdimora):
+    # Who had put him to sleep with the grappa never saw him recognise the flask.
+    game = in_act_two(valdimora, "biliardo", "ferri_addormentato", carried=("flacone",))
+
+    answer = game.turn("chiedi al dottore delle medicine")
+
+    assert "L'avevo portata piena" in answer
+    assert "russare" in answer
+    assert "russa" in game.turn("parla con il dottore")

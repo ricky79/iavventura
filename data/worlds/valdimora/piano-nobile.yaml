@@ -827,6 +827,12 @@ rules:
     trigger: {verb: usa, target: arpa}
     text: Sfiori il legno dove una volta c'erano le corde. Non ne esce niente.
 
+  tira_cordone:
+    trigger: {verb: tira, target: cordone}
+    text: >
+      Tiri il cordone, e ti resta in mano, molle: è tagliato di netto. In fondo alla casa non suona
+      niente. Da questo letto, la contessa non poteva più chiamare nessuno.
+
   # --- Il balcone: il vaso, il flacone (prova 2) e la balaustra (pericolo) ---
   aggancia_vaso:
     trigger:
@@ -857,7 +863,9 @@ rules:
     text: Ti sporgi oltre la balaustra, allunghi il braccio verso il vaso e ci appoggi tutto il peso.
 
   tira_vaso:
-    trigger: {verb: tira, target: vaso}
+    trigger:
+      - {verb: tira, target: vaso}
+      - {verb: spingi, target: vaso}
     when: {not: {flag: vaso_recuperato}}
     otherwise: È pesante e pieno di terra. Lo lasci dov'è, al sicuro.
     text: >
@@ -871,7 +879,9 @@ rules:
     text: Appoggi tutte e due le mani sulla balaustra crepata, e spingi.
 
   scavalca_balaustra:
-    trigger: {verb: salta, target: balaustra}
+    trigger:
+      - {verb: salta, target: balaustra}
+      - {verb: salta, target: valle}
     effects:
       - set_flag: caduta_dal_balcone
     text: Metti un piede sulla balaustra per scavalcarla.
