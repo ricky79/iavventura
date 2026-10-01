@@ -184,6 +184,10 @@ characters:
           «La dama di compagnia della contessa. Le leggeva i romanzi, le dava le medicine. Da quando
           è morta non si stacca da lei, in cappella.»
         variants:
+          - when: {flag: agnese_in_cucina}
+            text: «È qui con noi, signorina, davanti al focolare. Dice che vi prepara una tisana.»
+          - when: {flag: agnese_in_rimessa}
+            text: «È scesa in rimessa, a prendervi il petrolio. Una ragazza servizievole.»
           - when: {flag: atto_tre}
             text: >
               «La dama di compagnia della contessa. Ora sta di sopra, nel corridoio della servitù, e
@@ -219,6 +223,12 @@ characters:
         variants:
           - when: {flag: lanterna_accesa}
             text: «Bene. Con quella, laggiù, ci vedrete.»
+          - when: {flag: lanterna_piena}
+            text: "«Piena di petrolio, vedo. I fiammiferi sono qui in cucina: accendetela pure.»"
+          - when: {has: lanterna}
+            text: >
+              «L'avete trovata, allora. Ora le serve il petrolio: c'è una tanica in rimessa. E i
+              fiammiferi sono qui in cucina.»
         again: «Il petrolio in rimessa, signorina, i fiammiferi qui in cucina.»
       cantina:
         name: cantina
@@ -243,6 +253,11 @@ characters:
     description: >
       Una donna sulla cinquantina, vestita di grigio, con un mazzo di chiavi alla cintura. Ti guarda
       come si guarda una macchia sul tappeto.
+    variants:
+      - when: {flag: atto_tre}
+        text: >
+          Una donna sulla cinquantina, vestita di grigio. Senza il mazzo di chiavi alla cintura sembra
+          più piccola, e più vecchia.
     location: ufficio_governante
     moves:
       - when: {flag: atto_tre}

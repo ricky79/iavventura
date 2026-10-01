@@ -1019,6 +1019,7 @@ ACT_THREE_DESCRIBED = [
     ("archivio", "scaffali"), ("archivio", "faldoni"), ("archivio", "pergamene"), ("archivio", "faldone"),
     ("archivio", "tavolo"),
     ("stanza_orologio", "ingranaggi"), ("stanza_orologio", "pendolo"), ("stanza_orologio", "lucernario"),
+    ("stanza_orologio", "trave"),
     ("tetto", "tegole"), ("tetto", "tempesta"), ("tetto", "colmo"),
     ("piccionaia", "piccioni"), ("piccionaia", "posatoi"), ("piccionaia", "tubetto"),
 ]  # fmt: skip
@@ -1079,3 +1080,42 @@ def test_the_characters_have_something_to_say_in_the_third_act(valdimora, room, 
 )  # fmt: skip
 def test_what_the_characters_say_in_the_third_act_knows_when_it_is_done(valdimora, room, flags, carried, line, done):
     assert done in in_act_three(valdimora, room, *flags, carried=carried).turn(line)
+
+
+# --- Found by the final review of act 3 ------------------------------------------------------------------
+
+
+def test_the_rope_is_tied_to_the_beam_under_the_skylight(valdimora):
+    # The skylight's description invites it: «Sotto, una trave robusta, a cui si potrebbe legare qualcosa».
+    game = in_act_three(valdimora, "stanza_orologio", carried=("corda",))
+
+    assert "trave robusta" in game.turn("esamina la trave")
+    assert "qualcosa ti tiene" in game.turn("usa la corda con la trave")
+    assert "corda_legata" in game.state.flags
+
+
+def test_in_the_third_act_livia_has_no_keys_at_her_belt(valdimora):
+    game = in_act_three(valdimora, "camera_livia")
+
+    assert "Senza il mazzo di chiavi" in game.turn("parla con Livia")
+    assert "con un mazzo di chiavi alla cintura" not in game.turn("esamina Livia")
+
+
+@pytest.mark.parametrize(
+    ("flags", "expected"),
+    [(("agnese_in_cucina",), "qui con noi"), (("agnese_in_rimessa",), "in rimessa"), ((), "corridoio della servitù")],
+)  # fmt: skip
+def test_ettore_knows_where_agnese_is_in_the_third_act(valdimora, flags, expected):
+    assert expected in in_act_three(valdimora, "cucina", *flags).turn("chiedi a Ettore di Agnese")
+
+
+@pytest.mark.parametrize(
+    ("flags", "carried", "expected"),
+    [((), ("lanterna",), "L'avete trovata"), (("lanterna_piena",), ("lanterna",), "accendetela"),
+     (("lanterna_piena", "lanterna_accesa"), ("lanterna",), "ci vedrete")],
+)  # fmt: skip
+def test_ettore_s_hint_on_the_lantern_follows_it(valdimora, flags, carried, expected):
+    answer = in_act_three(valdimora, "cucina", *flags, carried=carried).turn("chiedi a Ettore della lanterna")
+
+    assert expected in answer
+    assert "nel sottotetto" not in answer

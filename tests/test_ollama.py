@@ -547,6 +547,9 @@ VALDIMORA_CASES = [
     ("camera_agnese", (), (*ACT_THREE, "agnese_in_cucina"), "guardo sotto il materasso",
      lambda a, g: g.state.item_locations["lettera_giugno"] == "inventory"),
     # Tied, or asked first when the model picked the clockwork and the skylight is only a guess.
+    ("stanza_orologio", ("corda",), ACT_THREE, "lego la corda alla trave",
+     lambda a, g: "corda_legata" in g.state.flags
+     or g.pending == Action(verb="usa", target="corda", with_="lucernario")),
     ("stanza_orologio", ("corda",), ACT_THREE, "lego la corda alla trave del lucernario",
      lambda a, g: "corda_legata" in g.state.flags
      or g.pending == Action(verb="usa", target="corda", with_="lucernario")),

@@ -504,13 +504,24 @@ items:
     gender: m
     aliases: [botola]
     description: >
-      Un lucernario di vetro e ferro, aperto, che sbatte nel vento. Sotto, una trave robusta, a cui si
-      potrebbe legare qualcosa; fuori, il tetto.
+      Un lucernario di vetro e ferro, aperto, che sbatte nel vento. Sotto, una trave robusta; fuori, il
+      tetto.
     location: stanza_orologio
     scenery: true
     variants:
       - when: {flag: corda_legata}
         text: Il lucernario aperto, che sbatte nel vento. Alla trave sotto è legata la tua corda, che pende fuori, sul tetto.
+
+  trave_lucernario:
+    name: trave
+    gender: f
+    aliases: [trave robusta]
+    description: Una trave robusta, proprio sotto il lucernario. Ci si potrebbe legare qualcosa.
+    location: stanza_orologio
+    scenery: true
+    variants:
+      - when: {flag: corda_legata}
+        text: La trave sotto il lucernario. Ci è legata la tua corda, con un nodo da marinaio.
 
   corda_legata:
     name: corda legata
@@ -761,6 +772,7 @@ rules:
   lega_corda:
     trigger:
       - {verb: usa, target: corda, with: lucernario}
+      - {verb: usa, target: corda, with: trave_lucernario}
       - {verb: usa, target: corda, with: meccanismo}
     effects:
       - remove: corda
