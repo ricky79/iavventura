@@ -587,3 +587,13 @@ def test_handing_over_an_item_is_giving_it(keeper, text):
 def test_holding_an_item_is_left_to_the_llm(keeper):
     # "tieni la corda" may be "take it" or "hold it".
     assert parse_giving(keeper, "tieni la moneta") is None
+
+
+def test_a_hidden_alias_names_the_item_like_the_others(world_data):
+    # Item.hidden_aliases: the parser and the checks on the model's answers know them, the model isn't shown them.
+    world_data["items"]["leva"]["hidden_aliases"] = ["maniglia"]
+    world = World.model_validate(world_data)
+    lever = world.items["leva"]
+
+    assert parse("tira la maniglia", world, [lever]) == Action(verb="tira", target="leva")
+    assert is_named(lever, words_of("tiro la maniglia"))

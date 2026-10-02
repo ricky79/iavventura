@@ -16,6 +16,7 @@ from app.engine.models import (
     FlagSet,
     Give,
     Has,
+    Item,
     Not,
     Place,
     PlayerIn,
@@ -166,6 +167,8 @@ def _names(world: World) -> Iterator[tuple[str, str]]:
         yield f"{path}.name", thing.name
         for index, alias in enumerate(thing.aliases):
             yield f"{path}.aliases.{index}", alias
+        for index, alias in enumerate(thing.hidden_aliases if isinstance(thing, Item) else ()):
+            yield f"{path}.hidden_aliases.{index}", alias
 
 
 def _effects(world: World) -> Iterator[tuple[str, Effect]]:
