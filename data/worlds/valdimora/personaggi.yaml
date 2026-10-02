@@ -132,6 +132,10 @@ characters:
           guarda il drappo nero. «Il conte è morto da dodici anni, signorina, e io sono vecchio. Se
           volete guardare, non sarò io a fermarvi.»
         variants:
+          - when: {flag: lettere_lette}
+            text: >
+              «La signorina Clara, a vent'anni. Vostra madre.» Ettore si schiarisce la voce. «Ora
+              sapete tutto, e io sono sciolto dalla mia parola. Le somigliate più di quanto crediate.»
           - when: {flag: ritratto_scoperto}
             text: >
               «La signorina Clara, a vent'anni. Viveva qui, in questa casa.» Ettore si schiarisce la
@@ -147,6 +151,10 @@ characters:
           «Il carillon d'argento, nel salone della musica? Era della signorina Clara. Da bambina non
           si addormentava senza la sua ninna nanna.»
         variants:
+          - when: {all: [{flag: atto_tre}, {flag: carillon_suonato}]}
+            text: >
+              «L'avete fatto suonare, il carillon. L'ho sentito fin dalla galleria.» Ettore chiude gli
+              occhi. «La ninna nanna della signorina Clara. Non la sentivo da trent'anni.»
           - when: {flag: carillon_suonato}
             text: >
               «L'avete fatto suonare. L'ho sentito fin qui.» Ettore chiude gli occhi. «La ninna nanna
@@ -272,6 +280,7 @@ characters:
         text: >
           Livia è seduta sul letto, con le mani in grembo e gli occhi rossi. «Vi ho detto tutto,
           signorina. Ora lasciatemi sola.»
+        again: Livia non alza gli occhi. «Lasciatemi sola, signorina. Vi prego.»
       - when: {flag: atto_tre}
         text: >
           Livia è seduta sul letto della sua camera, le mani in grembo. Senza il mazzo di chiavi alla
@@ -294,16 +303,29 @@ characters:
     gestures:
       congedo:
         text: «Andate pure. E non toccate niente.»
+        variants:
+          - when: {flag: livia_confessa}
+            text: «Andate, signorina. E chiudete piano la porta.»
       grazie:
         text: «Non ringraziatemi. Faccio il mio dovere.»
         again: «Basta ringraziare, signorina. Non serve.»
+        variants:
+          - when: {flag: livia_confessa}
+            text: «Non ringraziatemi. Avrei dovuto farlo trent'anni fa.»
       scuse:
         text: «Le scuse non riaprono le porte, signorina.»
+        variants:
+          - when: {flag: livia_confessa}
+            text: «Non siete voi a dovervi scusare, signorina.»
       come_stai:
         text: >
           «Come si sta, in una casa senza padrona.» Livia rimette in fila una penna che era già in
           fila.
         variants:
+          - when: {flag: livia_confessa}
+            text: >
+              «Come una che ha taciuto per trent'anni, e stanotte ha parlato.» Livia si stringe le mani
+              in grembo. «Non lo so, signorina.»
           - when: {flag: livia_chiave}
             text: «Ho dato la chiave dello scalone a una sconosciuta. Come volete che stia?»
       chi_sei:
@@ -329,6 +351,11 @@ characters:
         text: >
           «Trent'anni al suo servizio.» Per un attimo la voce le si incrina. «Non parlo della
           contessa con gli estranei.»
+        variants:
+          - when: {flag: livia_confessa}
+            text: >
+              «Non me l'ha mai perdonato, e non me l'ha mai detto.» Livia guarda la rosa secca sul
+              davanzale. «Trent'anni così, signorina: una rosa ogni mattina, e mai una parola su Clara.»
         again: «Ho detto che non ne parlo.»
       ettore:
         name: Ettore
@@ -336,6 +363,9 @@ characters:
         gender: m
         aliases: [maggiordomo]
         text: «Ettore è vecchio, e crede ancora alle favole.»
+        variants:
+          - when: {flag: livia_confessa}
+            text: «Ettore faceva bene a credere alle favole.» Livia quasi sorride. «Questa volta la favola siete voi.»
         again: «Chiedete a lui le sue favole.»
       corrado:
         name: Corrado
@@ -374,6 +404,11 @@ characters:
         plural: true
         aliases: [mazzo di chiavi, quadro delle chiavi]
         text: «Ogni chiave di questa casa passa da me.»
+        variants:
+          - when: {flag: livia_confessa}
+            text: «L'unica che contava ve l'ho data. Le altre sono giù, nel mio ufficio.»
+          - when: {flag: atto_tre}
+            text: «Il mazzo l'ho lasciato giù, nel mio ufficio. Quassù non mi serve.»
         again: «Tutte da me. Non fatemelo ripetere.»
       rose:
         name: rosa bianca
@@ -408,6 +443,11 @@ characters:
         text: >
           «Tagliato?» Livia si alza e guarda il cordone, e per la prima volta la vedi turbata. «Non me
           n'ero accorta. La notte la contessa non chiamava mai: c'era Agnese, con le sue gocce.»
+        variants:
+          - when: {flag: atto_tre}
+            text: >
+              «Il cordone tagliato? Ci penso da quando l'avete visto.» Livia si stringe le mani in
+              grembo. «La notte la contessa non chiamava mai: c'era Agnese, con le sue gocce.»
         again: «Non so chi l'abbia tagliato, signorina. Non lo so.»
       scala_servizio:
         name: scala di servizio
@@ -509,10 +549,19 @@ characters:
         text: >
           «Come uno che aspetta un'eredità da una settimana. Benissimo, quindi. Grazie per
           l'interesse.»
+        variants:
+          - when: {flag: lettere_lette}
+            text: «Come uno che aspettava un'eredità, e si è trovato una nipotina tra i piedi. Benissimo, grazie.»
       chi_sei:
         text: >
           «Corrado di Valdimora, nipote del conte buonanima. E, salvo sorprese, il prossimo padrone
           di tutto questo.»
+        variants:
+          - when: {flag: lettere_lette}
+            text: >
+              «Corrado di Valdimora, nipote del conte buonanima. Il prossimo padrone di tutto questo,
+              salvo sorprese.» Ti guarda il medaglione. «E le sorprese, a quanto pare, arrivano in
+              corriera.»
       scortesia:
         text: Corrado ride. «Finalmente qualcuno sincero, in questa casa.»
     topics:
@@ -524,6 +573,12 @@ characters:
           «Il castello, le terre, tutto quanto. Il conte non aveva altri eredi che me, e mia zia,
           pace all'anima sua, si è solo presa il suo tempo. Chiedete a Livia, se non mi credete: il
           notaio lo aspetta lei.»
+        variants:
+          - when: {flag: lettere_lette}
+            text: >
+              «L'eredità?» Corrado ride, ma gli riesce male. «Fino a stasera era tutta mia. Ora c'è una
+              nipotina col medaglione, e un notaio che non arriva. Vedremo chi la spunta.»
+            again: «Vedremo, signorina. Vedremo.»
         again: «Tutto a me, ve l'ho detto. Mettetevi il cuore in pace.»
       contessa:
         name: contessa

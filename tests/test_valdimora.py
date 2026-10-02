@@ -1170,3 +1170,56 @@ def test_the_medallion_fits_the_star_slot_of_the_doll_s_house(valdimora):
 def test_the_clothes_are_examined_where_they_are(valdimora, room, flags, expected):
     # In the coach house and in Clara's room «esamina i vestiti» found only Livia's wardrobe, upstairs.
     assert expected in in_act_three(valdimora, room, *flags).turn("esamina i vestiti")
+
+
+@pytest.mark.parametrize(
+    ("room", "flags", "line", "expected", "stale"),
+    [
+        ("camera_livia", ("livia_confessa",), "chiedi a Livia della contessa", "mai una parola su Clara",
+         "con gli estranei"),
+        ("camera_livia", ("livia_confessa",), "chiedi a Livia di Ettore", "la favola siete voi", "crede ancora"),
+        ("camera_livia", (), "chiedi a Livia delle chiavi", "Quassù non mi serve", "passa da me"),
+        ("camera_livia", ("livia_confessa",), "chiedi a Livia delle chiavi", "L'unica che contava", "passa da me"),
+        ("camera_livia", ("livia_chiave", "livia_confessa"), "come state, Livia?", "taciuto per trent'anni",
+         "chiave dello scalone"),
+        ("camera_livia", ("livia_confessa",), "grazie, Livia", "trent'anni fa", "il mio dovere"),
+        ("camera_livia", ("livia_confessa",), "scusate, Livia", "Non siete voi", "non riaprono le porte"),
+        ("camera_livia", ("livia_confessa",), "arrivederci, Livia", "chiudete piano la porta", "non toccate"),
+        ("camera_livia", (), "chiedi a Livia del campanello", "Ci penso da quando", "si alza e guarda il cordone"),
+        ("cucina", ("ritratto_scoperto", "lettere_lette"), "chiedi a Ettore del ritratto", "Vostra madre",
+         "Il resto la contessa"),
+        ("cucina", ("ritratto_scoperto", "carillon_suonato"), "chiedi a Ettore del carillon", "fin dalla galleria",
+         "fin qui"),
+        ("archivio", ("lettere_lette",), "chiedi a Corrado dell'eredità", "Vedremo chi la spunta",
+         "altri eredi che me"),
+        ("archivio", ("lettere_lette",), "come state, Corrado?", "una nipotina tra i piedi", "da una settimana"),
+        ("archivio", ("lettere_lette",), "chi siete, Corrado?", "arrivano in corriera", "E, salvo sorprese"),
+    ],
+)  # fmt: skip
+def test_what_the_characters_say_follows_the_third_act(valdimora, room, flags, line, expected, stale):
+    # Livia after her confession, Ettore and Corrado after the letters, Livia and Ettore away from the
+    # rooms of the second act.
+    answer = in_act_three(valdimora, room, *flags).turn(line)
+
+    assert expected in answer
+    assert stale not in answer
+
+
+def test_after_her_confession_livia_asks_to_be_left_alone(valdimora):
+    game = in_act_three(valdimora, "camera_livia", "livia_confessa")
+
+    assert "Vi ho detto tutto" in game.turn("parla con Livia")
+    assert "Vi prego" in game.turn("parla con Livia")
+
+
+@pytest.mark.parametrize(
+    ("room", "flags", "line", "expected"),
+    [
+        ("camera_contessa", (), "chiedi a Livia del campanello", "si alza e guarda il cordone"),
+        ("galleria", ("ritratto_scoperto", "carillon_suonato"), "chiedi a Ettore del carillon", "L'ho sentito fin qui"),
+        ("galleria", ("ritratto_scoperto",), "chiedi a Ettore del ritratto", "Il resto la contessa"),
+        ("studio_conte", (), "chiedi a Corrado dell'eredità", "altri eredi che me"),
+    ],
+)  # fmt: skip
+def test_in_the_second_act_they_still_say_what_they_said(valdimora, room, flags, line, expected):
+    assert expected in in_act_two(valdimora, room, *flags).turn(line)

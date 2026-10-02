@@ -504,7 +504,7 @@ VALDIMORA_CASES = [
     ("atrio", (), ("atto_due",), "vado su per lo scalone", lambda a, g: g.state.current_room == "loggia"),
     # The minors of act 2's final review: a topic named by a common noun, common words and words of things here.
     ("galleria", (), ("atto_due", "ritratto_scoperto"), "Ettore, chi è questa ragazza?",
-     says(ETTORE.topics["ritratto"].variants[0].text)),
+     says(next(v.text for v in ETTORE.topics["ritratto"].variants if v.when == FlagSet(flag="ritratto_scoperto")))),
     ("galleria", (), ("atto_due",), "ho sete", lambda a, g: "Non vedi" not in a),
     ("boudoir", (), ("atto_due", "livia_permette"), "accarezzo i velluti", lambda a, g: "Non vedi" not in a),
     # A glance from the balcony is no jump into the valley.
