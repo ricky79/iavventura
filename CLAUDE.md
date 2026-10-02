@@ -449,6 +449,33 @@ tests/
     (Livia dopo la confessione, Corrado sull'eredità dopo le lettere, Agnese che si offre di
     scendere quando è già di sotto), «tetto» e «pioggia» nella stanza dell'orologio, gli alias
     «casa», «appunti», «vestiti».
+- **Minori dell'atto 3** (2026-10-01, branch `feature/valdimora-atto-3-minori`; piano in
+  `docs/superpowers/plans/2026-10-01-valdimora-atto-3-minori.md`):
+  - **Alias nascosti al modello** (`hidden_aliases` sugli oggetti, formato in
+    `docs/formato-mondo.md`): il parser, i controlli sulle risposte del modello e «Non vedi niente
+    del genere qui.» li riconoscono come gli alias, ma il modello non li vede. Ogni nome in più
+    nell'elenco degli oggetti cambia le risposte del modello anche alle altre frasi della stanza:
+    un alias in più sulla casa delle bambole, o «vestiti» sul baule, faceva diventare «inventario»
+    «infilo il medaglione nel tetto della casa delle bambole». Un nome che serve solo perché il
+    parser riconosca una parola delle descrizioni va lì.
+  - Il tetto visto dalla stanza dell'orologio è un arredo (`tetto_visto`, anche pioggia e vento), e
+    saltarci sopra è un indizio; altrove «tetto» è un alias nascosto di ciò che c'è (travi, tegola
+    rotta, tempesta, casa delle bambole). La casa delle bambole ha anche «incavo» («usa il
+    medaglione con l'incavo» rispondeva «Non vedi niente del genere qui.»: era della meridiana e
+    del ritratto), la valigia e il baule «vestiti» (erano solo l'armadio di Livia). «caso»,
+    «causa», «appunto» e «vestita» sono parole comuni: non nominano più la casa delle bambole, il
+    quaderno e l'armadio.
+  - I testi che invecchiano andando avanti nell'atto: Livia dopo la confessione, Ettore e Corrado
+    dopo le lettere, Livia ed Ettore lontani dalle stanze dell'atto 2, Agnese di sotto che non si
+    offre più di scendere e, in rimessa, va in cucina per la tisana. Due argomenti nuovi di Agnese:
+    la tazza di tisana (solo in cucina; poi il suo saluto ed Ettore sanno che l'hai bevuta, flag
+    `tisana_bevuta`) e la tanica (con lei in cucina o la tanica in mano, senza effetti: prima
+    rispondeva «Non saprei»). Gli effetti di un argomento valgono per l'argomento intero: per un
+    effetto che vale in un posto solo serve un argomento a parte, con un `when` che escluda l'altro
+    (gli alias possono essere gli stessi, i nomi no).
+  - Limiti accettati: nello stenditoio e nel cortile «esamina il tetto» risponde «Non vedi niente
+    del genere qui.» (è il tetto visto dalla stanza dell'orologio); «Agnese, mi date la tisana?» è
+    un «dai» senza oggetto, come prima.
 
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.
@@ -501,10 +528,10 @@ ollama pull qwen2.5:3b
     (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
     sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
     invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
-    `tests/test_ollama.py` (oggi 172 su 179, ~1780 s: i 36 casi di prima, gli 8 dei pericoli, i 17
-    del primo atto di Valdimora, le 20 frasi dei dialoghi e le 24 del terzo atto tutti, 28 delle 29
-    frasi del secondo atto e 39 delle 45 frasi trovate giocando; le altre 7 sono limiti noti, e
-    «infilo il medaglione nella cornice» a volte passa).
+    `tests/test_ollama.py` (oggi 179 su 186, ~1770 s: i 36 casi di prima, gli 8 dei pericoli, i 17
+    del primo atto di Valdimora, le 20 frasi dei dialoghi, le 24 del terzo atto e le 7 dei suoi
+    minori tutti, 28 delle 29 frasi del secondo atto e 39 delle 45 frasi trovate giocando; le altre
+    7 sono limiti noti, e «infilo il medaglione nella cornice» a volte passa).
   - Il modello non è del tutto deterministico: con lo stesso prompt e `temperature: 0`, 2 o 3 frasi
     su 70 cambiano risposta da un giro all'altro (la cache di Ollama?). Un caso che passa una volta
     sola non dimostra niente.

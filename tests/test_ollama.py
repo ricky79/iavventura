@@ -560,6 +560,19 @@ VALDIMORA_CASES = [
     ("cucina", (), ACT_THREE, "Ettore, dove trovo una lanterna?", says(ETTORE.topics["lanterna"].text)),
     ("archivio", (), (*ACT_THREE, "lettere_lette"), "che cosa sapete di mia madre, Corrado?",
      says(VALDIMORA.characters["corrado"].topics["clara"].text)),
+    # The minors of act 3: the roof seen from the clock room, the star slot of the doll's house, the tea.
+    ("stanza_orologio", (), ACT_THREE, "do un'occhiata al tetto", says(VALDIMORA.items["tetto_visto"].description)),
+    ("stanza_orologio", (), ACT_THREE, "guardo la pioggia sul tetto", says(VALDIMORA.items["tetto_visto"].description)),
+    ("stanza_orologio", (), ACT_THREE, "mi arrampico sul tetto", lambda a, g: not g.finished),
+    ("soffittone", (), ACT_THREE, "guardo il tetto", lambda a, g: "Non vedi" not in a and not g.finished),
+    ("camera_clara", (), (*ACT_THREE, "camera_clara_aperta"), "uso il medaglione con l'incavo della casetta",
+     lambda a, g: g.state.item_locations["chiave_cantina"] == "inventory"
+     or g.pending == Action(verb="usa", target="medaglione", with_="casa_bambole")),
+    ("camera_clara", (), (*ACT_THREE, "camera_clara_aperta"), "metto il medaglione nell'incavo",
+     lambda a, g: g.state.item_locations["chiave_cantina"] == "inventory"
+     or g.pending == Action(verb="usa", target="medaglione", with_="casa_bambole")),
+    ("cucina", (), (*ACT_THREE, "agnese_in_cucina"), "Agnese, mi preparate una camomilla?",
+     lambda a, g: "tisana_bevuta" in g.state.flags),
 ]  # fmt: skip
 
 
