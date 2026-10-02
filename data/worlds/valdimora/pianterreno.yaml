@@ -183,6 +183,7 @@ items:
     name: valigia
     gender: f
     aliases: [bagaglio]
+    hidden_aliases: [vestiti]
     description: La tua valigia di cartone, ancora bagnata di pioggia.
     location: rimessa
     scenery: true

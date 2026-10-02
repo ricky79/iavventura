@@ -1119,3 +1119,54 @@ def test_ettore_s_hint_on_the_lantern_follows_it(valdimora, flags, carried, expe
 
     assert expected in answer
     assert "nel sottotetto" not in answer
+
+
+# --- The minors of act 3 ---------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("room", "flags", "thing", "expected"),
+    [
+        ("stanza_orologio", (), "il tetto", "Dal lucernario vedi il tetto"),
+        ("stanza_orologio", (), "la pioggia", "Dal lucernario vedi il tetto"),
+        ("stanza_orologio", (), "il vento", "Dal lucernario vedi il tetto"),
+        ("soffittone", (), "il tetto", "Travi di castagno"),
+        ("sottotetto", ("asse_posata",), "il tetto", "Una tegola spezzata"),
+        ("tetto", ("corda_legata",), "il tetto", "Pioggia e vento"),
+        ("camera_clara", (), "il tetto", "incavo a forma di stella"),
+    ],
+)  # fmt: skip
+def test_the_roof_can_be_examined_where_it_is_described(valdimora, room, flags, thing, expected):
+    # «fuori, il tetto è lucido di pioggia»: «esamina il tetto» wasn't understood, the rain was elsewhere.
+    assert expected in in_act_three(valdimora, room, *flags).turn(f"esamina {thing}")
+
+
+def test_jumping_on_the_roof_from_the_clock_room_is_a_hint(valdimora):
+    game = in_act_three(valdimora, "stanza_orologio")
+    tied = in_act_three(valdimora, "stanza_orologio", "corda_legata")
+
+    assert "Ci si sale dal lucernario" in game.turn("salta sul tetto")
+    assert not game.state.finished and game.state.current_room == "stanza_orologio"
+    assert "La tua corda pende fin lassù" in tied.turn("esamina il tetto")
+    assert "Sali, e tieniti a lei" in tied.turn("salta sul tetto")
+
+
+def test_the_medallion_fits_the_star_slot_of_the_doll_s_house(valdimora):
+    # «c'è un incavo a forma di stella»: «incavo» named only the sundial and the portrait, elsewhere.
+    game = in_act_three(valdimora, "camera_clara", "camera_clara_aperta")
+
+    assert "Con uno scatto il tetto si solleva" in game.turn("usa il medaglione con l'incavo")
+    assert game.state.item_locations["chiave_cantina"] == "inventory"
+
+
+@pytest.mark.parametrize(
+    ("room", "flags", "expected"),
+    [
+        ("rimessa", ("valigia_aperta",), "solo i tuoi vestiti"),
+        ("camera_clara", ("baule_aperto",), "vestiti da ragazza"),
+        ("camera_livia", (), "Tre vestiti grigi"),
+    ],
+)  # fmt: skip
+def test_the_clothes_are_examined_where_they_are(valdimora, room, flags, expected):
+    # In the coach house and in Clara's room «esamina i vestiti» found only Livia's wardrobe, upstairs.
+    assert expected in in_act_three(valdimora, room, *flags).turn("esamina i vestiti")

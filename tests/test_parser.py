@@ -553,6 +553,10 @@ def test_a_sentence_that_does_not_name_a_thing(world, text, item_id):
         ("mi fermo un attimo", "ferro"),
         ("mille grazie", "miele"),
         ("non ne vale la pena", "valle"),
+        ("per caso", "casa"),  # the doll's house of Valdimora
+        ("a causa della frana", "casa"),
+        ("appunto, ve l'avevo detto", "appunti"),  # Agnese's notebook
+        ("siete vestita di grigio", "vestiti"),  # Livia's wardrobe
     ],
 )
 def test_a_common_word_is_no_typo_for_a_name(world_data, text, alias):
@@ -568,6 +572,17 @@ def test_a_common_word_still_names_a_thing_called_so(world_data):
     key = World.model_validate(world_data).items["chiave"]
 
     assert is_named(key, words_of("mi siedo sul letto"))
+
+
+@pytest.mark.parametrize(
+    ("text", "alias"), [("esamina la casa", "casa"), ("leggo gli appunti", "appunti"), ("guardo il vestito", "vestiti")]
+)
+def test_a_name_said_whole_still_names_its_thing(world_data, text, alias):
+    # «caso», «causa», «appunto», «vestita» are common words; the names themselves still name.
+    world_data["items"]["chiave"]["aliases"] = [alias]
+    key = World.model_validate(world_data).items["chiave"]
+
+    assert is_named(key, words_of(text))
 
 
 def test_rooms_are_named_like_items(world_data):
