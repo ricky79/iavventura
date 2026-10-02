@@ -207,7 +207,7 @@ def test_the_sleeping_doctor_only_snores(valdimora):
 
 def test_no_character_gives_a_shortcut(valdimora):
     # Only Ettore's word for Livia and the key of the sideboard come from talking; Agnese's errands, in the
-    # third act, only send her downstairs.
+    # third act, only send her downstairs, and the tea she gives there only changes what she says.
     effects = {
         (character.id, topic.id): topic.effects
         for character in valdimora.characters.values()
@@ -215,10 +215,13 @@ def test_no_character_gives_a_shortcut(valdimora):
         if topic.effects
     }
 
-    assert set(effects) == {("ettore", "livia"), ("ettore", "credenza"), ("agnese", "petrolio"), ("agnese", "tisana")}
-    assert [*effects["agnese", "petrolio"], *effects["agnese", "tisana"]] == [
+    assert set(effects) == {
+        ("ettore", "livia"), ("ettore", "credenza"), ("agnese", "petrolio"), ("agnese", "tisana"), ("agnese", "tazza")
+    }  # fmt: skip
+    assert [*effects["agnese", "petrolio"], *effects["agnese", "tisana"], *effects["agnese", "tazza"]] == [
         SetFlag(set_flag="agnese_in_rimessa"),
         SetFlag(set_flag="agnese_in_cucina"),
+        SetFlag(set_flag="tisana_bevuta"),
     ]
 
 
@@ -1223,3 +1226,45 @@ def test_after_her_confession_livia_asks_to_be_left_alone(valdimora):
 )  # fmt: skip
 def test_in_the_second_act_they_still_say_what_they_said(valdimora, room, flags, line, expected):
     assert expected in in_act_two(valdimora, room, *flags).turn(line)
+
+
+def test_after_the_tea_agnese_no_longer_says_it_is_almost_ready(valdimora):
+    game = in_act_three(valdimora, "cucina", "agnese_in_cucina")
+
+    assert "bella calda" in game.turn("chiedi ad Agnese della tisana")
+    assert "Vi ha scaldata" in game.turn("parla con Agnese")
+    assert "Un'altra tazza?" in game.turn("chiedi ad Agnese della tisana")
+    assert "Vi ha fatto la tisana" in game.turn("chiedi a Ettore di Agnese")
+
+
+def test_from_the_coach_house_agnese_goes_to_the_kitchen_for_the_tea(valdimora):
+    game = in_act_three(valdimora, "rimessa", "agnese_in_rimessa")
+
+    answer = game.turn("chiedi ad Agnese della tisana")
+
+    assert "verso la cucina" in answer and "scende" not in answer
+    assert game.engine.character_room(valdimora.characters["agnese"], game.state) == "cucina"
+
+
+@pytest.mark.parametrize(
+    ("room", "flags", "carried", "line", "expected"),
+    [
+        ("cucina", ("agnese_in_cucina",), (), "chiedi ad Agnese di aiuto", "la tisana è sul fuoco"),
+        ("rimessa", ("agnese_in_rimessa",), (), "chiedi ad Agnese di aiuto", "vado in cucina"),
+        ("cucina", ("agnese_in_cucina",), (), "chiedi ad Agnese del petrolio", "accanto al muro"),
+        ("rimessa", ("agnese_in_rimessa",), ("tanica",), "chiedi ad Agnese del petrolio", "L'avete presa voi"),
+    ],
+)  # fmt: skip
+def test_downstairs_agnese_no_longer_offers_to_go_down(valdimora, room, flags, carried, line, expected):
+    answer = in_act_three(valdimora, room, *flags, carried=carried).turn(line)
+
+    assert expected in answer
+    assert "Le scale le conosco" not in answer
+    assert "Non saprei" not in answer
+
+
+def test_with_the_oil_can_in_hand_agnese_stays_upstairs(valdimora):
+    game = in_act_three(valdimora, "corridoio_servitu", carried=("tanica",))
+
+    assert "L'avete presa voi" in game.turn("chiedi ad Agnese del petrolio")
+    assert game.engine.character_room(valdimora.characters["agnese"], game.state) == "corridoio_servitu"

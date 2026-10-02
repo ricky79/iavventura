@@ -192,6 +192,8 @@ characters:
           «La dama di compagnia della contessa. Le leggeva i romanzi, le dava le medicine. Da quando
           è morta non si stacca da lei, in cappella.»
         variants:
+          - when: {flag: tisana_bevuta}
+            text: "«È qui con noi, davanti al focolare. Vi ha fatto la tisana, vedo: una ragazza servizievole.»"
           - when: {flag: agnese_in_cucina}
             text: «È qui con noi, signorina, davanti al focolare. Dice che vi prepara una tisana.»
           - when: {flag: agnese_in_rimessa}
@@ -836,6 +838,9 @@ characters:
       Genova. La contessa parlava di una visita… Se vi serve qualcosa, qualunque cosa, chiedete a
       me.»
     greeting_variants:
+      - when: {flag: tisana_bevuta}
+        text: Agnese è davanti al focolare, e sciacqua la tua tazza. «Vi ha scaldata, la tisana? Se vi serve altro, sono qui.»
+        again: «Vi aspetto qui, signorina, se vi serve altro.»
       - when: {flag: agnese_in_cucina}
         text: >
           Agnese è in cucina, davanti al focolare, e versa l'acqua bollente in una tazza. «Eccovi,
@@ -935,6 +940,14 @@ characters:
         aliases: [aiutare, serve]
         text: «Qualunque cosa. La contessa avrebbe voluto così.»
         variants:
+          - when: {flag: agnese_in_cucina}
+            text: >
+              «Ci sono io, signorina: la tisana è sul fuoco. Il petrolio è in rimessa, ma la tanica per
+              me è troppo pesante.»
+          - when: {flag: agnese_in_rimessa}
+            text: >
+              «La tanica è lì, accanto al muro. E se volete qualcosa di caldo, vado in cucina e vi
+              preparo una tisana.»
           - when: {flag: atto_tre}
             text: >
               «Se vi serve qualcosa di sotto, chiedete a me: il petrolio per una lanterna, una tisana
@@ -953,21 +966,44 @@ characters:
         variants:
           - when: {player_in: rimessa}
             text: «La tanica è lì, signorina, accanto al muro. Prendetela pure, per me è troppo pesante.»
+      # Once she is in the kitchen, or the oil can is in hand: the same question, and Agnese stays.
+      tanica:
+        name: tanica
+        gender: f
+        aliases: [petrolio, tanica di petrolio]
+        when: {all: [{flag: atto_tre}, {any: [{has: tanica}, {flag: agnese_in_cucina}]}]}
+        text: «La tanica è in rimessa, signorina, accanto al muro. Per me è troppo pesante, ma voi ce la fate.»
+        variants:
+          - when: {has: tanica}
+            text: «L'avete presa voi, la tanica? Brava. Pesa, eh?»
       tisana:
         name: tisana
         gender: f
         aliases: [camomilla, infuso, qualcosa di caldo, tazza]
-        when: {flag: atto_tre}
+        when: {all: [{flag: atto_tre}, {not: {flag: agnese_in_cucina}}]}
         effects:
           - set_flag: agnese_in_cucina
         text: >
           «Una tisana? Ma certo, signorina: vado in cucina e ve la preparo. Vi aspetto là, al caldo.»
           Agnese prende la candela e scende.
         variants:
-          - when: {player_in: cucina}
+          - when: {player_in: rimessa}
             text: >
-              «Eccola, bella calda.» Agnese ti porge una tazza fumante, e tu la bevi a piccoli sorsi.
-              Sa di camomilla e di miele. «Vi aspetto qui, se vi serve altro.»
+              «Una tisana? Ma certo, signorina: vado in cucina e ve la preparo. Vi aspetto là, al caldo.»
+              Agnese si pulisce le mani nel grembiule ed esce, verso la cucina.
+      # In the kitchen: the tea is ready, and from then on her greeting knows it.
+      tazza:
+        name: tazza di tisana
+        gender: f
+        aliases: [tisana, camomilla, infuso, qualcosa di caldo, tazza]
+        when: {flag: agnese_in_cucina}
+        effects:
+          - set_flag: tisana_bevuta
+        text: >
+          «Eccola, bella calda.» Agnese ti porge una tazza fumante, e tu la bevi a piccoli sorsi. Sa di
+          camomilla e di miele. «Vi aspetto qui, se vi serve altro.»
+        again: >
+          «Un'altra tazza?» Agnese te ne versa ancora. «Bevete, signorina: vi scalda.»
       camera:
         name: camera
         gender: f
