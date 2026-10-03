@@ -473,9 +473,18 @@ tests/
     rispondeva «Non saprei»). Gli effetti di un argomento valgono per l'argomento intero: per un
     effetto che vale in un posto solo serve un argomento a parte, con un `when` che escluda l'altro
     (gli alias possono essere gli stessi, i nomi no).
+  - Dalla revisione finale: «tetro», «tento», «testo» sono parole comuni (col tetto nuovo «che
+    posto tetro!» rispondeva «Non vedi niente del genere qui.» ovunque); una domanda non capita che
+    due personaggi presenti sanno va a quello nominato, altrimenti «A chi?» («dove trovo il
+    petrolio?» in cucina con Ettore e Agnese); Agnese non promette la tisana già bevuta né il
+    petrolio già preso, e Corrado nell'archivio parla dello studio come di un altro posto; la corda
+    si lega anche «al tetto». Lasciati: «(salta nel tetto)» (i salti hanno sempre «in»), due
+    ritocchi di testo («farlo trent'anni fa» di Livia, la corda che «pende fin lassù»); le partite
+    salvate nel terzo atto ricominciano (c'è un oggetto nuovo).
   - Limiti accettati: nello stenditoio e nel cortile «esamina il tetto» risponde «Non vedi niente
     del genere qui.» (è il tetto visto dalla stanza dell'orologio); «Agnese, mi date la tisana?» è
-    un «dai» senza oggetto, come prima.
+    un «dai» senza oggetto, come prima; «lego la corda al tetto» non è capita (il modello risponde
+    «leggi la trave con la corda», e la frase non nomina la trave; così anche su main).
 
 ## Decisioni ancora aperte
 - Mostrare oggetti ai personaggi («mostra X a Y»): per ora nessun enigma lo chiede.
@@ -528,10 +537,10 @@ ollama pull qwen2.5:3b
     (in fondo o dentro il blocco di esempi) "vado nella cantina" va a ovest: da qui la conferma
     sugli spostamenti non nominati. Mettere la chiave in vista nell'enum, senza l'esempio, rompeva
     invece "cala il rampino giù nel pozzo". Ogni modifica al prompt va verificata su tutto
-    `tests/test_ollama.py` (oggi 179 su 186, ~1770 s: i 36 casi di prima, gli 8 dei pericoli, i 17
-    del primo atto di Valdimora, le 20 frasi dei dialoghi, le 24 del terzo atto e le 7 dei suoi
-    minori tutti, 28 delle 29 frasi del secondo atto e 39 delle 45 frasi trovate giocando; le altre
-    7 sono limiti noti, e «infilo il medaglione nella cornice» a volte passa).
+    `tests/test_ollama.py` (oggi 183 su 191, ~2040 s: i 36 casi di prima, gli 8 dei pericoli, i 17
+    del primo atto di Valdimora, le 20 frasi dei dialoghi e le 24 del terzo atto tutti, 11 delle 12
+    dei suoi minori, 28 delle 29 frasi del secondo atto e 39 delle 45 frasi trovate giocando; le
+    altre 8 sono limiti noti, e «infilo il medaglione nella cornice» a volte passa).
   - Il modello non è del tutto deterministico: con lo stesso prompt e `temperature: 0`, 2 o 3 frasi
     su 70 cambiano risposta da un giro all'altro (la cache di Ollama?). Un caso che passa una volta
     sola non dimostra niente.

@@ -390,6 +390,8 @@ KNOWN_LIMITS = {
         "unstable: the model answers 'inventario' (the game shows the inventory) or 'prendi il medaglione' "
         "(the game asks 'Vuoi usare il medaglione con il ritratto?')"
     ),
+    # Found with the minors of the third act (2026-10-02): the same on main.
+    "lego la corda al tetto": "the model answers 'leggi la trave con la corda': the sentence names no beam",
 }
 
 
@@ -573,6 +575,18 @@ VALDIMORA_CASES = [
      or g.pending == Action(verb="usa", target="medaglione", with_="casa_bambole")),
     ("cucina", (), (*ACT_THREE, "agnese_in_cucina"), "Agnese, mi preparate una camomilla?",
      lambda a, g: "tisana_bevuta" in g.state.flags),
+    # From their final review: the kitchen with Agnese, the oil can in hand upstairs, the rope «al tetto».
+    ("cucina", ("lanterna",), (*ACT_THREE, "lanterna_piena", "agnese_in_cucina"), "accendo la lanterna con un fiammifero",
+     lambda a, g: "lanterna_accesa" in g.state.flags
+     or g.pending == Action(verb="usa", target="lanterna", with_="fiammiferi")),
+    ("cucina", ("lanterna", "chiave_cantina"), (*ACT_THREE, "lanterna_piena", "lanterna_accesa", "agnese_in_cucina"),
+     "uso la chiave della cantina sulla porta", lambda a, g: "atto_quattro" in g.state.flags),
+    ("cucina", (), (*ACT_THREE, "agnese_in_cucina"), "dove trovo il petrolio?", lambda a, g: "Non vedi" not in a),
+    ("corridoio_servitu", ("tanica",), ACT_THREE, "potresti andare a prendermi del petrolio?",
+     lambda a, g: "agnese_in_rimessa" not in g.state.flags),
+    ("stanza_orologio", ("corda",), ACT_THREE, "lego la corda al tetto",
+     lambda a, g: "corda_legata" in g.state.flags
+     or g.pending in [Action(verb="usa", target="corda", with_=other) for other in ("lucernario", "trave_lucernario", "tetto_visto")]),
 ]  # fmt: skip
 
 
