@@ -1268,3 +1268,45 @@ def test_with_the_oil_can_in_hand_agnese_stays_upstairs(valdimora):
 
     assert "L'avete presa voi" in game.turn("chiedi ad Agnese del petrolio")
     assert game.engine.character_room(valdimora.characters["agnese"], game.state) == "corridoio_servitu"
+
+
+# --- Found by the final review of the minors of act 3 ----------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("room", "flags", "carried", "expected", "stale"),
+    [
+        ("cucina", ("agnese_in_cucina", "tisana_bevuta"), (), "un'altra tazza", "sul fuoco"),
+        ("cucina", ("agnese_in_cucina",), ("tanica",), "ce l'avete già", "in rimessa"),
+        ("cucina", ("agnese_in_cucina", "lanterna_piena"), (), "ce l'avete già", "in rimessa"),
+        ("rimessa", ("agnese_in_rimessa",), ("tanica",), "ce l'avete già", "accanto al muro"),
+    ],
+)  # fmt: skip
+def test_agnese_s_offer_of_help_follows_what_is_done(valdimora, room, flags, carried, expected, stale):
+    answer = in_act_three(valdimora, room, *flags, carried=carried).turn("chiedi ad Agnese di aiuto")
+
+    assert expected in answer
+    assert stale not in answer
+
+
+def test_with_the_lantern_full_agnese_no_longer_sends_for_the_oil(valdimora):
+    answer = in_act_three(valdimora, "cucina", "agnese_in_cucina", "lanterna_piena").turn("chiedi ad Agnese del petrolio")
+
+    assert "già piena" in answer
+    assert "in rimessa" not in answer
+
+
+def test_in_the_archive_corrado_speaks_of_the_study_as_elsewhere(valdimora):
+    upstairs = in_act_three(valdimora, "archivio").turn("chiedi a Corrado dello studio")
+    in_the_study = in_act_two(valdimora, "studio_conte").turn("chiedi a Corrado dello studio")
+
+    assert "lì dentro" in upstairs and "qui dentro" not in upstairs
+    assert "qui dentro" in in_the_study
+
+
+def test_the_rope_is_tied_also_naming_the_roof(valdimora):
+    # «lego la corda al tetto»: the model has the roof in its list now, and asked about it led nowhere.
+    game = in_act_three(valdimora, "stanza_orologio", carried=("corda",))
+
+    assert "qualcosa ti tiene" in game.turn("usa la corda con il tetto")
+    assert "corda_legata" in game.state.flags

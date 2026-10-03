@@ -557,6 +557,9 @@ def test_a_sentence_that_does_not_name_a_thing(world, text, item_id):
         ("a causa della frana", "casa"),
         ("appunto, ve l'avevo detto", "appunti"),  # Agnese's notebook
         ("siete vestita di grigio", "vestiti"),  # Livia's wardrobe
+        ("che posto tetro", "tetto"),  # the roof seen from the clock room, everywhere in Valdimora
+        ("tento la fortuna", "tetto"),
+        ("il testo è illeggibile", "tetto"),
     ],
 )
 def test_a_common_word_is_no_typo_for_a_name(world_data, text, alias):

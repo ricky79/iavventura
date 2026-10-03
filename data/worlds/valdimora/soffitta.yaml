@@ -792,6 +792,7 @@ rules:
       - {verb: usa, target: corda, with: lucernario}
       - {verb: usa, target: corda, with: trave_lucernario}
       - {verb: usa, target: corda, with: meccanismo}
+      - {verb: usa, target: corda, with: tetto_visto}
     effects:
       - remove: corda
       - place: {item: corda_legata, room: stanza_orologio}

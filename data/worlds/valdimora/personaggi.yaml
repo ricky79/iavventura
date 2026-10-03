@@ -646,6 +646,12 @@ characters:
         text: >
           «Lo studio di mio zio Ruggero. È morto nel '15, e da allora qui dentro non ha comandato più
           nessuno.» Si accende una sigaretta. «Fino a me.»
+        variants:
+          - when: {flag: atto_tre}
+            text: >
+              «Lo studio di mio zio Ruggero, giù al piano nobile. È morto nel '15, e da allora lì dentro
+              non ha comandato più nessuno.» Soffia via la polvere da un faldone. «Fino a me.»
+            again: «Il mio studio, signorina. Quasi.»
         again: «Il mio studio, signorina. Quasi.»
       cambiali:
         name: cambiali
@@ -940,6 +946,10 @@ characters:
         aliases: [aiutare, serve]
         text: «Qualunque cosa. La contessa avrebbe voluto così.»
         variants:
+          - when: {flag: tisana_bevuta}
+            text: «Se volete un'altra tazza, ve la verso subito, signorina. Per il resto, chiedete pure.»
+          - when: {any: [{has: tanica}, {flag: lanterna_piena}]}
+            text: «Il petrolio ce l'avete già, vedo. Se vi serve una tisana calda, chiedete pure a me.»
           - when: {flag: agnese_in_cucina}
             text: >
               «Ci sono io, signorina: la tisana è sul fuoco. Il petrolio è in rimessa, ma la tanica per
@@ -974,6 +984,8 @@ characters:
         when: {all: [{flag: atto_tre}, {any: [{has: tanica}, {flag: agnese_in_cucina}]}]}
         text: «La tanica è in rimessa, signorina, accanto al muro. Per me è troppo pesante, ma voi ce la fate.»
         variants:
+          - when: {flag: lanterna_piena}
+            text: "«La lanterna è già piena, signorina: il petrolio non vi serve più.»"
           - when: {has: tanica}
             text: «L'avete presa voi, la tanica? Brava. Pesa, eh?»
       tisana:
