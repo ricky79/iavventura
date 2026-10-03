@@ -116,6 +116,7 @@ items:
     plural: false                # facoltativo: true per nomi plurali (attrezzi, chiavi)
     article: definite            # facoltativo: definite (sempre l'articolo determinativo) o none (nessun articolo)
     aliases: [gancio, uncino]    # altri nomi; possono coincidere con quelli di altri oggetti
+    hidden_aliases: []           # facoltativo: altri nomi che il modello non vede (vedi sotto)
     description: Testo mostrato quando lo si esamina.
     location: cucina             # una stanza, inventory, oppure null
     scenery: false               # true = arredo: non si prende e non viene elencato
@@ -169,6 +170,15 @@ parola che non c'è riceve "Non ho capito.", e finisce in `logs/comandi.jsonl`. 
 (`COMMON_WORDS` in `app/engine/parser.py`: "sete", "metto", "nostro"…) non sono mai refusi, quindi
 "ho sete" non nomina la "seta". Un alias di una parola sola vicino a una parola comune che non è
 nella lista va evitato, oppure la parola va aggiunta alla lista ("fuori" nominava i "fiori").
+
+**Alias nascosti al modello.** Il modello riceve l'elenco degli oggetti con i loro alias, e ogni nome
+in più cambia le sue risposte anche alle altre frasi della stanza: nella camera di Clara, «incavo»
+sulla casa delle bambole faceva diventare «inventario» la frase «infilo il medaglione nel tetto della
+casa delle bambole». Un nome che serve solo perché il parser e i controlli riconoscano una parola
+delle descrizioni va quindi in `hidden_aliases`: vale come gli alias per il parser, per i controlli
+sulle risposte del modello e per «Non vedi niente del genere qui.», ma il modello non lo vede. Il
+modello non lo sceglierà mai da solo; se però sceglie l'oggetto per un'altra via (la «casetta»), la
+frase che usa il nome nascosto è valida.
 
 ## `rules`
 

@@ -1157,3 +1157,21 @@ def test_riprendi_means_nothing_while_playing_or_after_winning(two_acts):
     assert playing == NOT_UNDERSTOOD  # the fake LLM understands nothing
     assert won == "La partita è finita."
     assert two_acts.state.current_room == "cella"
+
+
+@pytest.mark.parametrize(
+    ("sentence", "expected"),
+    [
+        ("dove trovo il petrolio?", GIVE_TO_WHOM),
+        ("Agnese, dove trovo il petrolio?", "(chiedi ad Agnese della tanica)\n«La tanica è in rimessa"),
+    ],
+)
+def test_a_question_two_people_here_can_answer_goes_to_the_one_named(sentence, expected):
+    # In the kitchen Ettore and Agnese both know about the oil: it was «Non vedi niente del genere qui.» (the can).
+    reply = {"verbo": "chiedi", "bersaglio": "nessuno", "con": "lanterna"}
+    game = Game(Engine(load_world(WORLDS_DIR / "valdimora")), talking(reply))
+    game.state.current_room = "cucina"
+    game.state.flags.update({"atto_due", "busta_data", "atto_tre", "agnese_in_cucina"})
+    game.state.act = 2
+
+    assert say(game, sentence).startswith(expected)

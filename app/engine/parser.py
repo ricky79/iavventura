@@ -50,7 +50,7 @@ COMMON_WORDS = frozenset(
     ancora sempre adesso subito prima dopo forse quasi proprio anche mezzo
     bene male strano strana strani strane bello bella brutto brutta vecchia nuovo nuova grande piccolo piccola
     vero sete fame freddo caldo paura sonno sera seria basta vale pena mille pieno soli certi certe
-    porto porti fermo fermi figlio corre crede parti sogni
+    porto porti fermo fermi figlio corre crede parti sogni caso causa appunto vestita tetro tento testo
     perche quando quanto quale come dove cosa niente nulla
     """.split()
 )
@@ -389,9 +389,14 @@ def is_named(thing: Named | Room, words: Sequence[str]) -> bool:
     return bool(names_said(thing, words))
 
 
+def names_of(thing: Named | Room) -> tuple[str, ...]:
+    """The name and the aliases of the thing, also those the model isn't shown (Item.hidden_aliases)."""
+    return (thing.name, *thing.aliases, *(thing.hidden_aliases if isinstance(thing, Item) else ()))
+
+
 def names_said(thing: Named | Room, words: Sequence[str]) -> list[tuple[str, ...]]:
     """The names and aliases of the thing that the words say (see is_named), as significant words."""
-    names = dict.fromkeys(significant_words(name) for name in (thing.name, *thing.aliases))
+    names = dict.fromkeys(significant_words(name) for name in names_of(thing))
     return [name for name in names if all(any(_nearly(word, name_word) for word in words) for name_word in name)]
 
 
@@ -471,7 +476,7 @@ def _phrases(items: Iterable[Named]) -> _Phrases:
     """Each name and alias as its significant words -> the items it may refer to."""
     phrases: _Phrases = {}
     for item in items:
-        for name in (item.name, *item.aliases):
+        for name in names_of(item):
             for key in {significant_words(name), _marked_words(name)}:
                 if item not in phrases.setdefault(key, []):
                     phrases[key].append(item)

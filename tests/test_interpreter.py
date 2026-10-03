@@ -816,3 +816,14 @@ def test_a_jump_toward_a_room_named_is_a_move(valdimora, sentence, expected):
     exits = [(Direction.NORTH, valdimora.rooms["soffittone"]), (Direction.UP, valdimora.rooms["tetto"])]
 
     assert interpret(FakeLLMClient(json_replies=[reply]), sentence, in_reach, exits) == expected
+
+
+def test_the_model_is_not_shown_the_hidden_aliases_but_they_name_the_item(castle):
+    # Valdimora's doll's house: «incavo» in the list changed the model's answer to another sentence.
+    well = castle.items["pozzo"].model_copy(update={"hidden_aliases": ("buco",)})
+    fake = FakeLLMClient(json_replies=[{"verbo": "esamina", "bersaglio": "pozzo", "con": "nessuno"}])
+
+    action = interpret(fake, "guardo nel buco", [well])
+
+    assert fake.calls[0][1].splitlines()[0] == "Oggetti: pozzo (vera)"
+    assert action == Action(verb="esamina", target="pozzo")

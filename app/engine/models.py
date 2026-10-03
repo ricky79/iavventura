@@ -277,6 +277,9 @@ class Item(_Frozen):
     plural: bool = False
     article: Article | None = None  # a proper name or a title (Article); without it, like a common noun
     aliases: tuple[Text, ...] = ()
+    # Names the parser and the checks on the model's answers know, but the model isn't shown: one name
+    # more in the list of items changes its answers to the other sentences of the room.
+    hidden_aliases: tuple[Text, ...] = ()
     description: Text
     # A room id, INVENTORY, or None when the item enters play only through an effect.
     location: Id | None

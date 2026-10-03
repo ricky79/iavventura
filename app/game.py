@@ -170,6 +170,9 @@ class Game:
                 asked = self._gesture_said(words, characters, here)
             if asked is not None:
                 answer = f"({action_text(asked, self.world)})\n" + self._execute(asked, "llm")
+            elif asking and len(_asked_about(words, characters)) > 1:
+                # «dove trovo il petrolio?» in the kitchen: Ettore and Agnese both know about it.
+                answer = GIVE_TO_WHOM
             else:
                 answer = self._not_understood(interpreted, words, here, len(characters))
             # What the game answered instead, if it isn't the usual: the log is for finding sentences to fix.
@@ -397,10 +400,17 @@ def _is_question(line: str, words: list[str]) -> bool:
     return line.rstrip().endswith("?") or words[0] in _QUESTION_WORDS
 
 
+def _asked_about(words: list[str], characters: list[tuple[Character, list[Topic]]]) -> list[tuple[Character, Topic]]:
+    """Those here with a topic the sentence names, each with it; among several, those it names by name
+    («Agnese, dove trovo il petrolio?»: Ettore knows about the oil too)."""
+    asked = [(person, named[0]) for person, topics in characters if (named := topics_named(person, topics, words))]
+    return [(person, topic) for person, topic in asked if is_named(person, words)] or asked
+
+
 def _topic_asked(words: list[str], characters: list[tuple[Character, list[Topic]]]) -> Action | None:
     """The question about the topic a sentence names ("mi dai il miele?"), if it names a topic of
-    exactly one of the characters here."""
-    asked = [(person, named[0]) for person, topics in characters if (named := topics_named(person, topics, words))]
+    exactly one of the characters here, or of exactly one of those it names."""
+    asked = _asked_about(words, characters)
     if len(asked) != 1:
         return None
     person, topic = asked[0]

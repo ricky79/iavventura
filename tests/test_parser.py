@@ -553,6 +553,13 @@ def test_a_sentence_that_does_not_name_a_thing(world, text, item_id):
         ("mi fermo un attimo", "ferro"),
         ("mille grazie", "miele"),
         ("non ne vale la pena", "valle"),
+        ("per caso", "casa"),  # the doll's house of Valdimora
+        ("a causa della frana", "casa"),
+        ("appunto, ve l'avevo detto", "appunti"),  # Agnese's notebook
+        ("siete vestita di grigio", "vestiti"),  # Livia's wardrobe
+        ("che posto tetro", "tetto"),  # the roof seen from the clock room, everywhere in Valdimora
+        ("tento la fortuna", "tetto"),
+        ("il testo è illeggibile", "tetto"),
     ],
 )
 def test_a_common_word_is_no_typo_for_a_name(world_data, text, alias):
@@ -568,6 +575,17 @@ def test_a_common_word_still_names_a_thing_called_so(world_data):
     key = World.model_validate(world_data).items["chiave"]
 
     assert is_named(key, words_of("mi siedo sul letto"))
+
+
+@pytest.mark.parametrize(
+    ("text", "alias"), [("esamina la casa", "casa"), ("leggo gli appunti", "appunti"), ("guardo il vestito", "vestiti")]
+)
+def test_a_name_said_whole_still_names_its_thing(world_data, text, alias):
+    # «caso», «causa», «appunto», «vestita» are common words; the names themselves still name.
+    world_data["items"]["chiave"]["aliases"] = [alias]
+    key = World.model_validate(world_data).items["chiave"]
+
+    assert is_named(key, words_of(text))
 
 
 def test_rooms_are_named_like_items(world_data):
@@ -587,3 +605,13 @@ def test_handing_over_an_item_is_giving_it(keeper, text):
 def test_holding_an_item_is_left_to_the_llm(keeper):
     # "tieni la corda" may be "take it" or "hold it".
     assert parse_giving(keeper, "tieni la moneta") is None
+
+
+def test_a_hidden_alias_names_the_item_like_the_others(world_data):
+    # Item.hidden_aliases: the parser and the checks on the model's answers know them, the model isn't shown them.
+    world_data["items"]["leva"]["hidden_aliases"] = ["maniglia"]
+    world = World.model_validate(world_data)
+    lever = world.items["leva"]
+
+    assert parse("tira la maniglia", world, [lever]) == Action(verb="tira", target="leva")
+    assert is_named(lever, words_of("tiro la maniglia"))

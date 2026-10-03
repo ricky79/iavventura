@@ -138,6 +138,10 @@ BROKEN_WORLDS = {
         lambda d: d["items"]["moneta"].update(aliases=["soldo", "la"]),
         ["items.moneta.aliases.1", "'la'"],
     ),
+    "hidden alias with no significant word": (
+        lambda d: d["items"]["moneta"].update(hidden_aliases=["la"]),
+        ["items.moneta.hidden_aliases.0", "'la'"],
+    ),
     "room alias with no significant word": (
         lambda d: d["rooms"]["cella"].update(aliases=["su"]),
         ["rooms.cella.aliases.0", "'su'"],

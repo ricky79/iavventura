@@ -390,6 +390,8 @@ KNOWN_LIMITS = {
         "unstable: the model answers 'inventario' (the game shows the inventory) or 'prendi il medaglione' "
         "(the game asks 'Vuoi usare il medaglione con il ritratto?')"
     ),
+    # Found with the minors of the third act (2026-10-02): the same on main.
+    "lego la corda al tetto": "the model answers 'leggi la trave con la corda': the sentence names no beam",
 }
 
 
@@ -504,7 +506,7 @@ VALDIMORA_CASES = [
     ("atrio", (), ("atto_due",), "vado su per lo scalone", lambda a, g: g.state.current_room == "loggia"),
     # The minors of act 2's final review: a topic named by a common noun, common words and words of things here.
     ("galleria", (), ("atto_due", "ritratto_scoperto"), "Ettore, chi è questa ragazza?",
-     says(ETTORE.topics["ritratto"].variants[0].text)),
+     says(next(v.text for v in ETTORE.topics["ritratto"].variants if v.when == FlagSet(flag="ritratto_scoperto")))),
     ("galleria", (), ("atto_due",), "ho sete", lambda a, g: "Non vedi" not in a),
     ("boudoir", (), ("atto_due", "livia_permette"), "accarezzo i velluti", lambda a, g: "Non vedi" not in a),
     # A glance from the balcony is no jump into the valley.
@@ -560,6 +562,31 @@ VALDIMORA_CASES = [
     ("cucina", (), ACT_THREE, "Ettore, dove trovo una lanterna?", says(ETTORE.topics["lanterna"].text)),
     ("archivio", (), (*ACT_THREE, "lettere_lette"), "che cosa sapete di mia madre, Corrado?",
      says(VALDIMORA.characters["corrado"].topics["clara"].text)),
+    # The minors of act 3: the roof seen from the clock room, the star slot of the doll's house, the tea.
+    ("stanza_orologio", (), ACT_THREE, "do un'occhiata al tetto", says(VALDIMORA.items["tetto_visto"].description)),
+    ("stanza_orologio", (), ACT_THREE, "guardo la pioggia sul tetto", says(VALDIMORA.items["tetto_visto"].description)),
+    ("stanza_orologio", (), ACT_THREE, "mi arrampico sul tetto", lambda a, g: not g.finished),
+    ("soffittone", (), ACT_THREE, "guardo il tetto", lambda a, g: "Non vedi" not in a and not g.finished),
+    ("camera_clara", (), (*ACT_THREE, "camera_clara_aperta"), "uso il medaglione con l'incavo della casetta",
+     lambda a, g: g.state.item_locations["chiave_cantina"] == "inventory"
+     or g.pending == Action(verb="usa", target="medaglione", with_="casa_bambole")),
+    ("camera_clara", (), (*ACT_THREE, "camera_clara_aperta"), "metto il medaglione nell'incavo",
+     lambda a, g: g.state.item_locations["chiave_cantina"] == "inventory"
+     or g.pending == Action(verb="usa", target="medaglione", with_="casa_bambole")),
+    ("cucina", (), (*ACT_THREE, "agnese_in_cucina"), "Agnese, mi preparate una camomilla?",
+     lambda a, g: "tisana_bevuta" in g.state.flags),
+    # From their final review: the kitchen with Agnese, the oil can in hand upstairs, the rope «al tetto».
+    ("cucina", ("lanterna",), (*ACT_THREE, "lanterna_piena", "agnese_in_cucina"), "accendo la lanterna con un fiammifero",
+     lambda a, g: "lanterna_accesa" in g.state.flags
+     or g.pending == Action(verb="usa", target="lanterna", with_="fiammiferi")),
+    ("cucina", ("lanterna", "chiave_cantina"), (*ACT_THREE, "lanterna_piena", "lanterna_accesa", "agnese_in_cucina"),
+     "uso la chiave della cantina sulla porta", lambda a, g: "atto_quattro" in g.state.flags),
+    ("cucina", (), (*ACT_THREE, "agnese_in_cucina"), "dove trovo il petrolio?", lambda a, g: "Non vedi" not in a),
+    ("corridoio_servitu", ("tanica",), ACT_THREE, "potresti andare a prendermi del petrolio?",
+     lambda a, g: "agnese_in_rimessa" not in g.state.flags),
+    ("stanza_orologio", ("corda",), ACT_THREE, "lego la corda al tetto",
+     lambda a, g: "corda_legata" in g.state.flags
+     or g.pending in [Action(verb="usa", target="corda", with_=other) for other in ("lucernario", "trave_lucernario", "tetto_visto")]),
 ]  # fmt: skip
 
 

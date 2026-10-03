@@ -354,6 +354,7 @@ items:
     name: baule
     gender: m
     aliases: [baule di Clara, coperchio]
+    hidden_aliases: [vestiti]
     description: Un baule da corredo, col coperchio intarsiato. Non è chiuso a chiave.
     location: camera_clara
     scenery: true
@@ -375,6 +376,7 @@ items:
     name: casa delle bambole
     gender: f
     aliases: [casa, casetta, bambole, comignolo]
+    hidden_aliases: [incavo, tetto]
     description: >
       Una casa delle bambole di legno dipinto, a tre piani, con le finestre vere e le tendine di
       pizzo. Sul tetto, al posto del comignolo, c'è un incavo a forma di stella.
@@ -411,6 +413,7 @@ items:
     gender: f
     plural: true
     aliases: [trave]
+    hidden_aliases: [tetto]
     description: Travi di castagno annerite dal tempo. Ci piove dentro da più di un punto.
     location: soffittone
     scenery: true
@@ -452,6 +455,7 @@ items:
     name: tegola rotta
     gender: f
     aliases: [tegola, spioventi, pioggia]
+    hidden_aliases: [tetto]
     description: Una tegola spezzata. Ci piove dentro, goccia dopo goccia.
     location: sottotetto
     scenery: true
@@ -523,6 +527,19 @@ items:
       - when: {flag: corda_legata}
         text: La trave sotto il lucernario. Ci è legata la tua corda, con un nodo da marinaio.
 
+  tetto_visto:
+    name: tetto
+    gender: m
+    aliases: [pioggia, vento, tegole]
+    description: >
+      Dal lucernario vedi il tetto: tegole lucide di pioggia, ripide come uno scivolo, e oltre la
+      grondaia il vuoto. Uscirci senza niente a cui tenersi sarebbe una follia.
+    location: stanza_orologio
+    scenery: true
+    variants:
+      - when: {flag: corda_legata}
+        text: Dal lucernario vedi il tetto, lucido di pioggia e ripido. La tua corda pende fin lassù.
+
   corda_legata:
     name: corda legata
     gender: f
@@ -535,6 +552,7 @@ items:
     name: tempesta
     gender: f
     aliases: [tegole, colmo, vento, pioggia]
+    hidden_aliases: [tetto]
     description: Pioggia e vento, e sotto di te le tegole lucide che scendono ripide verso il vuoto.
     location: tetto
     scenery: true
@@ -774,6 +792,7 @@ rules:
       - {verb: usa, target: corda, with: lucernario}
       - {verb: usa, target: corda, with: trave_lucernario}
       - {verb: usa, target: corda, with: meccanismo}
+      - {verb: usa, target: corda, with: tetto_visto}
     effects:
       - remove: corda
       - place: {item: corda_legata, room: stanza_orologio}
@@ -781,6 +800,14 @@ rules:
     text: >
       Leghi un capo della corda alla trave sotto il lucernario, con un nodo da marinaio, e lasci
       pendere l'altro fuori, sul tetto. Ora, lassù, qualcosa ti tiene.
+
+  salta_sul_tetto:
+    trigger: {verb: salta, target: tetto_visto}
+    when: {not: {flag: corda_legata}}
+    otherwise: "Non serve saltare: la corda pende dal lucernario. Sali, e tieniti a lei."
+    text: >
+      Saltare, lassù? Il tetto è ripido e lucido di pioggia. Ci si sale dal lucernario, e solo con
+      qualcosa a cui tenersi.
 
   prendi_corda_legata:
     trigger: {verb: prendi, target: corda_legata}
