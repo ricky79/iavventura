@@ -1,0 +1,5361 @@
+{
+  "descrizione": "Le frasi più difficili per l'interprete, trovate giocando e nei test col modello vero (tests/test_ollama.py). Per ogni caso c'è la richiesta esatta del gioco: il prompt di sistema dell'avventura (in «sistema»), il messaggio («utente») e lo schema JSON della risposta. «attese» sono le risposte accettate; con i verbi diversi da vai, chiedi e parla bersaglio e con si possono scambiare, «*» va bene qualunque valore. Col nome di un modello (es. «qwen2.5:3b») la sua risposta grezza, prima dei controlli del gioco sulla frase. Si prova un modello con prova.py.",
+  "opzioni": {
+    "temperature": 0,
+    "num_predict": 60,
+    "num_ctx": 2048
+  },
+  "sistema": {
+    "rocca": "Sei l'interprete di un'avventura testuale. Traduci la frase del giocatore in un'azione.\nVerbi:\n- esamina: guardare, osservare o controllare un oggetto\n- prendi: prendere, raccogliere\n- lascia: posare, mettere giù, buttare\n- usa: usare un oggetto con un altro, legarli, calarne uno in un altro\n- apri, chiudi, spingi, tira\n- leggi: leggere uno scritto\n- parla: rivolgersi a un personaggio: salutarlo, ringraziarlo, scusarsi, congedarsi, chiedergli come sta o chi è, offenderlo\n- chiedi: fare una domanda a un personaggio\n- dai: dare, porgere, offrire un oggetto a un personaggio (anche \"ecco\", \"tieni\")\n- salta: saltare, tuffarsi o buttarsi dentro qualcosa\n- vai: spostarsi in una direzione o verso una delle uscite elencate\n- guarda: guardarsi intorno\n- inventario: controllare cosa si ha con sé\n- altro: la frase non è un'azione di gioco\nbersaglio: l'oggetto o il personaggio su cui si agisce; con \"vai\", la direzione dell'uscita, oppure \"nessuno\" se il luogo non è tra le uscite.\ncon: l'oggetto usato per compiere l'azione, altrimenti \"nessuno\"; con \"chiedi\", l'argomento della domanda, oppure \"nessuno\" se non è tra gli argomenti; con \"parla\", il gesto (saluto, congedo, grazie, scuse, come stai, chi sei, scortesia).\nScegli solo tra gli oggetti, i personaggi e gli argomenti elencati; tra parentesi ci sono gli altri nomi con cui si chiamano.\nPer le uscite, tra parentesi c'è il luogo in cui portano, se è noto.\n\nEsempi\nOggetti: baule; chiavetta d'ottone (chiavetta); finestra della cucina (finestra); finestrone\nUscite: nord (Biblioteca), sud\nFrase: provo ad aprire il baule usando la chiavetta\n{\"verbo\": \"apri\", \"bersaglio\": \"baule\", \"con\": \"chiavetta d'ottone\"}\nFrase: chiudi la finestra\n{\"verbo\": \"chiudi\", \"bersaglio\": \"finestra della cucina\", \"con\": \"nessuno\"}\nFrase: a cosa serve questa chiavetta?\n{\"verbo\": \"esamina\", \"bersaglio\": \"chiavetta d'ottone\", \"con\": \"nessuno\"}\nFrase: torno indietro verso sud\n{\"verbo\": \"vai\", \"bersaglio\": \"sud\", \"con\": \"nessuno\"}\nFrase: torno in biblioteca\n{\"verbo\": \"vai\", \"bersaglio\": \"nord\", \"con\": \"nessuno\"}\nFrase: vado in cantina\n{\"verbo\": \"vai\", \"bersaglio\": \"nessuno\", \"con\": \"nessuno\"}\nFrase: buongiorno, che ore sono?\n{\"verbo\": \"altro\", \"bersaglio\": \"nessuno\", \"con\": \"nessuno\"}\nOggetti: pozzo; portone; corda con gancio (corda, gancio, rampino); chiave di ferro (chiave)\nUscite: est (Scuderia)\nFrase: usa il rampino per recuperare la chiave dal pozzo\n{\"verbo\": \"usa\", \"bersaglio\": \"pozzo\", \"con\": \"corda con gancio\"}\nOggetti: mestolo\nPersonaggi: cuoca (donna)\nArgomenti: cantina (scantinato); cena\nUscite: est\nFrase: buongiorno, signora\n{\"verbo\": \"parla\", \"bersaglio\": \"cuoca\", \"con\": \"saluto\"}\nFrase: grazie mille, siete gentile\n{\"verbo\": \"parla\", \"bersaglio\": \"cuoca\", \"con\": \"grazie\"}\nFrase: cosa sai dello scantinato?\n{\"verbo\": \"chiedi\", \"bersaglio\": \"cuoca\", \"con\": \"cantina\"}\nFrase: le chiedo se ha visto il re\n{\"verbo\": \"chiedi\", \"bersaglio\": \"cuoca\", \"con\": \"nessuno\"}",
+    "draghetto": "Sei l'interprete di un'avventura testuale. Traduci la frase del giocatore in un'azione.\nVerbi:\n- esamina: guardare, osservare o controllare un oggetto\n- prendi: prendere, raccogliere\n- lascia: posare, mettere giù, buttare\n- usa: usare un oggetto con un altro, legarli, calarne uno in un altro\n- apri, chiudi, spingi, tira\n- leggi: leggere uno scritto\n- parla: rivolgersi a un personaggio: salutarlo, ringraziarlo, scusarsi, congedarsi, chiedergli come sta o chi è, offenderlo\n- chiedi: fare una domanda a un personaggio\n- dai: dare, porgere, offrire un oggetto a un personaggio (anche \"ecco\", \"tieni\")\n- salta: saltare, tuffarsi o buttarsi dentro qualcosa\n- vai: spostarsi in una direzione o verso una delle uscite elencate\n- guarda: guardarsi intorno\n- inventario: controllare cosa si ha con sé\n- altro: la frase non è un'azione di gioco\nbersaglio: l'oggetto o il personaggio su cui si agisce; con \"vai\", la direzione dell'uscita, oppure \"nessuno\" se il luogo non è tra le uscite.\ncon: l'oggetto usato per compiere l'azione, altrimenti \"nessuno\"; con \"chiedi\", l'argomento della domanda, oppure \"nessuno\" se non è tra gli argomenti; con \"parla\", il gesto (saluto, congedo, grazie, scuse, come stai, chi sei, scortesia).\nScegli solo tra gli oggetti, i personaggi e gli argomenti elencati; tra parentesi ci sono gli altri nomi con cui si chiamano.\nPer le uscite, tra parentesi c'è il luogo in cui portano, se è noto.\n\nEsempi\nOggetti: baule; chiavetta d'ottone (chiavetta); finestra della cucina (finestra); finestrone\nUscite: nord (Biblioteca), sud\nFrase: provo ad aprire il baule usando la chiavetta\n{\"verbo\": \"apri\", \"bersaglio\": \"baule\", \"con\": \"chiavetta d'ottone\"}\nFrase: chiudi la finestra\n{\"verbo\": \"chiudi\", \"bersaglio\": \"finestra della cucina\", \"con\": \"nessuno\"}\nFrase: a cosa serve questa chiavetta?\n{\"verbo\": \"esamina\", \"bersaglio\": \"chiavetta d'ottone\", \"con\": \"nessuno\"}\nFrase: torno indietro verso sud\n{\"verbo\": \"vai\", \"bersaglio\": \"sud\", \"con\": \"nessuno\"}\nFrase: torno in biblioteca\n{\"verbo\": \"vai\", \"bersaglio\": \"nord\", \"con\": \"nessuno\"}\nFrase: vado in cantina\n{\"verbo\": \"vai\", \"bersaglio\": \"nessuno\", \"con\": \"nessuno\"}\nFrase: buongiorno, che ore sono?\n{\"verbo\": \"altro\", \"bersaglio\": \"nessuno\", \"con\": \"nessuno\"}\nOggetti: scala di legno (scala); mela; bastone\nUscite: ovest (Cantina), su\nFrase: salgo in cima alla scala\n{\"verbo\": \"vai\", \"bersaglio\": \"su\", \"con\": \"nessuno\"}\nFrase: faccio cadere la mela dall'albero col bastone\n{\"verbo\": \"prendi\", \"bersaglio\": \"mela\", \"con\": \"bastone\"}\nOggetti: mestolo\nPersonaggi: cuoca (donna)\nArgomenti: cantina (scantinato); cena\nUscite: est\nFrase: buongiorno, signora\n{\"verbo\": \"parla\", \"bersaglio\": \"cuoca\", \"con\": \"saluto\"}\nFrase: grazie mille, siete gentile\n{\"verbo\": \"parla\", \"bersaglio\": \"cuoca\", \"con\": \"grazie\"}\nFrase: cosa sai dello scantinato?\n{\"verbo\": \"chiedi\", \"bersaglio\": \"cuoca\", \"con\": \"cantina\"}\nFrase: le chiedo se ha visto il re\n{\"verbo\": \"chiedi\", \"bersaglio\": \"cuoca\", \"con\": \"nessuno\"}",
+    "valdimora": "Sei l'interprete di un'avventura testuale. Traduci la frase del giocatore in un'azione.\nVerbi:\n- esamina: guardare, osservare o controllare un oggetto\n- prendi: prendere, raccogliere\n- lascia: posare, mettere giù, buttare\n- usa: usare un oggetto con un altro, legarli, calarne uno in un altro\n- apri, chiudi, spingi, tira\n- leggi: leggere uno scritto\n- parla: rivolgersi a un personaggio: salutarlo, ringraziarlo, scusarsi, congedarsi, chiedergli come sta o chi è, offenderlo\n- chiedi: fare una domanda a un personaggio\n- dai: dare, porgere, offrire un oggetto a un personaggio (anche \"ecco\", \"tieni\")\n- salta: saltare, tuffarsi o buttarsi dentro qualcosa\n- vai: spostarsi in una direzione o verso una delle uscite elencate\n- guarda: guardarsi intorno\n- inventario: controllare cosa si ha con sé\n- altro: la frase non è un'azione di gioco\nbersaglio: l'oggetto o il personaggio su cui si agisce; con \"vai\", la direzione dell'uscita, oppure \"nessuno\" se il luogo non è tra le uscite.\ncon: l'oggetto usato per compiere l'azione, altrimenti \"nessuno\"; con \"chiedi\", l'argomento della domanda, oppure \"nessuno\" se non è tra gli argomenti; con \"parla\", il gesto (saluto, congedo, grazie, scuse, come stai, chi sei, scortesia).\nScegli solo tra gli oggetti, i personaggi e gli argomenti elencati; tra parentesi ci sono gli altri nomi con cui si chiamano.\nPer le uscite, tra parentesi c'è il luogo in cui portano, se è noto.\n\nEsempi\nOggetti: baule; chiavetta d'ottone (chiavetta); finestra della cucina (finestra); finestrone\nUscite: nord (Biblioteca), sud\nFrase: provo ad aprire il baule usando la chiavetta\n{\"verbo\": \"apri\", \"bersaglio\": \"baule\", \"con\": \"chiavetta d'ottone\"}\nFrase: chiudi la finestra\n{\"verbo\": \"chiudi\", \"bersaglio\": \"finestra della cucina\", \"con\": \"nessuno\"}\nFrase: a cosa serve questa chiavetta?\n{\"verbo\": \"esamina\", \"bersaglio\": \"chiavetta d'ottone\", \"con\": \"nessuno\"}\nFrase: torno indietro verso sud\n{\"verbo\": \"vai\", \"bersaglio\": \"sud\", \"con\": \"nessuno\"}\nFrase: torno in biblioteca\n{\"verbo\": \"vai\", \"bersaglio\": \"nord\", \"con\": \"nessuno\"}\nFrase: vado in cantina\n{\"verbo\": \"vai\", \"bersaglio\": \"nessuno\", \"con\": \"nessuno\"}\nFrase: buongiorno, che ore sono?\n{\"verbo\": \"altro\", \"bersaglio\": \"nessuno\", \"con\": \"nessuno\"}\nOggetti: mestolo\nPersonaggi: cuoca (donna)\nArgomenti: cantina (scantinato); cena\nUscite: est\nFrase: buongiorno, signora\n{\"verbo\": \"parla\", \"bersaglio\": \"cuoca\", \"con\": \"saluto\"}\nFrase: grazie mille, siete gentile\n{\"verbo\": \"parla\", \"bersaglio\": \"cuoca\", \"con\": \"grazie\"}\nFrase: cosa sai dello scantinato?\n{\"verbo\": \"chiedi\", \"bersaglio\": \"cuoca\", \"con\": \"cantina\"}\nFrase: le chiedo se ha visto il re\n{\"verbo\": \"chiedi\", \"bersaglio\": \"cuoca\", \"con\": \"nessuno\"}"
+  },
+  "casi": [
+    {
+      "id": "01-rocca",
+      "avventura": "rocca",
+      "stanza": "cortile",
+      "frase": "usa il rampino per recuperare la chiave dal pozzo",
+      "perche": "Frase con lo scopo: senza l'esempio nel prompt il modello sceglieva il portone.",
+      "utente": "Oggetti: pozzo (vera); porta della torre (porta, porta di ferro); portone; corda con gancio (corda, fune, gancio, uncino, rampino); chiave di ferro (chiave)\nUscite: nord (Torre: scala, scale), est (Scuderia: scuderie, stalla, pellegrino), ovest (Cucina)\nFrase: usa il rampino per recuperare la chiave dal pozzo",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "corda con gancio",
+              "chiave di ferro",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "corda con gancio",
+              "chiave di ferro",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "usa",
+          "bersaglio": "corda con gancio",
+          "con": "pozzo"
+        },
+        {
+          "verbo": "prendi",
+          "bersaglio": "chiave di ferro",
+          "con": "corda con gancio"
+        },
+        {
+          "verbo": "usa",
+          "bersaglio": "corda con gancio",
+          "con": "chiave di ferro"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "usa",
+        "bersaglio": "pozzo",
+        "con": "corda con gancio"
+      }
+    },
+    {
+      "id": "02-rocca",
+      "avventura": "rocca",
+      "stanza": "cortile",
+      "frase": "provo a ripescare la chiave nel pozzo col rampino",
+      "perche": "Frase con lo scopo, come sopra.",
+      "utente": "Oggetti: pozzo (vera); porta della torre (porta, porta di ferro); portone; corda con gancio (corda, fune, gancio, uncino, rampino); chiave di ferro (chiave)\nUscite: nord (Torre: scala, scale), est (Scuderia: scuderie, stalla, pellegrino), ovest (Cucina)\nFrase: provo a ripescare la chiave nel pozzo col rampino",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "corda con gancio",
+              "chiave di ferro",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "corda con gancio",
+              "chiave di ferro",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "usa",
+          "bersaglio": "corda con gancio",
+          "con": "pozzo"
+        },
+        {
+          "verbo": "prendi",
+          "bersaglio": "chiave di ferro",
+          "con": "corda con gancio"
+        },
+        {
+          "verbo": "usa",
+          "bersaglio": "corda con gancio",
+          "con": "chiave di ferro"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "usa",
+        "bersaglio": "pozzo",
+        "con": "corda con gancio"
+      }
+    },
+    {
+      "id": "03-rocca",
+      "avventura": "rocca",
+      "stanza": "cortile",
+      "frase": "butta il rampino nel pozzo",
+      "perche": "«Buttare» è nel glossario sotto «lascia»: qwen risponde lascia, ma buttare una cosa in un'altra è usarle insieme.",
+      "utente": "Oggetti: pozzo (vera); porta della torre (porta, porta di ferro); portone; corda con gancio (corda, fune, gancio, uncino, rampino)\nUscite: nord (Torre: scala, scale), est (Scuderia: scuderie, stalla, pellegrino), ovest (Cucina)\nFrase: butta il rampino nel pozzo",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "corda con gancio",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "corda con gancio",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "usa",
+          "bersaglio": "corda con gancio",
+          "con": "pozzo"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "lascia",
+        "bersaglio": "portone",
+        "con": "corda con gancio"
+      }
+    },
+    {
+      "id": "04-rocca",
+      "avventura": "rocca",
+      "stanza": "cortile",
+      "frase": "lancio il rampino nel pozzo",
+      "perche": "Non è un salto: lanciare una cosa dentro un'altra è usarle insieme.",
+      "utente": "Oggetti: pozzo (vera); porta della torre (porta, porta di ferro); portone; corda con gancio (corda, fune, gancio, uncino, rampino)\nUscite: nord (Torre: scala, scale), est (Scuderia: scuderie, stalla, pellegrino), ovest (Cucina)\nFrase: lancio il rampino nel pozzo",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "corda con gancio",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "corda con gancio",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "usa",
+          "bersaglio": "corda con gancio",
+          "con": "pozzo"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "lascia",
+        "bersaglio": "pozzo",
+        "con": "corda con gancio"
+      }
+    },
+    {
+      "id": "05-rocca",
+      "avventura": "rocca",
+      "stanza": "cortile",
+      "frase": "aggancia la corda alla vera di pietra",
+      "perche": "«vera» è un alias del pozzo; instabile con qwen.",
+      "utente": "Oggetti: pozzo (vera); porta della torre (porta, porta di ferro); portone; corda con gancio (corda, fune, gancio, uncino, rampino)\nUscite: nord (Torre: scala, scale), est (Scuderia: scuderie, stalla, pellegrino), ovest (Cucina)\nFrase: aggancia la corda alla vera di pietra",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "corda con gancio",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "corda con gancio",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "usa",
+          "bersaglio": "corda con gancio",
+          "con": "pozzo"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "leggi",
+        "bersaglio": "nessuno",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "06-rocca",
+      "avventura": "rocca",
+      "stanza": "cortile",
+      "frase": "afferra la ciave nel pozzo",
+      "perche": "Refuso e oggetto in vista ma non a portata: qwen mette il pozzo come strumento.",
+      "utente": "Oggetti: pozzo (vera); porta della torre (porta, porta di ferro); portone; corda con gancio (corda, fune, gancio, uncino, rampino); chiave di ferro (chiave)\nUscite: nord (Torre: scala, scale), est (Scuderia: scuderie, stalla, pellegrino), ovest (Cucina)\nFrase: afferra la ciave nel pozzo",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "corda con gancio",
+              "chiave di ferro",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "corda con gancio",
+              "chiave di ferro",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "prendi",
+          "bersaglio": "chiave di ferro",
+          "con": "nessuno"
+        },
+        {
+          "verbo": "prendi",
+          "bersaglio": "chiave di ferro",
+          "con": "corda con gancio"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "prendi",
+        "bersaglio": "chiave di ferro",
+        "con": "pozzo"
+      }
+    },
+    {
+      "id": "07-rocca",
+      "avventura": "rocca",
+      "stanza": "cortile",
+      "frase": "bene ora utilizza la corda che hai preso nella scuderia e legala alla vera del pozzo",
+      "perche": "Frase lunga, con un luogo che non c'entra.",
+      "utente": "Oggetti: pozzo (vera); porta della torre (porta, porta di ferro); portone; corda (fune)\nUscite: nord (Torre: scala, scale), est (Scuderia: scuderie, stalla, pellegrino), ovest (Cucina)\nFrase: bene ora utilizza la corda che hai preso nella scuderia e legala alla vera del pozzo",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "corda",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "corda",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "usa",
+          "bersaglio": "corda",
+          "con": "pozzo"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "usa",
+        "bersaglio": "corda",
+        "con": "pozzo"
+      }
+    },
+    {
+      "id": "08-rocca",
+      "avventura": "rocca",
+      "stanza": "scuderia",
+      "frase": "a cosa mi serve questa corda?",
+      "perche": "Una domanda, non un'azione: qwen legava il gancio alla corda e risolveva l'enigma.",
+      "utente": "Oggetti: gancio da macellaio (gancio, uncino); corda (fune)\nPersonaggi: pellegrino (viandante, vecchio)\nArgomenti: pellegrino (viaggio, santuario); rocca (castello, castellano); bufera (tempesta, tempo); portone (uscita, esce, uscire); torre (porta della torre, mura); chiave (chiave di ferro, chiave della torre); pozzo; corda (fune, gancio, rampino)\nUscite: ovest (Cortile: pozzo)\nFrase: a cosa mi serve questa corda?",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "gancio da macellaio",
+              "corda",
+              "pellegrino",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "gancio da macellaio",
+              "corda",
+              "pellegrino",
+              "rocca",
+              "bufera",
+              "portone",
+              "torre",
+              "chiave",
+              "pozzo",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "esamina",
+          "bersaglio": "corda",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "esamina",
+        "bersaglio": "corda",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "09-rocca",
+      "avventura": "rocca",
+      "stanza": "scuderia",
+      "frase": "vai in cucina",
+      "perche": "La cucina non è tra le uscite (è oltre il cortile): qwen sceglieva una direzione a caso.",
+      "utente": "Oggetti: corda (fune)\nPersonaggi: pellegrino (viandante, vecchio)\nArgomenti: pellegrino (viaggio, santuario); rocca (castello, castellano); bufera (tempesta, tempo); portone (uscita, esce, uscire); torre (porta della torre, mura); chiave (chiave di ferro, chiave della torre); pozzo; corda (fune, gancio, rampino)\nUscite: ovest (Cortile: pozzo)\nFrase: vai in cucina",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "corda",
+              "pellegrino",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "corda",
+              "pellegrino",
+              "rocca",
+              "bufera",
+              "portone",
+              "torre",
+              "chiave",
+              "pozzo",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "vai",
+          "bersaglio": "nessuno",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "vai",
+        "bersaglio": "corda",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "10-rocca",
+      "avventura": "rocca",
+      "stanza": "cortile",
+      "frase": "vado nella cantina",
+      "perche": "Un luogo che non esiste: la risposta giusta è «nessuno».",
+      "utente": "Oggetti: pozzo (vera); porta della torre (porta, porta di ferro); portone\nUscite: nord (Torre: scala, scale), est (Scuderia: scuderie, stalla, pellegrino), ovest (Cucina)\nFrase: vado nella cantina",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "vai",
+          "bersaglio": "nessuno",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "vai",
+        "bersaglio": "ovest",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "11-rocca",
+      "avventura": "rocca",
+      "stanza": "cortile",
+      "frase": "busso alla porta della torre",
+      "perche": "Nessun verbo per bussare: qwen dice «tira».",
+      "utente": "Oggetti: pozzo (vera); porta della torre (porta, porta di ferro); portone\nUscite: nord (Torre: scala, scale), est (Scuderia: scuderie, stalla, pellegrino), ovest (Cucina)\nFrase: busso alla porta della torre",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "altro",
+          "bersaglio": "nessuno",
+          "con": "nessuno"
+        },
+        {
+          "verbo": "esamina",
+          "bersaglio": "porta della torre",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "tira",
+        "bersaglio": "porta della torre",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "12-rocca",
+      "avventura": "rocca",
+      "stanza": "cortile",
+      "frase": "sfondo la porta a calci",
+      "perche": "qwen risponde «lascia la porta».",
+      "utente": "Oggetti: pozzo (vera); porta della torre (porta, porta di ferro); portone\nUscite: nord (Torre: scala, scale), est (Scuderia: scuderie, stalla, pellegrino), ovest (Cucina)\nFrase: sfondo la porta a calci",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "apri",
+          "bersaglio": "porta della torre",
+          "con": "nessuno"
+        },
+        {
+          "verbo": "spingi",
+          "bersaglio": "porta della torre",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "lascia",
+        "bersaglio": "porta della torre",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "13-rocca",
+      "avventura": "rocca",
+      "stanza": "cortile",
+      "frase": "mi butto nel pozzo",
+      "perche": "«Buttarsi» è saltare; «buttare» invece è lasciare.",
+      "utente": "Oggetti: pozzo (vera); porta della torre (porta, porta di ferro); portone\nUscite: nord (Torre: scala, scale), est (Scuderia: scuderie, stalla, pellegrino), ovest (Cucina)\nFrase: mi butto nel pozzo",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "salta",
+          "bersaglio": "pozzo",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "salta",
+        "bersaglio": "pozzo",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "14-rocca",
+      "avventura": "rocca",
+      "stanza": "cortile",
+      "frase": "guardo giù nel pozzo",
+      "perche": "Guardare giù non è un salto né uno spostamento.",
+      "utente": "Oggetti: pozzo (vera); porta della torre (porta, porta di ferro); portone\nUscite: nord (Torre: scala, scale), est (Scuderia: scuderie, stalla, pellegrino), ovest (Cucina)\nFrase: guardo giù nel pozzo",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "pozzo",
+              "porta della torre",
+              "portone",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "esamina",
+          "bersaglio": "pozzo",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "guarda",
+        "bersaglio": "pozzo",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "15-rocca",
+      "avventura": "rocca",
+      "stanza": "scuderia",
+      "frase": "chi era il castellano?",
+      "perche": "Domanda su un argomento («rocca») nominato solo dal contenuto: qwen dice «esamina il pellegrino».",
+      "utente": "Oggetti: corda (fune)\nPersonaggi: pellegrino (viandante, vecchio)\nArgomenti: pellegrino (viaggio, santuario); rocca (castello, castellano); bufera (tempesta, tempo); portone (uscita, esce, uscire); torre (porta della torre, mura); chiave (chiave di ferro, chiave della torre); pozzo; corda (fune, gancio, rampino)\nUscite: ovest (Cortile: pozzo)\nFrase: chi era il castellano?",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "corda",
+              "pellegrino",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "corda",
+              "pellegrino",
+              "rocca",
+              "bufera",
+              "portone",
+              "torre",
+              "chiave",
+              "pozzo",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "chiedi",
+          "bersaglio": "pellegrino",
+          "con": "rocca"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "chiedi",
+        "bersaglio": "pellegrino",
+        "con": "chiave"
+      }
+    },
+    {
+      "id": "16-rocca",
+      "avventura": "rocca",
+      "stanza": "scuderia",
+      "frase": "chiedo al vecchio come si esce da qui",
+      "perche": "L'argomento «portone» si capisce solo da «si esce» (alias «esce»).",
+      "utente": "Oggetti: corda (fune)\nPersonaggi: pellegrino (viandante, vecchio)\nArgomenti: pellegrino (viaggio, santuario); rocca (castello, castellano); bufera (tempesta, tempo); portone (uscita, esce, uscire); torre (porta della torre, mura); chiave (chiave di ferro, chiave della torre); pozzo; corda (fune, gancio, rampino)\nUscite: ovest (Cortile: pozzo)\nFrase: chiedo al vecchio come si esce da qui",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "corda",
+              "pellegrino",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "corda",
+              "pellegrino",
+              "rocca",
+              "bufera",
+              "portone",
+              "torre",
+              "chiave",
+              "pozzo",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "chiedi",
+          "bersaglio": "pellegrino",
+          "con": "portone"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "chiedi",
+        "bersaglio": "pellegrino",
+        "con": "come stai"
+      }
+    },
+    {
+      "id": "17-rocca",
+      "avventura": "rocca",
+      "stanza": "scuderia",
+      "frase": "gli chiedo se ha fame",
+      "perche": "Domanda su un argomento che il personaggio non ha: «con» deve essere «nessuno».",
+      "utente": "Oggetti: corda (fune)\nPersonaggi: pellegrino (viandante, vecchio)\nArgomenti: pellegrino (viaggio, santuario); rocca (castello, castellano); bufera (tempesta, tempo); portone (uscita, esce, uscire); torre (porta della torre, mura); chiave (chiave di ferro, chiave della torre); pozzo; corda (fune, gancio, rampino)\nUscite: ovest (Cortile: pozzo)\nFrase: gli chiedo se ha fame",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "corda",
+              "pellegrino",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "corda",
+              "pellegrino",
+              "rocca",
+              "bufera",
+              "portone",
+              "torre",
+              "chiave",
+              "pozzo",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "chiedi",
+          "bersaglio": "pellegrino",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "chiedi",
+        "bersaglio": "pellegrino",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "18-rocca",
+      "avventura": "rocca",
+      "stanza": "scuderia",
+      "frase": "sei proprio un vecchio brontolone",
+      "perche": "Gesto: qwen risponde «saluto» a quasi ogni gesto.",
+      "utente": "Oggetti: corda (fune)\nPersonaggi: pellegrino (viandante, vecchio)\nArgomenti: pellegrino (viaggio, santuario); rocca (castello, castellano); bufera (tempesta, tempo); portone (uscita, esce, uscire); torre (porta della torre, mura); chiave (chiave di ferro, chiave della torre); pozzo; corda (fune, gancio, rampino)\nUscite: ovest (Cortile: pozzo)\nFrase: sei proprio un vecchio brontolone",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "corda",
+              "pellegrino",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "corda",
+              "pellegrino",
+              "rocca",
+              "bufera",
+              "portone",
+              "torre",
+              "chiave",
+              "pozzo",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "parla",
+          "bersaglio": "pellegrino",
+          "con": "scortesia"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "parla",
+        "bersaglio": "pellegrino",
+        "con": "saluto"
+      }
+    },
+    {
+      "id": "19-rocca",
+      "avventura": "rocca",
+      "stanza": "scuderia",
+      "frase": "addio, e buona fortuna",
+      "perche": "Gesto di congedo, non uno spostamento.",
+      "utente": "Oggetti: corda (fune)\nPersonaggi: pellegrino (viandante, vecchio)\nArgomenti: pellegrino (viaggio, santuario); rocca (castello, castellano); bufera (tempesta, tempo); portone (uscita, esce, uscire); torre (porta della torre, mura); chiave (chiave di ferro, chiave della torre); pozzo; corda (fune, gancio, rampino)\nUscite: ovest (Cortile: pozzo)\nFrase: addio, e buona fortuna",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "corda",
+              "pellegrino",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "corda",
+              "pellegrino",
+              "rocca",
+              "bufera",
+              "portone",
+              "torre",
+              "chiave",
+              "pozzo",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "parla",
+          "bersaglio": "pellegrino",
+          "con": "congedo"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "parla",
+        "bersaglio": "pellegrino",
+        "con": "saluto"
+      }
+    },
+    {
+      "id": "20-draghetto",
+      "avventura": "draghetto",
+      "stanza": "radura",
+      "frase": "mangio una mora",
+      "perche": "Le more non sono qui: qwen sceglieva un oggetto a caso (prendi il sasso).",
+      "utente": "Oggetti: sasso (masso, muschio, pietra)\nPersonaggi: draghetto (drago, draghino)\nArgomenti: raffreddore (fuoco, fiamma, gola, febbre, aiuto, bisogno, serve, successo); miele (vasetto, dolce); orso (tobia, tana); more (mora, roveto); solletico (piuma, starnuto, naso); quercia (nido, albero); casa (montagna, montagna rossa, ali, volare); bosco (bosco fatato)\nUscite: nord (Quercia: albero, nido), sud (Casa: sentiero), est (Roveto: more, rovi, cespugli), ovest (Ruscello: acqua, ponte, ponticello)\nFrase: mangio una mora",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "raffreddore",
+              "miele",
+              "orso",
+              "more",
+              "solletico",
+              "quercia",
+              "casa",
+              "bosco",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "altro",
+          "bersaglio": "nessuno",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "prendi",
+        "bersaglio": "giù",
+        "con": "more"
+      }
+    },
+    {
+      "id": "21-draghetto",
+      "avventura": "draghetto",
+      "stanza": "quercia",
+      "frase": "salgo sull'albero",
+      "perche": "«su», non «sud».",
+      "utente": "Oggetti: ramo (bastone, legno); quercia (albero, tronco); nido\nUscite: sud (Radura: draghetto, drago, sasso), su (Albero: quercia, cima)\nFrase: salgo sull'albero",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "ramo",
+              "quercia",
+              "nido",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "ramo",
+              "quercia",
+              "nido",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "vai",
+          "bersaglio": "su",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "vai",
+        "bersaglio": "su",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "22-draghetto",
+      "avventura": "draghetto",
+      "stanza": "quercia",
+      "frase": "stacco la piuma col bastone",
+      "perche": "«bastone» è un alias del ramo; senza l'esempio della mela qwen perdeva lo strumento.",
+      "utente": "Oggetti: ramo (bastone, legno); quercia (albero, tronco); nido; piuma (penna, piuma bianca)\nUscite: sud (Radura: draghetto, drago, sasso), su (Albero: quercia, cima)\nFrase: stacco la piuma col bastone",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "ramo",
+              "quercia",
+              "nido",
+              "piuma",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "ramo",
+              "quercia",
+              "nido",
+              "piuma",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "usa",
+          "bersaglio": "ramo",
+          "con": "piuma"
+        },
+        {
+          "verbo": "prendi",
+          "bersaglio": "piuma",
+          "con": "ramo"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "usa",
+        "bersaglio": "ramo",
+        "con": "piuma"
+      }
+    },
+    {
+      "id": "23-draghetto",
+      "avventura": "draghetto",
+      "stanza": "quercia",
+      "frase": "guardo su nell'albero",
+      "perche": "«guarda su» è guardarsi intorno, non la quercia.",
+      "utente": "Oggetti: ramo (bastone, legno); quercia (albero, tronco); nido\nUscite: sud (Radura: draghetto, drago, sasso), su (Albero: quercia, cima)\nFrase: guardo su nell'albero",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "ramo",
+              "quercia",
+              "nido",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "ramo",
+              "quercia",
+              "nido",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "esamina",
+          "bersaglio": "quercia",
+          "con": "nessuno"
+        },
+        {
+          "verbo": "esamina",
+          "bersaglio": "nido",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "guarda",
+        "bersaglio": "su",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "24-draghetto",
+      "avventura": "draghetto",
+      "stanza": "radura",
+      "frase": "ti faccio il solletico sul naso con la piuma",
+      "perche": "Il personaggio è solo «ti»: qwen lo perde.",
+      "utente": "Oggetti: sasso (masso, muschio, pietra); ramo (bastone, legno); piuma (penna, piuma bianca)\nPersonaggi: draghetto (drago, draghino)\nArgomenti: raffreddore (fuoco, fiamma, gola, febbre, aiuto, bisogno, serve, successo); miele (vasetto, dolce); orso (tobia, tana); more (mora, roveto); solletico (piuma, starnuto, naso); quercia (nido, albero); casa (montagna, montagna rossa, ali, volare); bosco (bosco fatato)\nUscite: nord (Quercia: albero, nido), sud (Casa: sentiero), est (Roveto: more, rovi, cespugli), ovest (Ruscello: acqua, ponte, ponticello)\nFrase: ti faccio il solletico sul naso con la piuma",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "ramo",
+              "piuma",
+              "draghetto",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "ramo",
+              "piuma",
+              "draghetto",
+              "raffreddore",
+              "miele",
+              "orso",
+              "more",
+              "solletico",
+              "quercia",
+              "casa",
+              "bosco",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "usa",
+          "bersaglio": "piuma",
+          "con": "draghetto"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "usa",
+        "bersaglio": "piuma",
+        "con": "more"
+      }
+    },
+    {
+      "id": "25-draghetto",
+      "avventura": "draghetto",
+      "stanza": "ruscello",
+      "frase": "attraverso il ponte",
+      "perche": "Il ponte porta alla tana: la direzione si capisce dall'uscita.",
+      "utente": "Oggetti: ruscello (acqua, torrente); ponticello (ponte); ramo (bastone, legno)\nUscite: est (Radura: draghetto, drago, sasso), ovest (Tana: orso, tobia, grotta, ponte, ponticello)\nFrase: attraverso il ponte",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "ruscello",
+              "ponticello",
+              "ramo",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "ruscello",
+              "ponticello",
+              "ramo",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "vai",
+          "bersaglio": "ovest",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "vai",
+        "bersaglio": "est",
+        "con": "ponticello"
+      }
+    },
+    {
+      "id": "26-draghetto",
+      "avventura": "draghetto",
+      "stanza": "quercia",
+      "frase": "vai a casa",
+      "perche": "Casa è più lontana: dalla quercia non c'è un'uscita che ci porti.",
+      "utente": "Oggetti: quercia (albero, tronco); nido\nUscite: sud (Radura: draghetto, drago, sasso), su (Albero: quercia, cima)\nFrase: vai a casa",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "quercia",
+              "nido",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "quercia",
+              "nido",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "vai",
+          "bersaglio": "nessuno",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "vai",
+        "bersaglio": "sud",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "27-draghetto",
+      "avventura": "draghetto",
+      "stanza": "radura",
+      "frase": "vai dall orso",
+      "perche": "La tana è oltre il ruscello (ovest): va bene il primo passo o «nessuno».",
+      "utente": "Oggetti: sasso (masso, muschio, pietra)\nPersonaggi: draghetto (drago, draghino)\nArgomenti: raffreddore (fuoco, fiamma, gola, febbre, aiuto, bisogno, serve, successo); miele (vasetto, dolce); orso (tobia, tana); more (mora, roveto); solletico (piuma, starnuto, naso); quercia (nido, albero); casa (montagna, montagna rossa, ali, volare); bosco (bosco fatato)\nUscite: nord (Quercia: albero, nido), sud (Casa: sentiero), est (Roveto: more, rovi, cespugli), ovest (Ruscello: acqua, ponte, ponticello)\nFrase: vai dall orso",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "raffreddore",
+              "miele",
+              "orso",
+              "more",
+              "solletico",
+              "quercia",
+              "casa",
+              "bosco",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "vai",
+          "bersaglio": "ovest",
+          "con": "nessuno"
+        },
+        {
+          "verbo": "vai",
+          "bersaglio": "nessuno",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "vai",
+        "bersaglio": "ovest",
+        "con": "orso"
+      }
+    },
+    {
+      "id": "28-draghetto",
+      "avventura": "draghetto",
+      "stanza": "radura",
+      "frase": "salgo sul sasso",
+      "perche": "Non c'è un'uscita «su» nella radura: non è uno spostamento né un salto.",
+      "utente": "Oggetti: sasso (masso, muschio, pietra)\nPersonaggi: draghetto (drago, draghino)\nArgomenti: raffreddore (fuoco, fiamma, gola, febbre, aiuto, bisogno, serve, successo); miele (vasetto, dolce); orso (tobia, tana); more (mora, roveto); solletico (piuma, starnuto, naso); quercia (nido, albero); casa (montagna, montagna rossa, ali, volare); bosco (bosco fatato)\nUscite: nord (Quercia: albero, nido), sud (Casa: sentiero), est (Roveto: more, rovi, cespugli), ovest (Ruscello: acqua, ponte, ponticello)\nFrase: salgo sul sasso",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "raffreddore",
+              "miele",
+              "orso",
+              "more",
+              "solletico",
+              "quercia",
+              "casa",
+              "bosco",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "esamina",
+          "bersaglio": "sasso",
+          "con": "nessuno"
+        },
+        {
+          "verbo": "altro",
+          "bersaglio": "nessuno",
+          "con": "nessuno"
+        },
+        {
+          "verbo": "vai",
+          "bersaglio": "nessuno",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "vai",
+        "bersaglio": "nord",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "29-draghetto",
+      "avventura": "draghetto",
+      "stanza": "radura",
+      "frase": "ciao orso",
+      "perche": "L'orso non è qui: il draghetto non va salutato al suo posto.",
+      "utente": "Oggetti: sasso (masso, muschio, pietra)\nPersonaggi: draghetto (drago, draghino)\nArgomenti: raffreddore (fuoco, fiamma, gola, febbre, aiuto, bisogno, serve, successo); miele (vasetto, dolce); orso (tobia, tana); more (mora, roveto); solletico (piuma, starnuto, naso); quercia (nido, albero); casa (montagna, montagna rossa, ali, volare); bosco (bosco fatato)\nUscite: nord (Quercia: albero, nido), sud (Casa: sentiero), est (Roveto: more, rovi, cespugli), ovest (Ruscello: acqua, ponte, ponticello)\nFrase: ciao orso",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "raffreddore",
+              "miele",
+              "orso",
+              "more",
+              "solletico",
+              "quercia",
+              "casa",
+              "bosco",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "altro",
+          "bersaglio": "nessuno",
+          "con": "nessuno"
+        },
+        {
+          "verbo": "parla",
+          "bersaglio": "nessuno",
+          "con": "saluto"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "parla",
+        "bersaglio": "draghetto",
+        "con": "casa"
+      }
+    },
+    {
+      "id": "30-draghetto",
+      "avventura": "draghetto",
+      "stanza": "tana",
+      "frase": "mi dai il tuo miele?",
+      "perche": "Una domanda con «dai»: chi dà è l'orso, non il giocatore.",
+      "utente": "Oggetti: more (mora)\nPersonaggi: orso (tobia, orso tobia)\nArgomenti: miele (vasetto); more (mora); draghetto (drago)\nUscite: est (Ruscello: acqua, ponte, ponticello)\nFrase: mi dai il tuo miele?",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "more",
+              "orso",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "more",
+              "orso",
+              "miele",
+              "draghetto",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "chiedi",
+          "bersaglio": "orso",
+          "con": "miele"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "dai",
+        "bersaglio": "orso",
+        "con": "miele"
+      }
+    },
+    {
+      "id": "31-draghetto",
+      "avventura": "draghetto",
+      "stanza": "radura",
+      "frase": "conosci l'orso?",
+      "perche": "L'orso è un argomento, non un personaggio presente.",
+      "utente": "Oggetti: sasso (masso, muschio, pietra)\nPersonaggi: draghetto (drago, draghino)\nArgomenti: raffreddore (fuoco, fiamma, gola, febbre, aiuto, bisogno, serve, successo); miele (vasetto, dolce); orso (tobia, tana); more (mora, roveto); solletico (piuma, starnuto, naso); quercia (nido, albero); casa (montagna, montagna rossa, ali, volare); bosco (bosco fatato)\nUscite: nord (Quercia: albero, nido), sud (Casa: sentiero), est (Roveto: more, rovi, cespugli), ovest (Ruscello: acqua, ponte, ponticello)\nFrase: conosci l'orso?",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "raffreddore",
+              "miele",
+              "orso",
+              "more",
+              "solletico",
+              "quercia",
+              "casa",
+              "bosco",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "chiedi",
+          "bersaglio": "draghetto",
+          "con": "orso"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "parla",
+        "bersaglio": "draghetto",
+        "con": "orso"
+      }
+    },
+    {
+      "id": "32-draghetto",
+      "avventura": "draghetto",
+      "stanza": "radura",
+      "frase": "perche hai il naso rosso",
+      "perche": "Domanda senza punto interrogativo né accento.",
+      "utente": "Oggetti: sasso (masso, muschio, pietra)\nPersonaggi: draghetto (drago, draghino)\nArgomenti: raffreddore (fuoco, fiamma, gola, febbre, aiuto, bisogno, serve, successo); miele (vasetto, dolce); orso (tobia, tana); more (mora, roveto); solletico (piuma, starnuto, naso); quercia (nido, albero); casa (montagna, montagna rossa, ali, volare); bosco (bosco fatato)\nUscite: nord (Quercia: albero, nido), sud (Casa: sentiero), est (Roveto: more, rovi, cespugli), ovest (Ruscello: acqua, ponte, ponticello)\nFrase: perche hai il naso rosso",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "raffreddore",
+              "miele",
+              "orso",
+              "more",
+              "solletico",
+              "quercia",
+              "casa",
+              "bosco",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "chiedi",
+          "bersaglio": "draghetto",
+          "con": "raffreddore"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "usa",
+        "bersaglio": "sasso",
+        "con": "more"
+      }
+    },
+    {
+      "id": "33-draghetto",
+      "avventura": "draghetto",
+      "stanza": "radura",
+      "frase": "sei un drago cattivo",
+      "perche": "Gesto (scortesia), non una domanda.",
+      "utente": "Oggetti: sasso (masso, muschio, pietra)\nPersonaggi: draghetto (drago, draghino)\nArgomenti: raffreddore (fuoco, fiamma, gola, febbre, aiuto, bisogno, serve, successo); miele (vasetto, dolce); orso (tobia, tana); more (mora, roveto); solletico (piuma, starnuto, naso); quercia (nido, albero); casa (montagna, montagna rossa, ali, volare); bosco (bosco fatato)\nUscite: nord (Quercia: albero, nido), sud (Casa: sentiero), est (Roveto: more, rovi, cespugli), ovest (Ruscello: acqua, ponte, ponticello)\nFrase: sei un drago cattivo",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "raffreddore",
+              "miele",
+              "orso",
+              "more",
+              "solletico",
+              "quercia",
+              "casa",
+              "bosco",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "parla",
+          "bersaglio": "draghetto",
+          "con": "scortesia"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "usa",
+        "bersaglio": "draghetto",
+        "con": "more"
+      }
+    },
+    {
+      "id": "34-draghetto",
+      "avventura": "draghetto",
+      "stanza": "radura",
+      "frase": "i draghi cattivi sputano fuoco?",
+      "perche": "Domanda che contiene un insulto: resta una domanda.",
+      "utente": "Oggetti: sasso (masso, muschio, pietra)\nPersonaggi: draghetto (drago, draghino)\nArgomenti: raffreddore (fuoco, fiamma, gola, febbre, aiuto, bisogno, serve, successo); miele (vasetto, dolce); orso (tobia, tana); more (mora, roveto); solletico (piuma, starnuto, naso); quercia (nido, albero); casa (montagna, montagna rossa, ali, volare); bosco (bosco fatato)\nUscite: nord (Quercia: albero, nido), sud (Casa: sentiero), est (Roveto: more, rovi, cespugli), ovest (Ruscello: acqua, ponte, ponticello)\nFrase: i draghi cattivi sputano fuoco?",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "sasso",
+              "draghetto",
+              "raffreddore",
+              "miele",
+              "orso",
+              "more",
+              "solletico",
+              "quercia",
+              "casa",
+              "bosco",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "chiedi",
+          "bersaglio": "draghetto",
+          "con": "*"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "usa",
+        "bersaglio": "draghetto",
+        "con": "solletico"
+      }
+    },
+    {
+      "id": "35-draghetto",
+      "avventura": "draghetto",
+      "stanza": "tana",
+      "frase": "scusami tanto, orso",
+      "perche": "Gesto di scuse.",
+      "utente": "Oggetti: nessuno\nPersonaggi: orso (tobia, orso tobia)\nArgomenti: miele (vasetto); more (mora); draghetto (drago)\nUscite: est (Ruscello: acqua, ponte, ponticello)\nFrase: scusami tanto, orso",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "orso",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "orso",
+              "miele",
+              "more",
+              "draghetto",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "parla",
+          "bersaglio": "orso",
+          "con": "scuse"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "parla",
+        "bersaglio": "orso",
+        "con": "saluto"
+      }
+    },
+    {
+      "id": "36-valdimora",
+      "avventura": "valdimora",
+      "stanza": "stanza_maggiordomo",
+      "frase": "leggo il biglietto della contessa",
+      "perche": "qwen metteva un altro oggetto nominato come strumento.",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); busta della contessa (busta, cartoncino, indovinello, biglietto della contessa); argenteria (argento, posate); campanelli (campanello); tavolo dell'argenteria (tavolo); sedia impagliata (sedia); porta di servizio (porta)\nPersonaggi: Ettore (maggiordomo, vecchio)\nArgomenti: contessa (adelaide, padrona, morte); lettera (invito, lettera della contessa); credenza (grappa, liquori, chiave della credenza); Clara (madre, mamma, mia madre, tua madre); Livia (governante, chiavi); Corrado (nipote); Agnese (dama di compagnia); dottor Ferri (dottore, medico, ferri); frana (strada, notaio)\nUscite: sud (Sala da pranzo), est (Cucina)\nFrase: leggo il biglietto della contessa",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "busta della contessa",
+              "argenteria",
+              "campanelli",
+              "tavolo dell'argenteria",
+              "sedia impagliata",
+              "porta di servizio",
+              "Ettore",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "busta della contessa",
+              "argenteria",
+              "campanelli",
+              "tavolo dell'argenteria",
+              "sedia impagliata",
+              "porta di servizio",
+              "Ettore",
+              "contessa",
+              "lettera",
+              "credenza",
+              "Clara",
+              "Livia",
+              "Corrado",
+              "Agnese",
+              "dottor Ferri",
+              "frana",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "leggi",
+          "bersaglio": "busta della contessa",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "leggi",
+        "bersaglio": "busta della contessa",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "37-valdimora",
+      "avventura": "valdimora",
+      "stanza": "biliardo",
+      "frase": "frugo nella borsa del dottore",
+      "perche": "qwen rispondeva «inventario».",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); borsa del dottore (borsa, borsa da medico); tavolo da biliardo (tavolo, panno); stecche (stecca, bilie); carrello dei liquori (carrello, liquori, bottiglie); tavolino; poltrona\nPersonaggi: Corrado (nipote, signor corrado); dottor Ferri (dottore, medico, ferri)\nArgomenti: eredità (notaio, testamento, castello, soldi); contessa (morte, adelaide, certificato, cuore); dottor Ferri (dottore, medico, ferri); Livia (governante); Ettore (maggiordomo, vecchio); Agnese (dama di compagnia, ragazza); frana (strada); grappa (bottiglia, bere, liquore); medicine (farmaco, gocce, digitale, borsa, flacone, boccetta); Corrado (nipote)\nUscite: nord (Cappella: chiesetta), ovest (Atrio)\nFrase: frugo nella borsa del dottore",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "borsa del dottore",
+              "tavolo da biliardo",
+              "stecche",
+              "carrello dei liquori",
+              "tavolino",
+              "poltrona",
+              "Corrado",
+              "dottor Ferri",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "borsa del dottore",
+              "tavolo da biliardo",
+              "stecche",
+              "carrello dei liquori",
+              "tavolino",
+              "poltrona",
+              "Corrado",
+              "dottor Ferri",
+              "eredità",
+              "contessa",
+              "Livia",
+              "Ettore",
+              "Agnese",
+              "frana",
+              "grappa",
+              "medicine",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "esamina",
+          "bersaglio": "borsa del dottore",
+          "con": "nessuno"
+        },
+        {
+          "verbo": "apri",
+          "bersaglio": "borsa del dottore",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "inventario",
+        "bersaglio": "borsa del dottore",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "38-valdimora",
+      "avventura": "valdimora",
+      "stanza": "stanza_maggiordomo",
+      "frase": "faccio vedere la lettera a Ettore",
+      "perche": "Non c'è un verbo per mostrare: va bene dare o chiedere della lettera.",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); busta della contessa (busta, cartoncino, indovinello, biglietto della contessa); argenteria (argento, posate); campanelli (campanello); tavolo dell'argenteria (tavolo); sedia impagliata (sedia); porta di servizio (porta)\nPersonaggi: Ettore (maggiordomo, vecchio)\nArgomenti: contessa (adelaide, padrona, morte); lettera (invito, lettera della contessa); Livia (governante, chiavi); Corrado (nipote); Agnese (dama di compagnia); dottor Ferri (dottore, medico, ferri); frana (strada, notaio)\nUscite: sud (Sala da pranzo), est (Cucina)\nFrase: faccio vedere la lettera a Ettore",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "busta della contessa",
+              "argenteria",
+              "campanelli",
+              "tavolo dell'argenteria",
+              "sedia impagliata",
+              "porta di servizio",
+              "Ettore",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "busta della contessa",
+              "argenteria",
+              "campanelli",
+              "tavolo dell'argenteria",
+              "sedia impagliata",
+              "porta di servizio",
+              "Ettore",
+              "contessa",
+              "lettera",
+              "Livia",
+              "Corrado",
+              "Agnese",
+              "dottor Ferri",
+              "frana",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "dai",
+          "bersaglio": "busta della contessa",
+          "con": "Ettore"
+        },
+        {
+          "verbo": "chiedi",
+          "bersaglio": "Ettore",
+          "con": "lettera"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "parla",
+        "bersaglio": "Ettore",
+        "con": "lettera della contessa"
+      }
+    },
+    {
+      "id": "39-valdimora",
+      "avventura": "valdimora",
+      "stanza": "galleria",
+      "frase": "Ettore, chi è questa ragazza?",
+      "perche": "Anche il ritratto ha l'alias «ragazza»: qwen dice «esamina il ritratto».",
+      "utente": "Oggetti: ritratto (quadro, quadro coperto, ritratto coperto, cornice, incavo, ragazza); drappo di velluto (drappo, velluto, velluto nero, drappo nero); ritratti degli antenati (ritratti, antenati, quadri, dame, cavalieri, vescovo, pareti); lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento)\nPersonaggi: Ettore (maggiordomo, vecchio)\nArgomenti: contessa (adelaide, padrona, morte); lettera (invito, lettera della contessa); ritratto (quadro, quadro coperto, drappo, galleria, ragazza); carillon (cilindro, ninna nanna, musica, salone della musica); Livia (governante, chiavi); Corrado (nipote); Agnese (dama di compagnia); dottor Ferri (dottore, medico, ferri); frana (strada, notaio)\nUscite: nord (Pianerottolo di servizio: pianerottolo), sud, est (Biblioteca), ovest (Salottino verde: salottino)\nFrase: Ettore, chi è questa ragazza?",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "ritratto",
+              "drappo di velluto",
+              "ritratti degli antenati",
+              "lettera della contessa",
+              "medaglione",
+              "Ettore",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "ritratto",
+              "drappo di velluto",
+              "ritratti degli antenati",
+              "lettera della contessa",
+              "medaglione",
+              "Ettore",
+              "contessa",
+              "lettera",
+              "carillon",
+              "Livia",
+              "Corrado",
+              "Agnese",
+              "dottor Ferri",
+              "frana",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "chiedi",
+          "bersaglio": "Ettore",
+          "con": "ritratto"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "esamina",
+        "bersaglio": "ritratto",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "40-valdimora",
+      "avventura": "valdimora",
+      "stanza": "galleria",
+      "frase": "infilo il medaglione nella cornice",
+      "perche": "La cornice è il ritratto: qwen dice «inventario» o «prendi il medaglione».",
+      "utente": "Oggetti: ritratto (quadro, quadro coperto, ritratto coperto, cornice, incavo, ragazza); drappo di velluto (drappo, velluto, velluto nero, drappo nero); ritratti degli antenati (ritratti, antenati, quadri, dame, cavalieri, vescovo, pareti); lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento)\nPersonaggi: Ettore (maggiordomo, vecchio)\nArgomenti: contessa (adelaide, padrona, morte); lettera (invito, lettera della contessa); ritratto (quadro, quadro coperto, drappo, galleria, ragazza); carillon (cilindro, ninna nanna, musica, salone della musica); Livia (governante, chiavi); Corrado (nipote); Agnese (dama di compagnia); dottor Ferri (dottore, medico, ferri); frana (strada, notaio)\nUscite: nord (Pianerottolo di servizio: pianerottolo), sud, est (Biblioteca), ovest (Salottino verde: salottino)\nFrase: infilo il medaglione nella cornice",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "ritratto",
+              "drappo di velluto",
+              "ritratti degli antenati",
+              "lettera della contessa",
+              "medaglione",
+              "Ettore",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "ritratto",
+              "drappo di velluto",
+              "ritratti degli antenati",
+              "lettera della contessa",
+              "medaglione",
+              "Ettore",
+              "contessa",
+              "lettera",
+              "carillon",
+              "Livia",
+              "Corrado",
+              "Agnese",
+              "dottor Ferri",
+              "frana",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "usa",
+          "bersaglio": "medaglione",
+          "con": "ritratto"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "inventario",
+        "bersaglio": "nessuno",
+        "con": "medaglione"
+      }
+    },
+    {
+      "id": "41-valdimora",
+      "avventura": "valdimora",
+      "stanza": "camera_clara",
+      "frase": "infilo il medaglione nel tetto della casa delle bambole",
+      "perche": "Ogni nome in più nella stanza cambiava la risposta in «inventario».",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); letto di Clara (letto, coperta, coperta ricamata); carta da parati (stelline, pareti); baule (baule di Clara, coperchio); casa delle bambole (casa, casetta, bambole, comignolo)\nUscite: est\nFrase: infilo il medaglione nel tetto della casa delle bambole",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "letto di Clara",
+              "carta da parati",
+              "baule",
+              "casa delle bambole",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "letto di Clara",
+              "carta da parati",
+              "baule",
+              "casa delle bambole",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "usa",
+          "bersaglio": "medaglione",
+          "con": "casa delle bambole"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "usa",
+        "bersaglio": "medaglione",
+        "con": "casa delle bambole"
+      }
+    },
+    {
+      "id": "42-valdimora",
+      "avventura": "valdimora",
+      "stanza": "camera_clara",
+      "frase": "metto il medaglione nell'incavo",
+      "perche": "«incavo» è un alias della casa delle bambole.",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); letto di Clara (letto, coperta, coperta ricamata); carta da parati (stelline, pareti); baule (baule di Clara, coperchio); casa delle bambole (casa, casetta, bambole, comignolo)\nUscite: est\nFrase: metto il medaglione nell'incavo",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "letto di Clara",
+              "carta da parati",
+              "baule",
+              "casa delle bambole",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "letto di Clara",
+              "carta da parati",
+              "baule",
+              "casa delle bambole",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "usa",
+          "bersaglio": "medaglione",
+          "con": "casa delle bambole"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "usa",
+        "bersaglio": "medaglione",
+        "con": "letto di Clara"
+      }
+    },
+    {
+      "id": "43-valdimora",
+      "avventura": "valdimora",
+      "stanza": "camera_clara",
+      "frase": "leggo le lettere della contessa",
+      "perche": "«lettere» non è la lettera della contessa (che è altrove).",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); letto di Clara (letto, coperta, coperta ricamata); carta da parati (stelline, pareti); baule (baule di Clara, coperchio); lettere per Clara (lettere, lettere della contessa, pacco, pacco di lettere, nastro nero); casa delle bambole (casa, casetta, bambole, comignolo)\nUscite: est\nFrase: leggo le lettere della contessa",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "letto di Clara",
+              "carta da parati",
+              "baule",
+              "lettere per Clara",
+              "casa delle bambole",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "letto di Clara",
+              "carta da parati",
+              "baule",
+              "lettere per Clara",
+              "casa delle bambole",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "leggi",
+          "bersaglio": "lettere per Clara",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "leggi",
+        "bersaglio": "lettere per Clara",
+        "con": "lettera della contessa"
+      }
+    },
+    {
+      "id": "44-valdimora",
+      "avventura": "valdimora",
+      "stanza": "camera_agnese",
+      "frase": "guardo sotto il materasso",
+      "perche": "Il materasso è del letto di Agnese.",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); letto di Agnese (letto, materasso, letto stretto); crocifisso (croce); catino (comodino, brocca); mozzicone di candela (mozzicone, candela); scarpe grigie (scarpe)\nUscite: sud\nFrase: guardo sotto il materasso",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "letto di Agnese",
+              "crocifisso",
+              "catino",
+              "mozzicone di candela",
+              "scarpe grigie",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "letto di Agnese",
+              "crocifisso",
+              "catino",
+              "mozzicone di candela",
+              "scarpe grigie",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "esamina",
+          "bersaglio": "letto di Agnese",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "guarda",
+        "bersaglio": "letto di Agnese",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "45-valdimora",
+      "avventura": "valdimora",
+      "stanza": "stanza_orologio",
+      "frase": "lego la corda alla trave",
+      "perche": "«lego» non è «leggo».",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); corda da bucato (corda, fune); meccanismo dell'orologio (meccanismo, ingranaggi, pendolo, orologio); lucernario (botola); trave (trave robusta); tetto (pioggia, vento, tegole)\nUscite: nord (Soffittone), su (Tetto)\nFrase: lego la corda alla trave",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "corda da bucato",
+              "meccanismo dell'orologio",
+              "lucernario",
+              "trave",
+              "tetto",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "corda da bucato",
+              "meccanismo dell'orologio",
+              "lucernario",
+              "trave",
+              "tetto",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "usa",
+          "bersaglio": "corda da bucato",
+          "con": "trave"
+        },
+        {
+          "verbo": "usa",
+          "bersaglio": "corda da bucato",
+          "con": "lucernario"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "leggi",
+        "bersaglio": "corda da bucato",
+        "con": "trave"
+      }
+    },
+    {
+      "id": "46-valdimora",
+      "avventura": "valdimora",
+      "stanza": "stanza_orologio",
+      "frase": "lego la corda al tetto",
+      "perche": "qwen risponde «leggi la trave con la corda».",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); corda da bucato (corda, fune); meccanismo dell'orologio (meccanismo, ingranaggi, pendolo, orologio); lucernario (botola); trave (trave robusta); tetto (pioggia, vento, tegole)\nUscite: nord (Soffittone), su (Tetto)\nFrase: lego la corda al tetto",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "corda da bucato",
+              "meccanismo dell'orologio",
+              "lucernario",
+              "trave",
+              "tetto",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "corda da bucato",
+              "meccanismo dell'orologio",
+              "lucernario",
+              "trave",
+              "tetto",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "usa",
+          "bersaglio": "corda da bucato",
+          "con": "trave"
+        },
+        {
+          "verbo": "usa",
+          "bersaglio": "corda da bucato",
+          "con": "lucernario"
+        },
+        {
+          "verbo": "usa",
+          "bersaglio": "corda da bucato",
+          "con": "tetto"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "leggi",
+        "bersaglio": "corda da bucato",
+        "con": "tetto"
+      }
+    },
+    {
+      "id": "47-valdimora",
+      "avventura": "valdimora",
+      "stanza": "stanza_orologio",
+      "frase": "esco dal lucernario sul tetto",
+      "perche": "Uno spostamento verso il tetto, non un salto.",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); meccanismo dell'orologio (meccanismo, ingranaggi, pendolo, orologio); lucernario (botola); trave (trave robusta); tetto (pioggia, vento, tegole)\nUscite: nord (Soffittone), su (Tetto)\nFrase: esco dal lucernario sul tetto",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "meccanismo dell'orologio",
+              "lucernario",
+              "trave",
+              "tetto",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "meccanismo dell'orologio",
+              "lucernario",
+              "trave",
+              "tetto",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "vai",
+          "bersaglio": "su",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "salta",
+        "bersaglio": "lucernario",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "48-valdimora",
+      "avventura": "valdimora",
+      "stanza": "cucina",
+      "frase": "accendo la lanterna con un fiammifero",
+      "perche": "qwen sceglieva il focolare come strumento.",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); focolare (fuoco, camino); pentole (rame, travi); porta della cantina (porta, cantina, porta bassa); scatola di fiammiferi (fiammiferi, cerini, scatola); lanterna (lume, lanterna a petrolio, stoppino, serbatoio)\nPersonaggi: Ettore (maggiordomo, vecchio)\nArgomenti: contessa (adelaide, padrona, morte); lettera (invito, lettera della contessa); credenza (grappa, liquori, chiave della credenza); Clara (madre, mamma, mia madre, tua madre); ritratto (quadro, quadro coperto, drappo, galleria, ragazza); Livia (governante, chiavi); Corrado (nipote); Agnese (dama di compagnia); dottor Ferri (dottore, medico, ferri); frana (strada, notaio); lanterna (lume, petrolio, fiammiferi); cantina (porta della cantina, chiave della cantina, vino)\nUscite: nord (Lavanderia), sud (Cortile), est (Dispensa), ovest (Stanza del maggiordomo)\nFrase: accendo la lanterna con un fiammifero",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "focolare",
+              "pentole",
+              "porta della cantina",
+              "scatola di fiammiferi",
+              "lanterna",
+              "Ettore",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "focolare",
+              "pentole",
+              "porta della cantina",
+              "scatola di fiammiferi",
+              "lanterna",
+              "Ettore",
+              "contessa",
+              "lettera",
+              "credenza",
+              "Clara",
+              "ritratto",
+              "Livia",
+              "Corrado",
+              "Agnese",
+              "dottor Ferri",
+              "frana",
+              "cantina",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "usa",
+          "bersaglio": "lanterna",
+          "con": "scatola di fiammiferi"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "usa",
+        "bersaglio": "lanterna",
+        "con": "focolare"
+      }
+    },
+    {
+      "id": "49-valdimora",
+      "avventura": "valdimora",
+      "stanza": "balcone",
+      "frase": "mi appoggio alla balaustra",
+      "perche": "Spingere la balaustra uccide: appoggiarsi non è spingere.",
+      "utente": "Oggetti: balaustra (parapetto, crepe, angolo); vaso di gerani (vaso, gerani, terracotta); valle (panorama, montagne); lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento)\nUscite: nord (Salone delle feste: sala delle feste)\nFrase: mi appoggio alla balaustra",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "balaustra",
+              "vaso di gerani",
+              "valle",
+              "lettera della contessa",
+              "medaglione",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "balaustra",
+              "vaso di gerani",
+              "valle",
+              "lettera della contessa",
+              "medaglione",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "esamina",
+          "bersaglio": "balaustra",
+          "con": "nessuno"
+        },
+        {
+          "verbo": "altro",
+          "bersaglio": "nessuno",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "guarda",
+        "bersaglio": "balaustra",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "50-valdimora",
+      "avventura": "valdimora",
+      "stanza": "balcone",
+      "frase": "lancio uno sguardo verso la valle",
+      "perche": "Uno sguardo non è un salto nella valle.",
+      "utente": "Oggetti: balaustra (parapetto, crepe, angolo); vaso di gerani (vaso, gerani, terracotta); valle (panorama, montagne); lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento)\nUscite: nord (Salone delle feste: sala delle feste)\nFrase: lancio uno sguardo verso la valle",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "balaustra",
+              "vaso di gerani",
+              "valle",
+              "lettera della contessa",
+              "medaglione",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "balaustra",
+              "vaso di gerani",
+              "valle",
+              "lettera della contessa",
+              "medaglione",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "esamina",
+          "bersaglio": "valle",
+          "con": "nessuno"
+        },
+        {
+          "verbo": "guarda",
+          "bersaglio": "nessuno",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "guarda",
+        "bersaglio": "valle",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "51-valdimora",
+      "avventura": "valdimora",
+      "stanza": "galleria",
+      "frase": "ho sete",
+      "perche": "Non è un'azione di gioco («sete» assomiglia a «seta»).",
+      "utente": "Oggetti: ritratto (quadro, quadro coperto, ritratto coperto, cornice, incavo, ragazza); drappo di velluto (drappo, velluto, velluto nero, drappo nero); ritratti degli antenati (ritratti, antenati, quadri, dame, cavalieri, vescovo, pareti); lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento)\nPersonaggi: Ettore (maggiordomo, vecchio)\nArgomenti: contessa (adelaide, padrona, morte); lettera (invito, lettera della contessa); ritratto (quadro, quadro coperto, drappo, galleria, ragazza); Livia (governante, chiavi); Corrado (nipote); Agnese (dama di compagnia); dottor Ferri (dottore, medico, ferri); frana (strada, notaio)\nUscite: nord (Pianerottolo di servizio: pianerottolo), sud, est (Biblioteca), ovest (Salottino verde: salottino)\nFrase: ho sete",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "ritratto",
+              "drappo di velluto",
+              "ritratti degli antenati",
+              "lettera della contessa",
+              "medaglione",
+              "Ettore",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "ritratto",
+              "drappo di velluto",
+              "ritratti degli antenati",
+              "lettera della contessa",
+              "medaglione",
+              "Ettore",
+              "contessa",
+              "lettera",
+              "Livia",
+              "Corrado",
+              "Agnese",
+              "dottor Ferri",
+              "frana",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "altro",
+          "bersaglio": "nessuno",
+          "con": "nessuno"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "guarda",
+        "bersaglio": "nessuno",
+        "con": "nessuno"
+      }
+    },
+    {
+      "id": "52-valdimora",
+      "avventura": "valdimora",
+      "stanza": "ufficio_governante",
+      "frase": "chiedo a Livia di Corrado",
+      "perche": "Argomento che è anche il nome di un altro personaggio.",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); quadro delle chiavi (quadro, chiavi, cartellini, cartellino); calendario; libri contabili (contabilità, libri)\nPersonaggi: Livia (governante, signora livia)\nArgomenti: scalone (piano nobile, piano di sopra, chiave dello scalone, porta); contessa (adelaide, padrona, morte); Ettore (maggiordomo); Corrado (nipote); Agnese (dama di compagnia, ragazza); dottor Ferri (dottore, medico, ferri); notaio (frana, strada); chiavi (mazzo di chiavi, quadro delle chiavi)\nUscite: sud (Cappella: chiesetta), ovest (Dispensa)\nFrase: chiedo a Livia di Corrado",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "quadro delle chiavi",
+              "calendario",
+              "libri contabili",
+              "Livia",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "quadro delle chiavi",
+              "calendario",
+              "libri contabili",
+              "Livia",
+              "scalone",
+              "contessa",
+              "Ettore",
+              "Corrado",
+              "Agnese",
+              "dottor Ferri",
+              "notaio",
+              "chiavi",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "chiedi",
+          "bersaglio": "Livia",
+          "con": "Corrado"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "chiedi",
+        "bersaglio": "Livia",
+        "con": "Corrado"
+      }
+    },
+    {
+      "id": "53-valdimora",
+      "avventura": "valdimora",
+      "stanza": "ufficio_governante",
+      "frase": "e voi chi siete, di preciso?",
+      "perche": "Gesto «chi sei», col «voi» di cortesia.",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); quadro delle chiavi (quadro, chiavi, cartellini, cartellino); calendario; libri contabili (contabilità, libri)\nPersonaggi: Livia (governante, signora livia)\nArgomenti: scalone (piano nobile, piano di sopra, chiave dello scalone, porta); contessa (adelaide, padrona, morte); Ettore (maggiordomo); Corrado (nipote); Agnese (dama di compagnia, ragazza); dottor Ferri (dottore, medico, ferri); notaio (frana, strada); chiavi (mazzo di chiavi, quadro delle chiavi)\nUscite: sud (Cappella: chiesetta), ovest (Dispensa)\nFrase: e voi chi siete, di preciso?",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "quadro delle chiavi",
+              "calendario",
+              "libri contabili",
+              "Livia",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "quadro delle chiavi",
+              "calendario",
+              "libri contabili",
+              "Livia",
+              "scalone",
+              "contessa",
+              "Ettore",
+              "Corrado",
+              "Agnese",
+              "dottor Ferri",
+              "notaio",
+              "chiavi",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "parla",
+          "bersaglio": "Livia",
+          "con": "chi sei"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "parla",
+        "bersaglio": "Livia",
+        "con": "saluto"
+      }
+    },
+    {
+      "id": "54-valdimora",
+      "avventura": "valdimora",
+      "stanza": "ufficio_governante",
+      "frase": "siete una vecchia strega",
+      "perche": "Insulto col «voi».",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); quadro delle chiavi (quadro, chiavi, cartellini, cartellino); calendario; libri contabili (contabilità, libri)\nPersonaggi: Livia (governante, signora livia)\nArgomenti: scalone (piano nobile, piano di sopra, chiave dello scalone, porta); contessa (adelaide, padrona, morte); Ettore (maggiordomo); Corrado (nipote); Agnese (dama di compagnia, ragazza); dottor Ferri (dottore, medico, ferri); notaio (frana, strada); chiavi (mazzo di chiavi, quadro delle chiavi)\nUscite: sud (Cappella: chiesetta), ovest (Dispensa)\nFrase: siete una vecchia strega",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "quadro delle chiavi",
+              "calendario",
+              "libri contabili",
+              "Livia",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "quadro delle chiavi",
+              "calendario",
+              "libri contabili",
+              "Livia",
+              "scalone",
+              "contessa",
+              "Ettore",
+              "Corrado",
+              "Agnese",
+              "dottor Ferri",
+              "notaio",
+              "chiavi",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "parla",
+          "bersaglio": "Livia",
+          "con": "scortesia"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "parla",
+        "bersaglio": "Livia",
+        "con": "saluto"
+      }
+    },
+    {
+      "id": "55-valdimora",
+      "avventura": "valdimora",
+      "stanza": "cappella",
+      "frase": "perdonatemi se vi disturbo",
+      "perche": "Gesto di scuse.",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); bara della contessa (bara, feretro); candele (candela, ceri); gigli\nPersonaggi: Agnese (dama di compagnia, ragazza)\nArgomenti: contessa (adelaide, padrona, morte); medicine (gocce, digitale, farmaco); Corrado (nipote, signor corrado); Ettore (maggiordomo); Livia (governante); aiuto (aiutare, serve); medaglione (stella, ciondolo)\nUscite: nord (Ufficio della governante: ufficio), sud (Sala del biliardo: biliardo), ovest (Cortile)\nFrase: perdonatemi se vi disturbo",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "bara della contessa",
+              "candele",
+              "gigli",
+              "Agnese",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "bara della contessa",
+              "candele",
+              "gigli",
+              "Agnese",
+              "contessa",
+              "medicine",
+              "Corrado",
+              "Ettore",
+              "Livia",
+              "aiuto",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "parla",
+          "bersaglio": "Agnese",
+          "con": "scuse"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "parla",
+        "bersaglio": "Agnese",
+        "con": "saluto"
+      }
+    },
+    {
+      "id": "56-valdimora",
+      "avventura": "valdimora",
+      "stanza": "cappella",
+      "frase": "adesso vado, ci vediamo più tardi",
+      "perche": "Congedo, non uno spostamento.",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); bara della contessa (bara, feretro); candele (candela, ceri); gigli\nPersonaggi: Agnese (dama di compagnia, ragazza)\nArgomenti: contessa (adelaide, padrona, morte); medicine (gocce, digitale, farmaco); Corrado (nipote, signor corrado); Ettore (maggiordomo); Livia (governante); aiuto (aiutare, serve); medaglione (stella, ciondolo)\nUscite: nord (Ufficio della governante: ufficio), sud (Sala del biliardo: biliardo), ovest (Cortile)\nFrase: adesso vado, ci vediamo più tardi",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "bara della contessa",
+              "candele",
+              "gigli",
+              "Agnese",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "bara della contessa",
+              "candele",
+              "gigli",
+              "Agnese",
+              "contessa",
+              "medicine",
+              "Corrado",
+              "Ettore",
+              "Livia",
+              "aiuto",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "parla",
+          "bersaglio": "Agnese",
+          "con": "congedo"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "parla",
+        "bersaglio": "Agnese",
+        "con": "saluto"
+      }
+    },
+    {
+      "id": "57-valdimora",
+      "avventura": "valdimora",
+      "stanza": "stanza_maggiordomo",
+      "frase": "scusate, cosa sapete della contessa?",
+      "perche": "Una domanda dietro le parole di un gesto.",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); argenteria (argento, posate); campanelli (campanello); tavolo dell'argenteria (tavolo); sedia impagliata (sedia); porta di servizio (porta)\nPersonaggi: Ettore (maggiordomo, vecchio)\nArgomenti: contessa (adelaide, padrona, morte); lettera (invito, lettera della contessa); Livia (governante, chiavi); Corrado (nipote); Agnese (dama di compagnia); dottor Ferri (dottore, medico, ferri); frana (strada, notaio)\nUscite: sud (Sala da pranzo), est (Cucina)\nFrase: scusate, cosa sapete della contessa?",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "argenteria",
+              "campanelli",
+              "tavolo dell'argenteria",
+              "sedia impagliata",
+              "porta di servizio",
+              "Ettore",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "argenteria",
+              "campanelli",
+              "tavolo dell'argenteria",
+              "sedia impagliata",
+              "porta di servizio",
+              "Ettore",
+              "contessa",
+              "lettera",
+              "Livia",
+              "Corrado",
+              "Agnese",
+              "dottor Ferri",
+              "frana",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "chiedi",
+          "bersaglio": "Ettore",
+          "con": "contessa"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "chiedi",
+        "bersaglio": "Ettore",
+        "con": "contessa"
+      }
+    },
+    {
+      "id": "58-valdimora",
+      "avventura": "valdimora",
+      "stanza": "corridoio_servitu",
+      "frase": "Agnese, mi faresti una camomilla?",
+      "perche": "La camomilla è l'argomento «tisana».",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); porta della camera di Clara (porta, porta di Clara, camera di Clara, targhetta, porta in fondo); porta della camera di Agnese (porta di Agnese)\nPersonaggi: Agnese (dama di compagnia, ragazza)\nArgomenti: contessa (adelaide, padrona, morte); medicine (gocce, digitale, farmaco); Corrado (nipote, signor corrado); Ettore (maggiordomo); Livia (governante); aiuto (aiutare, serve); petrolio (tanica, tanica di petrolio); tisana (camomilla, infuso, qualcosa di caldo, tazza); camera (camera di Agnese, cameretta, porta della camera di Agnese); luce (candela, impronte, cera, soffittone); medaglione (stella, ciondolo)\nUscite: nord (Camera di Agnese), sud (Camera di Livia), est, ovest\nFrase: Agnese, mi faresti una camomilla?",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "porta della camera di Clara",
+              "porta della camera di Agnese",
+              "Agnese",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "porta della camera di Clara",
+              "porta della camera di Agnese",
+              "Agnese",
+              "contessa",
+              "medicine",
+              "Corrado",
+              "Ettore",
+              "Livia",
+              "aiuto",
+              "petrolio",
+              "tisana",
+              "camera",
+              "luce",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "chiedi",
+          "bersaglio": "Agnese",
+          "con": "tisana"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "chiedi",
+        "bersaglio": "Agnese",
+        "con": "tisana"
+      }
+    },
+    {
+      "id": "59-valdimora",
+      "avventura": "valdimora",
+      "stanza": "cucina",
+      "frase": "dove trovo il petrolio?",
+      "perche": "Due personaggi presenti, nessuno nominato: va bene chiederlo a uno dei due (tanica o lanterna).",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); focolare (fuoco, camino); pentole (rame, travi); porta della cantina (porta, cantina, porta bassa); scatola di fiammiferi (fiammiferi, cerini, scatola)\nPersonaggi: Ettore (maggiordomo, vecchio); Agnese (dama di compagnia, ragazza)\nArgomenti: contessa (adelaide, padrona, morte); lettera (invito, lettera della contessa); credenza (grappa, liquori, chiave della credenza); Clara (madre, mamma, mia madre, tua madre); ritratto (quadro, quadro coperto, drappo, galleria, ragazza); Livia (governante); Corrado (nipote, signor corrado); Agnese (dama di compagnia); dottor Ferri (dottore, medico, ferri); frana (strada, notaio); lanterna (lume, petrolio, fiammiferi); cantina (porta della cantina, chiave della cantina, vino); medicine (gocce, digitale, farmaco); Ettore (maggiordomo); aiuto (aiutare, serve); tanica (petrolio, tanica di petrolio); tazza di tisana (tisana, camomilla, infuso, qualcosa di caldo, tazza); camera (camera di Agnese, cameretta, porta della camera di Agnese); luce (candela, impronte, cera, soffittone); medaglione (stella, ciondolo)\nUscite: nord (Lavanderia), sud (Cortile), est (Dispensa), ovest (Stanza del maggiordomo)\nFrase: dove trovo il petrolio?",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "focolare",
+              "pentole",
+              "porta della cantina",
+              "scatola di fiammiferi",
+              "Ettore",
+              "Agnese",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "focolare",
+              "pentole",
+              "porta della cantina",
+              "scatola di fiammiferi",
+              "Ettore",
+              "Agnese",
+              "contessa",
+              "lettera",
+              "credenza",
+              "Clara",
+              "ritratto",
+              "Livia",
+              "Corrado",
+              "dottor Ferri",
+              "frana",
+              "lanterna",
+              "cantina",
+              "medicine",
+              "aiuto",
+              "tanica",
+              "tazza di tisana",
+              "camera",
+              "luce",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "chiedi",
+          "bersaglio": "*",
+          "con": "tanica"
+        },
+        {
+          "verbo": "chiedi",
+          "bersaglio": "*",
+          "con": "lanterna"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "chiedi",
+        "bersaglio": "Ettore",
+        "con": "focolare"
+      }
+    },
+    {
+      "id": "60-valdimora",
+      "avventura": "valdimora",
+      "stanza": "camera_livia",
+      "frase": "mostro la fotografia di mia madre a Livia",
+      "perche": "Mostrare: va bene dare o chiedere della fotografia.",
+      "utente": "Oggetti: lettera della contessa (lettera, invito); medaglione (ciondolo, medaglione d'argento); fotografia di tua madre (fotografia, foto, fotografia di mia madre, foto di mia madre); letto di Livia (letto, letto stretto); inginocchiatoio (rosario); armadio di Livia (armadio, vestiti, vestiti grigi); rosa secca (rosa, vasetto, davanzale)\nPersonaggi: Livia (governante, signora livia)\nArgomenti: scalone (piano nobile, piano di sopra, chiave dello scalone, porta); contessa (adelaide, padrona, morte); Ettore (maggiordomo); Corrado (nipote); Agnese (dama di compagnia, ragazza); dottor Ferri (dottore, medico, ferri); notaio (frana, strada); chiavi (mazzo di chiavi, quadro delle chiavi); rosa bianca (rosa, rose, rose bianche, vasetto, comodino); boudoir (porta del boudoir, porta bassa, portagioie); campanello (cordone, cordone del campanello, filo, campanelli); scala di servizio (porta di servizio, porta della scala di servizio, chiave della scala di servizio, soffitta); fotografia (foto, fotografia di mia madre); Clara (madre, mamma, mia madre); camera di Clara (camera chiusa, porta in fondo, targhetta, chiave della camera di Clara)\nUscite: nord\nFrase: mostro la fotografia di mia madre a Livia",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "verbo": {
+            "type": "string",
+            "enum": [
+              "esamina",
+              "prendi",
+              "lascia",
+              "usa",
+              "apri",
+              "chiudi",
+              "spingi",
+              "tira",
+              "leggi",
+              "dai",
+              "salta",
+              "parla",
+              "chiedi",
+              "vai",
+              "guarda",
+              "inventario",
+              "altro"
+            ]
+          },
+          "bersaglio": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "fotografia di tua madre",
+              "letto di Livia",
+              "inginocchiatoio",
+              "armadio di Livia",
+              "rosa secca",
+              "Livia",
+              "nord",
+              "sud",
+              "est",
+              "ovest",
+              "su",
+              "giù",
+              "nessuno"
+            ]
+          },
+          "con": {
+            "type": "string",
+            "enum": [
+              "lettera della contessa",
+              "medaglione",
+              "fotografia di tua madre",
+              "letto di Livia",
+              "inginocchiatoio",
+              "armadio di Livia",
+              "rosa secca",
+              "Livia",
+              "scalone",
+              "contessa",
+              "Ettore",
+              "Corrado",
+              "Agnese",
+              "dottor Ferri",
+              "notaio",
+              "chiavi",
+              "rosa bianca",
+              "boudoir",
+              "campanello",
+              "scala di servizio",
+              "fotografia",
+              "Clara",
+              "camera di Clara",
+              "saluto",
+              "congedo",
+              "grazie",
+              "scuse",
+              "come stai",
+              "chi sei",
+              "scortesia",
+              "nessuno"
+            ]
+          }
+        },
+        "required": [
+          "verbo",
+          "bersaglio",
+          "con"
+        ]
+      },
+      "attese": [
+        {
+          "verbo": "dai",
+          "bersaglio": "fotografia di tua madre",
+          "con": "Livia"
+        },
+        {
+          "verbo": "chiedi",
+          "bersaglio": "Livia",
+          "con": "fotografia"
+        }
+      ],
+      "qwen2.5:3b": {
+        "verbo": "dai",
+        "bersaglio": "fotografia di tua madre",
+        "con": "Livia"
+      }
+    }
+  ]
+}

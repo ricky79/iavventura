@@ -1,0 +1,725 @@
+{
+  "modello": "qwen2.5:3b",
+  "risultati": [
+    {
+      "id": "01-rocca",
+      "frase": "usa il rampino per recuperare la chiave dal pozzo",
+      "risposta": {
+        "verbo": "usa",
+        "bersaglio": "pozzo",
+        "con": "corda con gancio"
+      },
+      "errore": null,
+      "ok": true,
+      "secondi": 54.3
+    },
+    {
+      "id": "02-rocca",
+      "frase": "provo a ripescare la chiave nel pozzo col rampino",
+      "risposta": {
+        "verbo": "usa",
+        "bersaglio": "pozzo",
+        "con": "corda con gancio"
+      },
+      "errore": null,
+      "ok": true,
+      "secondi": 6.5
+    },
+    {
+      "id": "03-rocca",
+      "frase": "butta il rampino nel pozzo",
+      "risposta": {
+        "verbo": "lascia",
+        "bersaglio": "portone",
+        "con": "corda con gancio"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 8.6
+    },
+    {
+      "id": "04-rocca",
+      "frase": "lancio il rampino nel pozzo",
+      "risposta": {
+        "verbo": "lascia",
+        "bersaglio": "pozzo",
+        "con": "corda con gancio"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 6.2
+    },
+    {
+      "id": "05-rocca",
+      "frase": "aggancia la corda alla vera di pietra",
+      "risposta": {
+        "verbo": "leggi",
+        "bersaglio": "nessuno",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 4.8
+    },
+    {
+      "id": "06-rocca",
+      "frase": "afferra la ciave nel pozzo",
+      "risposta": {
+        "verbo": "prendi",
+        "bersaglio": "chiave di ferro",
+        "con": "pozzo"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 7.0
+    },
+    {
+      "id": "07-rocca",
+      "frase": "bene ora utilizza la corda che hai preso nella scuderia e legala alla vera del pozzo",
+      "risposta": {
+        "verbo": "usa",
+        "bersaglio": "corda",
+        "con": "pozzo"
+      },
+      "errore": null,
+      "ok": true,
+      "secondi": 7.2
+    },
+    {
+      "id": "08-rocca",
+      "frase": "a cosa mi serve questa corda?",
+      "risposta": {
+        "verbo": "esamina",
+        "bersaglio": "corda",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": true,
+      "secondi": 10.8
+    },
+    {
+      "id": "09-rocca",
+      "frase": "vai in cucina",
+      "risposta": {
+        "verbo": "vai",
+        "bersaglio": "corda",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 11.0
+    },
+    {
+      "id": "10-rocca",
+      "frase": "vado nella cantina",
+      "risposta": {
+        "verbo": "vai",
+        "bersaglio": "ovest",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 8.3
+    },
+    {
+      "id": "11-rocca",
+      "frase": "busso alla porta della torre",
+      "risposta": {
+        "verbo": "tira",
+        "bersaglio": "porta della torre",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 5.9
+    },
+    {
+      "id": "12-rocca",
+      "frase": "sfondo la porta a calci",
+      "risposta": {
+        "verbo": "lascia",
+        "bersaglio": "porta della torre",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 5.7
+    },
+    {
+      "id": "13-rocca",
+      "frase": "mi butto nel pozzo",
+      "risposta": {
+        "verbo": "salta",
+        "bersaglio": "pozzo",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": true,
+      "secondi": 4.6
+    },
+    {
+      "id": "14-rocca",
+      "frase": "guardo giù nel pozzo",
+      "risposta": {
+        "verbo": "guarda",
+        "bersaglio": "pozzo",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 5.6
+    },
+    {
+      "id": "15-rocca",
+      "frase": "chi era il castellano?",
+      "risposta": {
+        "verbo": "chiedi",
+        "bersaglio": "pellegrino",
+        "con": "chiave"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 12.0
+    },
+    {
+      "id": "16-rocca",
+      "frase": "chiedo al vecchio come si esce da qui",
+      "risposta": {
+        "verbo": "chiedi",
+        "bersaglio": "pellegrino",
+        "con": "come stai"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 6.9
+    },
+    {
+      "id": "17-rocca",
+      "frase": "gli chiedo se ha fame",
+      "risposta": {
+        "verbo": "chiedi",
+        "bersaglio": "pellegrino",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": true,
+      "secondi": 6.5
+    },
+    {
+      "id": "18-rocca",
+      "frase": "sei proprio un vecchio brontolone",
+      "risposta": {
+        "verbo": "parla",
+        "bersaglio": "pellegrino",
+        "con": "saluto"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 6.3
+    },
+    {
+      "id": "19-rocca",
+      "frase": "addio, e buona fortuna",
+      "risposta": {
+        "verbo": "parla",
+        "bersaglio": "pellegrino",
+        "con": "saluto"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 6.4
+    },
+    {
+      "id": "20-draghetto",
+      "frase": "mangio una mora",
+      "risposta": {
+        "verbo": "prendi",
+        "bersaglio": "giù",
+        "con": "more"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 24.4
+    },
+    {
+      "id": "21-draghetto",
+      "frase": "salgo sull'albero",
+      "risposta": {
+        "verbo": "vai",
+        "bersaglio": "su",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": true,
+      "secondi": 7.3
+    },
+    {
+      "id": "22-draghetto",
+      "frase": "stacco la piuma col bastone",
+      "risposta": {
+        "verbo": "usa",
+        "bersaglio": "ramo",
+        "con": "piuma"
+      },
+      "errore": null,
+      "ok": true,
+      "secondi": 7.6
+    },
+    {
+      "id": "23-draghetto",
+      "frase": "guardo su nell'albero",
+      "risposta": {
+        "verbo": "guarda",
+        "bersaglio": "su",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 6.5
+    },
+    {
+      "id": "24-draghetto",
+      "frase": "ti faccio il solletico sul naso con la piuma",
+      "risposta": {
+        "verbo": "usa",
+        "bersaglio": "piuma",
+        "con": "more"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 14.3
+    },
+    {
+      "id": "25-draghetto",
+      "frase": "attraverso il ponte",
+      "risposta": {
+        "verbo": "vai",
+        "bersaglio": "est",
+        "con": "ponticello"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 7.8
+    },
+    {
+      "id": "26-draghetto",
+      "frase": "vai a casa",
+      "risposta": {
+        "verbo": "vai",
+        "bersaglio": "sud",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 7.2
+    },
+    {
+      "id": "27-draghetto",
+      "frase": "vai dall orso",
+      "risposta": {
+        "verbo": "vai",
+        "bersaglio": "ovest",
+        "con": "orso"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 13.1
+    },
+    {
+      "id": "28-draghetto",
+      "frase": "salgo sul sasso",
+      "risposta": {
+        "verbo": "vai",
+        "bersaglio": "nord",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 4.9
+    },
+    {
+      "id": "29-draghetto",
+      "frase": "ciao orso",
+      "risposta": {
+        "verbo": "parla",
+        "bersaglio": "draghetto",
+        "con": "casa"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 6.0
+    },
+    {
+      "id": "30-draghetto",
+      "frase": "mi dai il tuo miele?",
+      "risposta": {
+        "verbo": "dai",
+        "bersaglio": "orso",
+        "con": "miele"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 8.4
+    },
+    {
+      "id": "31-draghetto",
+      "frase": "conosci l'orso?",
+      "risposta": {
+        "verbo": "parla",
+        "bersaglio": "draghetto",
+        "con": "orso"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 13.7
+    },
+    {
+      "id": "32-draghetto",
+      "frase": "perche hai il naso rosso",
+      "risposta": {
+        "verbo": "usa",
+        "bersaglio": "sasso",
+        "con": "more"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 5.2
+    },
+    {
+      "id": "33-draghetto",
+      "frase": "sei un drago cattivo",
+      "risposta": {
+        "verbo": "usa",
+        "bersaglio": "draghetto",
+        "con": "more"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 5.2
+    },
+    {
+      "id": "34-draghetto",
+      "frase": "i draghi cattivi sputano fuoco?",
+      "risposta": {
+        "verbo": "usa",
+        "bersaglio": "draghetto",
+        "con": "solletico"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 5.7
+    },
+    {
+      "id": "35-draghetto",
+      "frase": "scusami tanto, orso",
+      "risposta": {
+        "verbo": "parla",
+        "bersaglio": "orso",
+        "con": "saluto"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 7.8
+    },
+    {
+      "id": "36-valdimora",
+      "frase": "leggo il biglietto della contessa",
+      "risposta": {
+        "verbo": "leggi",
+        "bersaglio": "busta della contessa",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": true,
+      "secondi": 21.9
+    },
+    {
+      "id": "37-valdimora",
+      "frase": "frugo nella borsa del dottore",
+      "risposta": {
+        "verbo": "inventario",
+        "bersaglio": "borsa del dottore",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 16.0
+    },
+    {
+      "id": "38-valdimora",
+      "frase": "faccio vedere la lettera a Ettore",
+      "risposta": {
+        "verbo": "parla",
+        "bersaglio": "Ettore",
+        "con": "lettera della contessa"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 13.7
+    },
+    {
+      "id": "39-valdimora",
+      "frase": "Ettore, chi è questa ragazza?",
+      "risposta": {
+        "verbo": "esamina",
+        "bersaglio": "ritratto",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 17.8
+    },
+    {
+      "id": "40-valdimora",
+      "frase": "infilo il medaglione nella cornice",
+      "risposta": {
+        "verbo": "inventario",
+        "bersaglio": "nessuno",
+        "con": "medaglione"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 7.0
+    },
+    {
+      "id": "41-valdimora",
+      "frase": "infilo il medaglione nel tetto della casa delle bambole",
+      "risposta": {
+        "verbo": "usa",
+        "bersaglio": "medaglione",
+        "con": "casa delle bambole"
+      },
+      "errore": null,
+      "ok": true,
+      "secondi": 10.3
+    },
+    {
+      "id": "42-valdimora",
+      "frase": "metto il medaglione nell'incavo",
+      "risposta": {
+        "verbo": "usa",
+        "bersaglio": "medaglione",
+        "con": "letto di Clara"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 5.9
+    },
+    {
+      "id": "43-valdimora",
+      "frase": "leggo le lettere della contessa",
+      "risposta": {
+        "verbo": "leggi",
+        "bersaglio": "lettere per Clara",
+        "con": "lettera della contessa"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 8.0
+    },
+    {
+      "id": "44-valdimora",
+      "frase": "guardo sotto il materasso",
+      "risposta": {
+        "verbo": "guarda",
+        "bersaglio": "letto di Agnese",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 8.4
+    },
+    {
+      "id": "45-valdimora",
+      "frase": "lego la corda alla trave",
+      "risposta": {
+        "verbo": "leggi",
+        "bersaglio": "corda da bucato",
+        "con": "trave"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 9.7
+    },
+    {
+      "id": "46-valdimora",
+      "frase": "lego la corda al tetto",
+      "risposta": {
+        "verbo": "leggi",
+        "bersaglio": "corda da bucato",
+        "con": "tetto"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 5.4
+    },
+    {
+      "id": "47-valdimora",
+      "frase": "esco dal lucernario sul tetto",
+      "risposta": {
+        "verbo": "salta",
+        "bersaglio": "lucernario",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 8.4
+    },
+    {
+      "id": "48-valdimora",
+      "frase": "accendo la lanterna con un fiammifero",
+      "risposta": {
+        "verbo": "usa",
+        "bersaglio": "lanterna",
+        "con": "focolare"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 16.8
+    },
+    {
+      "id": "49-valdimora",
+      "frase": "mi appoggio alla balaustra",
+      "risposta": {
+        "verbo": "guarda",
+        "bersaglio": "balaustra",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 8.3
+    },
+    {
+      "id": "50-valdimora",
+      "frase": "lancio uno sguardo verso la valle",
+      "risposta": {
+        "verbo": "guarda",
+        "bersaglio": "valle",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 5.0
+    },
+    {
+      "id": "51-valdimora",
+      "frase": "ho sete",
+      "risposta": {
+        "verbo": "guarda",
+        "bersaglio": "nessuno",
+        "con": "nessuno"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 16.5
+    },
+    {
+      "id": "52-valdimora",
+      "frase": "chiedo a Livia di Corrado",
+      "risposta": {
+        "verbo": "chiedi",
+        "bersaglio": "Livia",
+        "con": "Corrado"
+      },
+      "errore": null,
+      "ok": true,
+      "secondi": 14.1
+    },
+    {
+      "id": "53-valdimora",
+      "frase": "e voi chi siete, di preciso?",
+      "risposta": {
+        "verbo": "parla",
+        "bersaglio": "Livia",
+        "con": "saluto"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 5.8
+    },
+    {
+      "id": "54-valdimora",
+      "frase": "siete una vecchia strega",
+      "risposta": {
+        "verbo": "parla",
+        "bersaglio": "Livia",
+        "con": "saluto"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 5.2
+    },
+    {
+      "id": "55-valdimora",
+      "frase": "perdonatemi se vi disturbo",
+      "risposta": {
+        "verbo": "parla",
+        "bersaglio": "Agnese",
+        "con": "saluto"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 11.4
+    },
+    {
+      "id": "56-valdimora",
+      "frase": "adesso vado, ci vediamo più tardi",
+      "risposta": {
+        "verbo": "parla",
+        "bersaglio": "Agnese",
+        "con": "saluto"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 5.1
+    },
+    {
+      "id": "57-valdimora",
+      "frase": "scusate, cosa sapete della contessa?",
+      "risposta": {
+        "verbo": "chiedi",
+        "bersaglio": "Ettore",
+        "con": "contessa"
+      },
+      "errore": null,
+      "ok": true,
+      "secondi": 11.6
+    },
+    {
+      "id": "58-valdimora",
+      "frase": "Agnese, mi faresti una camomilla?",
+      "risposta": {
+        "verbo": "chiedi",
+        "bersaglio": "Agnese",
+        "con": "tisana"
+      },
+      "errore": null,
+      "ok": true,
+      "secondi": 15.2
+    },
+    {
+      "id": "59-valdimora",
+      "frase": "dove trovo il petrolio?",
+      "risposta": {
+        "verbo": "chiedi",
+        "bersaglio": "Ettore",
+        "con": "focolare"
+      },
+      "errore": null,
+      "ok": false,
+      "secondi": 21.3
+    },
+    {
+      "id": "60-valdimora",
+      "frase": "mostro la fotografia di mia madre a Livia",
+      "risposta": {
+        "verbo": "dai",
+        "bersaglio": "fotografia di tua madre",
+        "con": "Livia"
+      },
+      "errore": null,
+      "ok": true,
+      "secondi": 19.6
+    }
+  ]
+}

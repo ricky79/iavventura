@@ -504,6 +504,8 @@ $env:OLLAMA_TESTS=1; .venv\Scripts\python -m pytest tests/test_ollama.py -v -s  
 
 ollama pull qwen2.5:3b
 .venv\Scripts\python -m app.main          # giocare nel browser: http://127.0.0.1:8000
+
+.venv\Scripts\python prove-modelli/prova.py --model qwen2.5:7b   # un altro modello sulle 60 frasi più difficili (prove-modelli/README.md)
 ```
 
 
