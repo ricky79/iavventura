@@ -202,3 +202,4 @@ tests/              # test pytest
 8. Test con modello Qwen3-4B
 9. Test con modello Qwen3-8B
 10. Test con modello Gemma3-4B
+11. Test con Jev
